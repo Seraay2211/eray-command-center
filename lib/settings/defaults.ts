@@ -1,0 +1,49 @@
+import type { UserSettings } from "@/types";
+
+export const DEFAULT_USER_SETTINGS: UserSettings = {
+  id: "local-default",
+  user_id: "",
+  display_name: null,
+  app_theme: "command_dark",
+  language: "tr",
+  density: "compact",
+  sidebar_mode: "expanded",
+  font_family: "geist",
+  reduce_motion: false,
+  default_landing_page: "dashboard",
+  notifications_enabled: true,
+  finance_alerts_enabled: true,
+  task_alerts_enabled: true,
+  calendar_alerts_enabled: true,
+  highlight_critical_alerts: true,
+  default_currency: "TRY",
+  highlight_overdue_debts: true,
+  critical_debt_threshold: 100000,
+  show_ai_summaries: true,
+  show_finance_ai_warning: true,
+  short_ai_response_mode: false,
+  dashboard_layout: "default",
+  default_note_category_id: null,
+  default_task_status: "todo",
+  default_task_priority: "medium",
+  ai_provider: "gemini",
+  ai_default_action: "premium",
+  ai_save_history: true,
+  ai_sensitive_warning: true,
+  show_dashboard_notes: true,
+  show_dashboard_tasks: true,
+  show_dashboard_reports: true,
+  show_dashboard_ai: true,
+  show_dashboard_calendar: true,
+  confirm_before_delete: true,
+  compact_cards: false,
+  created_at: "",
+  updated_at: "",
+};
+
+export function createDefaultUserSettings(userId = ""): UserSettings {
+  return {
+    ...DEFAULT_USER_SETTINGS,
+    user_id: userId,
+  };
+}
