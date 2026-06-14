@@ -54,7 +54,7 @@ const defaultCategories = [
 ];
 
 const inboxCategory = {
-  name: "Hızlı Kayıt",
+  name: "Hızlı Kayıtlar",
   slug: "inbox",
   color: "#64748b",
 };
@@ -535,6 +535,7 @@ export async function createNote(
 
 export async function createQuickCaptureNote(input: {
   content: string;
+  tags?: string[];
   title?: string;
 }): Promise<ActionResult<NoteWithRelations>> {
   try {
@@ -564,6 +565,22 @@ export async function createQuickCaptureNote(input: {
       .single();
 
     if (error) throw error;
+
+    try {
+      await replaceNoteTags(
+        supabase,
+        user.id,
+        data.id,
+        normalizeTags(input.tags ?? []),
+      );
+    } catch (tagError) {
+      await supabase
+        .from("notes")
+        .delete()
+        .eq("id", data.id)
+        .eq("user_id", user.id);
+      throw tagError;
+    }
 
     const note = await fetchNoteById(supabase, user.id, data.id);
     revalidateNoteViews();

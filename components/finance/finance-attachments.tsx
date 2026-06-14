@@ -458,8 +458,25 @@ export function FinanceAttachments({
               })}
             </div>
           ) : (
-            <div className="app-surface app-muted rounded-lg border border-dashed p-4 text-xs">
-              Henüz dekont yüklenmedi.
+            <div className="app-surface rounded-xl border border-dashed p-5 text-center">
+              <FilePlus2 className="app-primary mx-auto size-5" />
+              <p className="app-text mt-3 text-sm font-semibold">
+                Henüz dekont yüklenmedi
+              </p>
+              <p className="app-muted mx-auto mt-1 max-w-sm text-xs leading-5">
+                Bu kayda dekont, görsel veya PDF bağlayarak belgelerini güvenli
+                biçimde saklayabilirsin.
+              </p>
+              <Button
+                className="mt-4"
+                disabled={isUploading}
+                onClick={() => fileInputRef.current?.click()}
+                size="sm"
+                variant="secondary"
+              >
+                <Upload className="size-3.5" />
+                Dekont Yükle
+              </Button>
             </div>
           )}
         </div>

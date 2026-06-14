@@ -1,15 +1,21 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { getDashboardFinanceSummary } from "@/services/finance-service";
+import { getIstanbulDateKey } from "@/lib/dates/istanbul";
+import { formatTRY } from "@/lib/utils/currency";
 import type {
   ActionResult,
+  DashboardCommandStats,
   DashboardData,
   DashboardPinnedSummary,
+  DashboardPriorityItem,
   DashboardRecentNote,
   DashboardReport,
   DashboardStats,
   DashboardTask,
+  DebtPriority,
+  DebtStatus,
+  FinanceDashboardSummary,
   PlannerEventWithLinks,
   PlannerStats,
   TaskPriority,
@@ -87,6 +93,34 @@ interface RawPlannerDashboardEvent {
     | null;
 }
 
+interface RawDashboardTask {
+  id: string;
+  title: string;
+  status: TaskStatus;
+  priority: TaskPriority;
+  due_date: string | null;
+  created_at: string;
+}
+
+interface RawDashboardDebt {
+  id: string;
+  title: string;
+  total_amount: number | string;
+  paid_amount: number | string;
+  currency: string;
+  status: DebtStatus;
+  priority: DebtPriority;
+  due_date: string | null;
+}
+
+interface DashboardIntelligence {
+  commandStats: DashboardCommandStats;
+  financeSummary: FinanceDashboardSummary;
+  openTasks: DashboardTask[];
+  priorityItems: DashboardPriorityItem[];
+  upcomingTasks: DashboardTask[];
+}
+
 const recentNoteSelect = `
   id,
   title,
@@ -149,17 +183,17 @@ function getErrorMessage(error: unknown): string {
     message.includes("Could not find the table")
   ) {
     if (message.includes("planner_events")) {
-      return "Takvim veritabani henuz hazır degil. database/phase-9-calendar.sql dosyasini Supabase SQL Editor icinde calistirin.";
+      return "Takvim veritabanı henüz hazır değil. database/phase-9-calendar.sql dosyasını Supabase SQL Editor içinde çalıştırın.";
     }
 
-    return "Veritabani semasi henuz hazır degil. database/schema.sql dosyasinin tamamini Supabase SQL Editor icinde calistirin.";
+    return "Veritabanı şeması henüz hazır değil. database/schema.sql dosyasının tamamını Supabase SQL Editor içinde çalıştırın.";
   }
 
   if (message.toLowerCase().includes("jwt")) {
-    return "Oturum dogrulanamadi. Lütfen yeniden giris yapin.";
+    return "Oturum doğrulanamadı. Lütfen yeniden giriş yapın.";
   }
 
-  return message || "Dashboard verileri alinamadi.";
+  return message || "Dashboard verileri alınamadı.";
 }
 
 function getTurkeyDateParts(value: Date) {
@@ -191,6 +225,10 @@ function getTodayRange() {
   };
 }
 
+function addDays(value: Date, days: number): Date {
+  return new Date(value.getTime() + days * 24 * 60 * 60 * 1000);
+}
+
 function formatDashboardDate(value: string): string {
   const date = new Date(value);
   const now = new Date();
@@ -204,11 +242,11 @@ function formatDashboardDate(value: string): string {
   }).format(date);
 
   if (date >= startOfToday) {
-    return `Bugun, ${timeLabel}`;
+    return `Bugün, ${timeLabel}`;
   }
 
   if (date >= startOfYesterday && date < startOfToday) {
-    return `Dun, ${timeLabel}`;
+    return `Dün, ${timeLabel}`;
   }
 
   const { day, month } = new Intl.DateTimeFormat("tr-TR", {
@@ -244,7 +282,7 @@ function buildPreview(content: string, maxLength = 120): string {
   const normalized = content.replace(/\s+/g, " ").trim();
 
   if (!normalized) {
-    return "Bu kayıtta henuz içerik bulunmuyor.";
+    return "Bu kayıtta henüz içerik bulunmuyor.";
   }
 
   if (normalized.length <= maxLength) {
@@ -304,12 +342,29 @@ function mapDashboardPlannerEvent(
   };
 }
 
+function mapDashboardTask(task: RawDashboardTask): DashboardTask {
+  return {
+    id: task.id,
+    title: task.title,
+    status: task.status,
+    priority: task.priority,
+    dueDate: task.due_date,
+  };
+}
+
+function getDebtRemainingAmount(debt: RawDashboardDebt): number {
+  return Math.max(
+    (Number(debt.total_amount) || 0) - (Number(debt.paid_amount) || 0),
+    0,
+  );
+}
+
 async function getDashboardContext(): Promise<DashboardContext> {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getUser();
 
   if (error || !data.user) {
-    throw new Error("Oturum dogrulanamadi. Lütfen yeniden giris yapin.");
+    throw new Error("Oturum doğrulanamadı. Lütfen yeniden giriş yapın.");
   }
 
   return {
@@ -579,6 +634,264 @@ export async function getTodayTodoStats(
   };
 }
 
+async function getDashboardIntelligence(
+  userId: string,
+  supabase: SupabaseServerClient,
+): Promise<DashboardIntelligence> {
+  const { startIso, endIso } = getTodayRange();
+  const todayStart = new Date(startIso);
+  const weekEndIso = addDays(todayStart, 7).toISOString();
+  const todayKey = getIstanbulDateKey(todayStart);
+  const weekEndKey = getIstanbulDateKey(addDays(todayStart, 7));
+  const currentMonth = todayKey.slice(0, 7);
+
+  const [
+    taskRowsResult,
+    debtRowsResult,
+    latestPaymentResult,
+    todayTasksResult,
+    overdueTasksResult,
+    upcomingTasksResult,
+    todayCalendarResult,
+    dueThisWeekDebtsResult,
+    overdueDebtsResult,
+    criticalDebtsResult,
+    importantTasksResult,
+  ] = await Promise.all([
+    supabase
+      .from("tasks")
+      .select("id,title,status,priority,due_date,created_at")
+      .eq("user_id", userId)
+      .neq("status", "done")
+      .order("due_date", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: false })
+      .limit(50),
+    supabase
+      .from("debts")
+      .select(
+        "id,title,total_amount,paid_amount,currency,status,priority,due_date",
+      )
+      .eq("user_id", userId)
+      .neq("status", "paid")
+      .neq("status", "cancelled")
+      .order("due_date", { ascending: true, nullsFirst: false })
+      .limit(50),
+    supabase
+      .from("debt_payments")
+      .select("amount,payment_date,method")
+      .eq("user_id", userId)
+      .order("payment_date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("tasks")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .neq("status", "done")
+      .gte("due_date", startIso)
+      .lt("due_date", endIso),
+    supabase
+      .from("tasks")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .neq("status", "done")
+      .lt("due_date", startIso),
+    supabase
+      .from("tasks")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .neq("status", "done")
+      .gte("due_date", endIso)
+      .lt("due_date", weekEndIso),
+    supabase
+      .from("planner_events")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .neq("status", "cancelled")
+      .gte("start_at", startIso)
+      .lt("start_at", endIso),
+    supabase
+      .from("debts")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .neq("status", "paid")
+      .neq("status", "cancelled")
+      .gte("due_date", todayKey)
+      .lt("due_date", weekEndKey),
+    supabase
+      .from("debts")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .neq("status", "paid")
+      .neq("status", "cancelled")
+      .lt("due_date", todayKey),
+    supabase
+      .from("debts")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .neq("status", "paid")
+      .neq("status", "cancelled")
+      .eq("priority", "critical"),
+    supabase
+      .from("tasks")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .neq("status", "done")
+      .in("priority", ["high", "critical"]),
+  ]);
+
+  const results = [
+    taskRowsResult,
+    debtRowsResult,
+    latestPaymentResult,
+    todayTasksResult,
+    overdueTasksResult,
+    upcomingTasksResult,
+    todayCalendarResult,
+    dueThisWeekDebtsResult,
+    overdueDebtsResult,
+    criticalDebtsResult,
+    importantTasksResult,
+  ];
+  const failedResult = results.find((result) => result.error);
+  if (failedResult?.error) throw failedResult.error;
+
+  const tasks = (taskRowsResult.data ?? []) as RawDashboardTask[];
+  const debts = (debtRowsResult.data ?? []) as RawDashboardDebt[];
+  const overdueCriticalTasks = tasks.filter(
+    (task) =>
+      task.due_date &&
+      task.due_date < startIso &&
+      task.priority === "critical",
+  );
+  const todayTasks = tasks.filter(
+    (task) =>
+      task.due_date &&
+      task.due_date >= startIso &&
+      task.due_date < endIso,
+  );
+  const overdueDebts = debts.filter(
+    (debt) => debt.due_date && debt.due_date < todayKey,
+  );
+  const dueThisWeekDebts = debts.filter(
+    (debt) =>
+      debt.due_date &&
+      debt.due_date >= todayKey &&
+      debt.due_date < weekEndKey,
+  );
+  const upcomingTasks = tasks
+    .filter(
+      (task) =>
+        task.due_date &&
+        task.due_date >= endIso &&
+        task.due_date < weekEndIso,
+    )
+    .slice(0, 5)
+    .map(mapDashboardTask);
+  const importantTasks = tasks.filter(
+    (task) =>
+      (task.priority === "high" || task.priority === "critical") &&
+      !overdueCriticalTasks.some((item) => item.id === task.id) &&
+      !todayTasks.some((item) => item.id === task.id),
+  );
+
+  const priorityItems: DashboardPriorityItem[] = [
+    ...overdueCriticalTasks.map((task) => ({
+      id: `task-overdue-${task.id}`,
+      source: "task" as const,
+      title: task.title,
+      description: "Kritik görevin son tarihi geçti.",
+      href: `/tasks?task=${encodeURIComponent(task.id)}`,
+      priority: task.priority,
+      dueDate: task.due_date,
+    })),
+    ...todayTasks.map((task) => ({
+      id: `task-today-${task.id}`,
+      source: "task" as const,
+      title: task.title,
+      description: "Görevin son tarihi bugün.",
+      href: `/tasks?task=${encodeURIComponent(task.id)}`,
+      priority: task.priority,
+      dueDate: task.due_date,
+    })),
+    ...overdueDebts.map((debt) => ({
+      id: `debt-overdue-${debt.id}`,
+      source: "finance" as const,
+      title: debt.title,
+      description: `Vadesi geçti. Kalan ${formatTRY(getDebtRemainingAmount(debt))}.`,
+      href: `/finance?debt=${encodeURIComponent(debt.id)}`,
+      priority: debt.priority,
+      dueDate: debt.due_date,
+    })),
+    ...dueThisWeekDebts.map((debt) => ({
+      id: `debt-week-${debt.id}`,
+      source: "finance" as const,
+      title: debt.title,
+      description: `Bu hafta ödenecek. Kalan ${formatTRY(getDebtRemainingAmount(debt))}.`,
+      href: `/finance?debt=${encodeURIComponent(debt.id)}`,
+      priority: debt.priority,
+      dueDate: debt.due_date,
+    })),
+    ...importantTasks.map((task) => ({
+      id: `task-important-${task.id}`,
+      source: "task" as const,
+      title: task.title,
+      description: "Tamamlanmamış önemli iş.",
+      href: `/tasks?task=${encodeURIComponent(task.id)}`,
+      priority: task.priority,
+      dueDate: task.due_date,
+    })),
+  ].slice(0, 8);
+
+  const activeRemainingDebt = debts.reduce(
+    (sum, debt) => sum + getDebtRemainingAmount(debt),
+    0,
+  );
+  const dueThisMonth = debts
+    .filter((debt) => debt.due_date?.startsWith(currentMonth))
+    .reduce((sum, debt) => sum + getDebtRemainingAmount(debt), 0);
+  const latestPayment = latestPaymentResult.data;
+
+  return {
+    commandStats: {
+      todayTasks: todayTasksResult.count ?? 0,
+      overdueTasks: overdueTasksResult.count ?? 0,
+      upcomingTasks: upcomingTasksResult.count ?? 0,
+      todayCalendar: todayCalendarResult.count ?? 0,
+      dueThisWeekDebts: dueThisWeekDebtsResult.count ?? 0,
+      overdueDebts: overdueDebtsResult.count ?? 0,
+      criticalDebts: criticalDebtsResult.count ?? 0,
+      importantOpenTasks: importantTasksResult.count ?? 0,
+    },
+    financeSummary: {
+      available: true,
+      remainingDebt: activeRemainingDebt,
+      dueThisMonth,
+      dueThisWeekCount: dueThisWeekDebtsResult.count ?? 0,
+      criticalCount: criticalDebtsResult.count ?? 0,
+      overdueCount: overdueDebtsResult.count ?? 0,
+      lastPayment: latestPayment
+        ? {
+            amount: Number(latestPayment.amount) || 0,
+            date: latestPayment.payment_date,
+            method: latestPayment.method,
+          }
+        : null,
+      upcomingDebts: dueThisWeekDebts.slice(0, 3).map((debt) => ({
+        id: debt.id,
+        title: debt.title,
+        remainingAmount: getDebtRemainingAmount(debt),
+        currency: debt.currency,
+        dueDate: debt.due_date,
+      })),
+    },
+    openTasks: tasks.slice(0, 4).map(mapDashboardTask),
+    priorityItems,
+    upcomingTasks,
+  };
+}
+
 export async function getDashboardData(): Promise<ActionResult<DashboardData>> {
   try {
     const { supabase, userId } = await getDashboardContext();
@@ -586,35 +899,66 @@ export async function getDashboardData(): Promise<ActionResult<DashboardData>> {
       stats,
       recentNotes,
       pinnedSummary,
-      openTasks,
       recentReports,
       todayPlannerEvents,
       plannerStats,
       todayTodoStats,
-      financeSummary,
+      intelligence,
     ] = await Promise.all([
       getDashboardStats(userId, supabase),
       getRecentNotes(userId, supabase),
       getPinnedNotesSummary(userId, supabase),
-      getOpenTasks(userId, supabase),
       getRecentReports(userId, supabase),
       getTodayPlannerEvents(userId, supabase),
       getPlannerStats(userId, supabase),
       getTodayTodoStats(userId, supabase),
-      getDashboardFinanceSummary(),
+      getDashboardIntelligence(userId, supabase),
     ]);
+    const calendarPriorities: DashboardPriorityItem[] = todayPlannerEvents
+      .filter((event) => event.status !== "done" && event.status !== "cancelled")
+      .map((event) => ({
+        id: `calendar-${event.id}`,
+        source: "calendar",
+        title: event.title,
+        description: event.all_day
+          ? "Bugün için tüm gün planlandı."
+          : `${new Intl.DateTimeFormat("tr-TR", {
+              hour: "2-digit",
+              minute: "2-digit",
+              timeZone: "Europe/Istanbul",
+            }).format(new Date(event.start_at))} saatinde takvim kaydı var.`,
+        href: `/calendar?event=${encodeURIComponent(event.id)}`,
+        priority: event.priority,
+        dueDate: event.start_at,
+      }));
 
     return {
       data: {
         stats,
+        commandStats: intelligence.commandStats,
+        priorities: [...intelligence.priorityItems, ...calendarPriorities]
+          .sort((left, right) => {
+            const getRank = (item: DashboardPriorityItem) => {
+              if (item.id.startsWith("task-overdue-")) return 1;
+              if (item.id.startsWith("task-today-")) return 2;
+              if (item.id.startsWith("debt-overdue-")) return 3;
+              if (item.id.startsWith("debt-week-")) return 4;
+              if (item.id.startsWith("calendar-")) return 5;
+              return 6;
+            };
+
+            return getRank(left) - getRank(right);
+          })
+          .slice(0, 8),
         recentNotes,
         pinnedSummary,
-        openTasks,
+        openTasks: intelligence.openTasks,
+        upcomingTasks: intelligence.upcomingTasks,
         recentReports,
         todayPlannerEvents,
         plannerStats,
         todayTodoStats,
-        financeSummary,
+        financeSummary: intelligence.financeSummary,
       },
       error: null,
     };

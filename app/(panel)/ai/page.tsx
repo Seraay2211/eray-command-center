@@ -1,5 +1,6 @@
 import { AiWorkspace } from "@/components/ai/ai-workspace";
 import { isAiActionKey } from "@/lib/ai/actions";
+import { hasGeminiApiKey } from "@/lib/ai/config";
 import { getUserSettings } from "@/services/settings-service";
 import type { AiActionKey } from "@/types";
 
@@ -25,6 +26,7 @@ export default async function AiPage({ searchParams }: AiPageProps) {
   return (
     <AiWorkspace
       initialAction={initialAction}
+      isAiConfigured={hasGeminiApiKey()}
       key={initialAction}
       showSensitiveWarning={
         settingsResult.data?.ai_sensitive_warning ?? true

@@ -28,6 +28,7 @@ export default async function SettingsPage() {
       categories={categoriesResult.data ?? []}
       initialError={settingsResult.error ?? categoriesResult.error ?? ""}
       isSupabaseConfigured={hasSupabaseEnv()}
+      userCreatedAt={data.user?.created_at ?? ""}
       userEmail={data.user?.email ?? "Kullanıcı"}
     />
   );

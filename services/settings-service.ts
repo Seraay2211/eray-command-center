@@ -75,7 +75,8 @@ function getErrorMessage(error: unknown): string {
     message.includes("font_family") ||
     message.includes("default_landing_page") ||
     message.includes("notifications_enabled") ||
-    message.includes("critical_debt_threshold")
+    message.includes("critical_debt_threshold") ||
+    message.includes("onboarding_completed")
   ) {
     return "Faz 18 ayar güncellemesi eksik. database/phase-18-settings-center.sql dosyasını Supabase SQL Editor içinde çalıştırın.";
   }
@@ -205,6 +206,7 @@ function sanitizeInput(
     "show_ai_summaries",
     "show_finance_ai_warning",
     "short_ai_response_mode",
+    "onboarding_completed",
   ] as const;
 
   booleanKeys.forEach((key) => {

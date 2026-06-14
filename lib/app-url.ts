@@ -23,9 +23,12 @@ export function getAppUrl(fallback = LOCAL_APP_URL): string {
   );
 }
 
-export function getAuthCallbackUrl(fallback?: string): string {
-  return new URL(
-    "/auth/callback?next=/dashboard",
-    getAppUrl(fallback),
-  ).toString();
+export function getAuthCallbackUrl(
+  fallback?: string,
+  nextPath = "/dashboard",
+): string {
+  const callbackUrl = new URL("/auth/callback", getAppUrl(fallback));
+  callbackUrl.searchParams.set("next", nextPath);
+
+  return callbackUrl.toString();
 }

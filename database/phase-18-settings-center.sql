@@ -18,7 +18,8 @@ alter table public.user_settings
   add column if not exists critical_debt_threshold numeric(14,2) not null default 100000,
   add column if not exists show_ai_summaries boolean not null default true,
   add column if not exists show_finance_ai_warning boolean not null default true,
-  add column if not exists short_ai_response_mode boolean not null default false;
+  add column if not exists short_ai_response_mode boolean not null default false,
+  add column if not exists onboarding_completed boolean not null default false;
 
 alter table public.user_settings
   alter column font_family set default 'geist';

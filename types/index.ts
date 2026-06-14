@@ -65,6 +65,29 @@ export interface DashboardTask {
   dueDate: string | null;
 }
 
+export type DashboardPrioritySource = "task" | "finance" | "calendar";
+
+export interface DashboardPriorityItem {
+  id: string;
+  source: DashboardPrioritySource;
+  title: string;
+  description: string;
+  href: string;
+  priority: TaskPriority;
+  dueDate: string | null;
+}
+
+export interface DashboardCommandStats {
+  todayTasks: number;
+  overdueTasks: number;
+  upcomingTasks: number;
+  todayCalendar: number;
+  dueThisWeekDebts: number;
+  overdueDebts: number;
+  criticalDebts: number;
+  importantOpenTasks: number;
+}
+
 export type ReportType =
   | "daily"
   | "weekly"
@@ -285,7 +308,14 @@ export interface FinanceDashboardSummary {
   available: boolean;
   remainingDebt: number;
   dueThisMonth: number;
+  dueThisWeekCount: number;
   criticalCount: number;
+  overdueCount: number;
+  lastPayment: {
+    amount: number;
+    date: string;
+    method: string | null;
+  } | null;
   upcomingDebts: Array<{
     id: string;
     title: string;
@@ -297,9 +327,12 @@ export interface FinanceDashboardSummary {
 
 export interface DashboardData {
   stats: DashboardStats;
+  commandStats: DashboardCommandStats;
+  priorities: DashboardPriorityItem[];
   recentNotes: DashboardRecentNote[];
   pinnedSummary: DashboardPinnedSummary;
   openTasks: DashboardTask[];
+  upcomingTasks: DashboardTask[];
   recentReports: DashboardReport[];
   todayPlannerEvents: PlannerEventWithLinks[];
   plannerStats: PlannerStats;
@@ -645,6 +678,7 @@ export interface UserSettings {
   show_ai_summaries: boolean;
   show_finance_ai_warning: boolean;
   short_ai_response_mode: boolean;
+  onboarding_completed: boolean;
   dashboard_layout: DashboardLayout;
   default_note_category_id: string | null;
   default_task_status: TaskStatus;

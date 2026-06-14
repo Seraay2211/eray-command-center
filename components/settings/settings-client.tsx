@@ -20,6 +20,7 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { useSettings } from "@/components/providers/settings-provider";
+import { AccountCard } from "@/components/settings/account-card";
 import { SettingsSection } from "@/components/settings/settings-section";
 import {
   SettingsSidebar,
@@ -57,6 +58,7 @@ interface SettingsClientProps {
   categories: Category[];
   initialError: string;
   isSupabaseConfigured: boolean;
+  userCreatedAt: string;
   userEmail: string;
 }
 
@@ -120,6 +122,7 @@ export function SettingsClient({
   categories,
   initialError,
   isSupabaseConfigured,
+  userCreatedAt,
   userEmail,
 }: SettingsClientProps) {
   const { replaceSettings, settings, updateSettings } = useSettings();
@@ -687,6 +690,19 @@ export function SettingsClient({
                 )}
                 Profili Kaydet
               </Button>
+              <AccountCard
+                activeTheme={activeTheme}
+                createdAt={userCreatedAt}
+                email={userEmail}
+                isOnboardingPending={pendingKey === "onboarding"}
+                onShowOnboarding={() =>
+                  void savePatch(
+                    "onboarding",
+                    { onboarding_completed: false },
+                    "Onboarding Dashboard’da tekrar gösterilecek.",
+                  )
+                }
+              />
               <ToggleRow
                 checked={settings.show_dashboard_notes}
                 description="Son notlar bölümünü dashboard üzerinde gösterir."

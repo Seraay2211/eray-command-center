@@ -21,13 +21,14 @@ type AuthMode = "login" | "signup";
 interface LoginFormProps {
   configurationError?: string;
   initialError?: string;
+  initialMessage?: string;
 }
 
 function getAuthErrorMessage(message: string): string {
   const normalizedMessage = message.toLowerCase();
 
   if (normalizedMessage.includes("invalid login credentials")) {
-    return "E-posta veya şifre hatalı.";
+    return "Geçersiz giriş bilgileri. E-posta adresini ve şifreni kontrol et.";
   }
 
   if (normalizedMessage.includes("email not confirmed")) {
@@ -55,6 +56,7 @@ function getAuthErrorMessage(message: string): string {
 export function LoginForm({
   configurationError,
   initialError,
+  initialMessage,
 }: LoginFormProps) {
   const router = useRouter();
   const [mode, setMode] = useState<AuthMode>("login");
@@ -62,8 +64,9 @@ export function LoginForm({
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isPending, setIsPending] = useState(false);
+  const [isResetPending, setIsResetPending] = useState(false);
   const [error, setError] = useState(initialError ?? configurationError ?? "");
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(initialMessage ?? "");
 
   const isConfigured = !configurationError;
 
@@ -129,6 +132,45 @@ export function LoginForm({
     }
   }
 
+  async function handleForgotPassword() {
+    setError("");
+    setMessage("");
+
+    if (!email.trim()) {
+      setError("Şifre sıfırlama bağlantısı için e-posta adresini yaz.");
+      return;
+    }
+
+    setIsResetPending(true);
+
+    try {
+      const supabase = createClient();
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+        email.trim(),
+        {
+          redirectTo: getAuthCallbackUrl(
+            window.location.origin,
+            "/reset-password",
+          ),
+        },
+      );
+
+      if (resetError) {
+        throw resetError;
+      }
+
+      setMessage(
+        "Şifre sıfırlama bağlantısı gönderildi. E-posta adresini kontrol et.",
+      );
+    } catch (resetError) {
+      const resetMessage =
+        resetError instanceof Error ? resetError.message : String(resetError);
+      setError(getAuthErrorMessage(resetMessage));
+    } finally {
+      setIsResetPending(false);
+    }
+  }
+
   return (
     <div>
       <div className="mb-6 grid grid-cols-2 rounded-xl border border-white/[0.07] bg-black/20 p-1">
@@ -181,12 +223,26 @@ export function LoginForm({
         </div>
 
         <div>
-          <label
-            className="mb-2 block text-xs font-medium text-zinc-400"
-            htmlFor="auth-password"
-          >
-            Şifre
-          </label>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <label
+              className="block text-xs font-medium text-zinc-400"
+              htmlFor="auth-password"
+            >
+              Şifre
+            </label>
+            {mode === "login" ? (
+              <button
+                className="text-[11px] font-medium text-violet-400 transition hover:text-violet-300 disabled:opacity-50"
+                disabled={!isConfigured || isPending || isResetPending}
+                onClick={() => void handleForgotPassword()}
+                type="button"
+              >
+                {isResetPending
+                  ? "Bağlantı gönderiliyor..."
+                  : "Şifremi unuttum"}
+              </button>
+            ) : null}
+          </div>
           <span className="relative block">
             <LockKeyhole className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-600" />
             <input

@@ -4,15 +4,25 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 interface EmptyStateProps {
-  title: string;
   description: string;
   icon: LucideIcon;
+  primaryAction?: {
+    label: string;
+    onClick: () => void;
+  };
+  secondaryAction?: {
+    label: string;
+    onClick: () => void;
+  };
+  title: string;
 }
 
 export function EmptyState({
-  title,
   description,
   icon: Icon,
+  primaryAction,
+  secondaryAction,
+  title,
 }: EmptyStateProps) {
   return (
     <Card className="relative min-h-80 overflow-hidden p-6 sm:p-8">
@@ -25,10 +35,21 @@ export function EmptyState({
         <p className="app-muted mt-2 max-w-md text-sm leading-6">
           {description}
         </p>
-        <Button className="mt-6" variant="secondary">
-          Yakında kullanılabilir
-          <ArrowUpRight className="size-4" />
-        </Button>
+        {primaryAction || secondaryAction ? (
+          <div className="mt-6 flex flex-col justify-center gap-2 sm:flex-row">
+            {secondaryAction ? (
+              <Button onClick={secondaryAction.onClick} variant="secondary">
+                {secondaryAction.label}
+              </Button>
+            ) : null}
+            {primaryAction ? (
+              <Button onClick={primaryAction.onClick}>
+                {primaryAction.label}
+                <ArrowUpRight className="size-4" />
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </Card>
   );

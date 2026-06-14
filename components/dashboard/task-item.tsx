@@ -21,21 +21,21 @@ function formatDueDate(value: string): string {
 export function TaskItem({ task }: TaskItemProps) {
   return (
     <Link
-      className="group flex items-start gap-3 border-b border-white/[0.055] py-3.5 last:border-0"
-      href="/tasks"
+      className="group flex items-start gap-3 border-b border-[var(--border)] py-3.5 last:border-0"
+      href={`/tasks?task=${encodeURIComponent(task.id)}`}
     >
-      <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full text-zinc-700 transition group-hover:bg-violet-500/10 group-hover:text-violet-400">
+      <span className="app-muted mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full transition group-hover:bg-[color-mix(in_srgb,var(--primary)_10%,var(--surface))] group-hover:text-[var(--primary)]">
         <Circle className="size-[17px]" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-zinc-300 transition group-hover:text-zinc-100">
+        <p className="app-text truncate text-sm font-medium transition group-hover:text-[var(--primary)]">
           {task.title}
         </p>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <TaskStatusBadge status={task.status} />
           <TaskPriorityBadge priority={task.priority} />
           {task.dueDate ? (
-            <span className="flex items-center gap-1 text-[10px] text-zinc-600">
+            <span className="app-muted flex items-center gap-1 text-[10px]">
               <CalendarClock className="size-3" />
               {formatDueDate(task.dueDate)}
             </span>

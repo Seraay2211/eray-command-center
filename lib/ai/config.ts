@@ -32,5 +32,5 @@ export function getAiProviderLabel(provider: AiProvider): string {
 export function getAiProviderDescription(provider: AiProvider): string {
   return provider === "gemini"
     ? "Gerçek Gemini çıktıları aktif."
-    : "API key olmadan güvenli demo çıktı üretiliyor.";
+    : "Gemini API anahtarı tanımlı değil. Demo çıktı gösteriliyor.";
 }

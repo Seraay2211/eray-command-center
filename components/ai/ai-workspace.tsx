@@ -19,6 +19,7 @@ import type {
 
 interface AiWorkspaceProps {
   initialAction: AiActionKey;
+  isAiConfigured: boolean;
   showSensitiveWarning: boolean;
 }
 
@@ -53,6 +54,7 @@ function buildNoteTitle(sourceTitle: string): string {
 
 export function AiWorkspace({
   initialAction,
+  isAiConfigured,
   showSensitiveWarning,
 }: AiWorkspaceProps) {
   const { settings } = useSettings();
@@ -204,6 +206,15 @@ export function AiWorkspace({
 
   return (
     <div className="space-y-6">
+      {!isAiConfigured ? (
+        <div
+          className="app-surface-2 app-border app-text flex items-start gap-3 rounded-xl border p-3 text-xs leading-5"
+          role="status"
+        >
+          <Bot className="app-primary mt-0.5 size-4 shrink-0" />
+          Gemini API anahtarı tanımlı değil. Demo çıktı gösteriliyor.
+        </div>
+      ) : null}
       {showSensitiveWarning ? (
         <div className="flex items-start gap-3 rounded-xl border border-amber-400/15 bg-amber-500/[0.06] p-3 text-xs leading-5 text-amber-100/80">
           <ShieldAlert className="mt-0.5 size-4 shrink-0 text-amber-300" />

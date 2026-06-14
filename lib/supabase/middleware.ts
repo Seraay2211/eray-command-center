@@ -8,10 +8,13 @@ const protectedRoutes = [
   "/notes",
   "/tasks",
   "/reports",
+  "/calendar",
+  "/finance",
   "/templates",
   "/taxonomy",
   "/ai",
   "/settings",
+  "/today",
 ];
 
 function isProtectedRoute(pathname: string): boolean {

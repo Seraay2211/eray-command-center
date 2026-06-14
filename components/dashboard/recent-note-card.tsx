@@ -12,7 +12,7 @@ export function RecentNoteCard({ note }: RecentNoteCardProps) {
 
   return (
     <Link
-      className="group block border-b border-white/[0.055] px-1 py-4 last:border-0"
+      className="group block border-b border-[var(--border)] px-1 py-4 last:border-0"
       href={`/notes?note=${encodeURIComponent(note.id)}`}
     >
       <div className="flex items-start justify-between gap-3">
@@ -30,7 +30,7 @@ export function RecentNoteCard({ note }: RecentNoteCardProps) {
                 {note.category.name}
               </span>
             ) : (
-              <span className="inline-flex rounded-md border border-white/[0.07] bg-white/[0.03] px-2 py-1 text-[10px] font-semibold text-zinc-600">
+              <span className="app-surface-2 app-muted inline-flex rounded-md border px-2 py-1 text-[10px] font-semibold">
                 Kategorisiz
               </span>
             )}
@@ -42,10 +42,10 @@ export function RecentNoteCard({ note }: RecentNoteCardProps) {
             ) : null}
           </div>
 
-          <h3 className="mt-3 truncate text-sm font-medium text-zinc-200 transition group-hover:text-white">
+          <h3 className="app-text mt-3 truncate text-sm font-medium transition group-hover:text-[var(--primary)]">
             {note.title}
           </h3>
-          <p className="mt-1 line-clamp-2 text-xs leading-5 text-zinc-600">
+          <p className="app-muted mt-1 line-clamp-2 text-xs leading-5">
             {note.preview}
           </p>
 
@@ -65,11 +65,11 @@ export function RecentNoteCard({ note }: RecentNoteCardProps) {
               </span>
             ))}
             {hiddenTagCount > 0 ? (
-              <span className="text-[10px] text-zinc-700">
+              <span className="app-muted text-[10px]">
                 +{hiddenTagCount} etiket
               </span>
             ) : null}
-            <span className="ml-auto text-[10px] text-zinc-700">{note.date}</span>
+            <span className="app-muted ml-auto text-[10px]">{note.date}</span>
           </div>
         </div>
       </div>

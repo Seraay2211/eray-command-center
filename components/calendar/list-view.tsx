@@ -1,5 +1,6 @@
 import { Search } from "lucide-react";
 import { PlannerEventCard } from "@/components/calendar/planner-event-card";
+import { Button } from "@/components/ui/button";
 import { DarkSelect } from "@/components/ui/dark-select";
 import { Card } from "@/components/ui/card";
 import type {
@@ -120,8 +121,25 @@ export function ListView({
           ))}
         </div>
       ) : (
-        <Card className="p-6 text-center text-sm app-muted">
-          Seçilen filtrelere uygun plan bulunamadı.
+        <Card className="p-6 text-center">
+          <p className="app-text text-sm font-semibold">
+            Seçilen filtrelere uygun plan bulunamadı
+          </p>
+          <p className="app-muted mt-2 text-sm leading-6">
+            Arama metnini veya filtreleri değiştirerek tekrar deneyebilirsin.
+          </p>
+          <Button
+            className="mt-4"
+            onClick={() => {
+              onQueryChange("");
+              onTypeChange("all");
+              onStatusChange("all");
+              onPriorityChange("all");
+            }}
+            variant="secondary"
+          >
+            Filtreleri Temizle
+          </Button>
         </Card>
       )}
     </div>

@@ -151,6 +151,7 @@ create table if not exists public.user_settings (
   show_ai_summaries boolean not null default true,
   show_finance_ai_warning boolean not null default true,
   short_ai_response_mode boolean not null default false,
+  onboarding_completed boolean not null default false,
   dashboard_layout text not null default 'default' check (dashboard_layout in ('default', 'focus', 'compact')),
   default_note_category_id uuid references public.categories(id) on delete set null,
   default_task_status text not null default 'todo'
@@ -940,7 +941,8 @@ alter table public.user_settings
   add column if not exists critical_debt_threshold numeric(14,2) not null default 100000,
   add column if not exists show_ai_summaries boolean not null default true,
   add column if not exists show_finance_ai_warning boolean not null default true,
-  add column if not exists short_ai_response_mode boolean not null default false;
+  add column if not exists short_ai_response_mode boolean not null default false,
+  add column if not exists onboarding_completed boolean not null default false;
 
 alter table public.user_settings
   drop constraint if exists user_settings_font_family_check,

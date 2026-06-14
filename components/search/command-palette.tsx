@@ -385,8 +385,21 @@ export function CommandPaletteProvider({
                         ))}
 
                         {activeResults.length === 0 && quickActions.length === 0 ? (
-                          <div className="rounded-2xl border px-4 py-6 text-center text-sm app-muted app-border app-surface">
-                            Sonuç bulunamadı.
+                          <div className="rounded-2xl border px-4 py-6 text-center app-border app-surface">
+                            <p className="app-text text-sm font-semibold">
+                              Sonuç bulunamadı
+                            </p>
+                            <p className="app-muted mt-2 text-xs">
+                              Farklı bir kelimeyle arayabilir veya aramayı
+                              temizleyebilirsin.
+                            </p>
+                            <button
+                              className="app-button-secondary app-text mt-4 rounded-lg border px-3 py-2 text-xs font-medium"
+                              onClick={() => handleQueryChange("")}
+                              type="button"
+                            >
+                              Aramayı Temizle
+                            </button>
                           </div>
                         ) : null}
                       </>

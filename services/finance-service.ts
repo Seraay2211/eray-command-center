@@ -650,17 +650,28 @@ export async function createDebtReminder(
 }
 
 export async function getDashboardFinanceSummary(): Promise<FinanceDashboardSummary> {
-  const debtsResult = await getDebts(50);
+  const [debtsResult, paymentsResult] = await Promise.all([
+    getDebts(50),
+    getRecentPayments(1),
+  ]);
   if (debtsResult.error || !debtsResult.data) {
     return {
       available: false,
       remainingDebt: 0,
       dueThisMonth: 0,
+      dueThisWeekCount: 0,
       criticalCount: 0,
+      overdueCount: 0,
+      lastPayment: null,
       upcomingDebts: [],
     };
   }
   const stats = calculateStats(debtsResult.data);
+  const lastPayment = paymentsResult.data?.[0] ?? null;
+  const today = getIstanbulDateKey();
+  const weekEnd = getIstanbulDateKey(
+    new Date(new Date(`${today}T12:00:00+03:00`).getTime() + 7 * 86400000),
+  );
   const upcoming = debtsResult.data
     .filter(
       (debt) =>
@@ -676,7 +687,23 @@ export async function getDashboardFinanceSummary(): Promise<FinanceDashboardSumm
     available: true,
     remainingDebt: stats.remainingDebt,
     dueThisMonth: stats.dueThisMonth,
+    dueThisWeekCount: debtsResult.data.filter(
+      (debt) =>
+        debt.due_date &&
+        debt.due_date >= today &&
+        debt.due_date < weekEnd &&
+        debt.status !== "paid" &&
+        debt.status !== "cancelled",
+    ).length,
     criticalCount: stats.criticalCount,
+    overdueCount: stats.overdueCount,
+    lastPayment: lastPayment
+      ? {
+          amount: lastPayment.amount,
+          date: lastPayment.payment_date,
+          method: lastPayment.method,
+        }
+      : null,
     upcomingDebts: upcoming.map((debt) => ({
       id: debt.id,
       title: debt.title,

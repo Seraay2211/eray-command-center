@@ -31,7 +31,7 @@ export function LogoutButton({ onLogout }: LogoutButtonProps) {
 
   return (
     <button
-      className="mt-2 flex h-10 w-full items-center gap-3 rounded-lg px-3 text-xs font-medium text-zinc-600 transition hover:bg-rose-500/[0.07] hover:text-rose-300 disabled:cursor-wait disabled:opacity-60"
+      className="flex h-10 w-full items-center justify-center gap-3 rounded-[10px] border px-3 text-xs font-medium app-border app-muted transition hover:bg-rose-500/[0.07] hover:text-rose-300 disabled:cursor-wait disabled:opacity-60"
       disabled={isPending}
       onClick={handleLogout}
       type="button"

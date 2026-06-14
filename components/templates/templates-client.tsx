@@ -1,7 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { LoaderCircle, Plus, Sparkles, Star } from "lucide-react";
+import {
+  LayoutTemplate,
+  LoaderCircle,
+  Plus,
+  SearchX,
+  Sparkles,
+  Star,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   createTemplate,
@@ -12,6 +19,7 @@ import {
   updateTemplate,
 } from "@/services/templates-service";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { DarkSelect } from "@/components/ui/dark-select";
 import { TemplateCard } from "@/components/templates/template-card";
 import { TemplateDetailPanel } from "@/components/templates/template-detail-panel";
@@ -235,20 +243,77 @@ export function TemplatesClient({
       </div>
 
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,0.95fr)_minmax(420px,1.05fr)]">
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-          {filteredTemplates.map((template) => (
-            <TemplateCard
-              key={template.id}
-              onCopy={(item) => void handleCopy(item)}
-              onDelete={(item) => void handleDelete(item)}
-              onEdit={(item) => { setEditingTemplate(item); setIsFormOpen(true); }}
-              onFavorite={(item) => void handleFavorite(item)}
-              onSelect={setSelectedTemplate}
-              onUse={handleUse}
-              template={template}
-            />
-          ))}
-        </div>
+        {filteredTemplates.length ? (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+            {filteredTemplates.map((template) => (
+              <TemplateCard
+                key={template.id}
+                onCopy={(item) => void handleCopy(item)}
+                onDelete={(item) => void handleDelete(item)}
+                onEdit={(item) => {
+                  setEditingTemplate(item);
+                  setIsFormOpen(true);
+                }}
+                onFavorite={(item) => void handleFavorite(item)}
+                onSelect={setSelectedTemplate}
+                onUse={handleUse}
+                template={template}
+              />
+            ))}
+          </div>
+        ) : (
+          <Card className="flex min-h-80 flex-col items-center justify-center p-6 text-center">
+            <span className="app-primary-bg flex size-14 items-center justify-center rounded-2xl">
+              {templates.length ? (
+                <SearchX className="size-6" />
+              ) : (
+                <LayoutTemplate className="size-6" />
+              )}
+            </span>
+            <h2 className="app-text mt-5 text-lg font-semibold">
+              {templates.length
+                ? "Eşleşen şablon bulunamadı"
+                : "Henüz şablon yok"}
+            </h2>
+            <p className="app-muted mt-2 max-w-md text-sm leading-6">
+              {templates.length
+                ? "Arama ve filtreleri temizleyerek tüm şablonları tekrar görüntüleyebilirsin."
+                : "Sistem şablonlarını yükleyebilir veya kendi çalışma formatını oluşturabilirsin."}
+            </p>
+            <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+              {templates.length ? (
+                <Button
+                  onClick={() => {
+                    setQuery("");
+                    setType("all");
+                    setFavoritesOnly(false);
+                  }}
+                  variant="secondary"
+                >
+                  Filtreleri Temizle
+                </Button>
+              ) : (
+                <Button
+                  disabled={isSeeding}
+                  onClick={() => void handleSeedSystemTemplates()}
+                  variant="secondary"
+                >
+                  <Sparkles className="size-4" />
+                  Sistem Şablonlarını Yükle
+                </Button>
+              )}
+              <Button
+                onClick={() => {
+                  setEditingTemplate(null);
+                  setIsFormOpen(true);
+                }}
+              >
+                <Plus className="size-4" />
+                Yeni Şablon
+              </Button>
+            </div>
+          </Card>
+        )}
         <TemplateDetailPanel
           onCopy={(item) => void handleCopy(item)}
           onFavorite={(item) => void handleFavorite(item)}

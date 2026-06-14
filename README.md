@@ -66,7 +66,9 @@ npm run start
 5. Supabase SQL şemasını çalıştırın ve private Storage bucket'larını doğrulayın.
 6. Deploy sonrasında Auth, Dashboard, Notes, Finance, Calendar ve PWA akışlarını test edin.
 
-Ayrıntılı adımlar için [Deployment Kılavuzu](docs/DEPLOYMENT.md) dosyasını kullanın.
+Ayrıntılı adımlar için [Deployment Kılavuzu](docs/DEPLOYMENT.md), yayın öncesi
+kontroller için [Production QA Listesi](docs/PRODUCTION_QA.md) dosyasını
+kullanın.
 
 ## Temel Komutlar
 

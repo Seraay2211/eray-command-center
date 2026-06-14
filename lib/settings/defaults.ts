@@ -22,6 +22,7 @@ export const DEFAULT_USER_SETTINGS: UserSettings = {
   show_ai_summaries: true,
   show_finance_ai_warning: true,
   short_ai_response_mode: false,
+  onboarding_completed: false,
   dashboard_layout: "default",
   default_note_category_id: null,
   default_task_status: "todo",

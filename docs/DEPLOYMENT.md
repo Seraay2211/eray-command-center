@@ -83,6 +83,7 @@ kurulumu aşamalı güncelliyorsanız yalnızca eksik faz dosyalarını sıra il
 8. `database/phase-15.3-finance-attachments.sql`
 9. `database/phase-16.1-notifications.sql`
 10. `database/phase-18-settings-center.sql`
+11. `database/phase-18-production-polish.sql`
 
 Mevcut production veritabanında ihtiyaç olmayan faz dosyalarını tekrar çalıştırmayın.
 Destructive migration veya tablo sıfırlama yapmayın.

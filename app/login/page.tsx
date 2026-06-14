@@ -17,6 +17,7 @@ export const metadata = {
 interface LoginPageProps {
   searchParams: Promise<{
     error?: string;
+    message?: string;
   }>;
 }
 
@@ -26,6 +27,10 @@ const initialErrors: Record<string, string> = {
   config: SUPABASE_ENV_INVALID_ERROR,
   connection:
     "Supabase bağlantısı kurulamadı. Proje URL’sini, anahtarı ve internet bağlantısını kontrol et.",
+};
+
+const initialMessages: Record<string, string> = {
+  "password-updated": "Şifren güncellendi. Yeni şifrenle giriş yapabilirsin.",
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
@@ -54,6 +59,9 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       ? SUPABASE_ENV_INVALID_ERROR
       : SUPABASE_ENV_ERROR;
   const initialError = query.error ? initialErrors[query.error] : undefined;
+  const initialMessage = query.message
+    ? initialMessages[query.message]
+    : undefined;
 
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#09090b] px-4 py-10 sm:px-6">
@@ -139,6 +147,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               <LoginForm
                 configurationError={configurationError}
                 initialError={initialError}
+                initialMessage={initialMessage}
               />
             </div>
 
