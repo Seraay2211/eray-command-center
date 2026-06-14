@@ -2,23 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Command, HardDrive, X } from "lucide-react";
+import { Command, X } from "lucide-react";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { useSettings } from "@/components/providers/settings-provider";
 import { navItems } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 interface SidebarProps {
-  isSupabaseConfigured: boolean;
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function Sidebar({
-  isSupabaseConfigured,
-  isOpen,
-  onClose,
-}: SidebarProps) {
+export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { settings, t } = useSettings();
   const isCollapsed = settings.sidebar_mode === "collapsed";
@@ -56,13 +51,19 @@ export function Sidebar({
         )}
         role={isOpen ? "dialog" : undefined}
       >
-        <div className="flex h-14 items-center justify-between px-2">
+        <div
+          className={cn(
+            "flex h-14 items-center justify-between px-2",
+            isCollapsed && "lg:justify-center lg:px-0",
+          )}
+        >
           <Link
-            className="flex items-center gap-3"
+            className={cn("flex items-center gap-3", isCollapsed && "lg:gap-0")}
             href="/dashboard"
             onClick={onClose}
+            title={isCollapsed ? "Eray Command Center" : undefined}
           >
-            <span className="flex size-9 items-center justify-center rounded-xl bg-violet-500 text-white shadow-[0_0_28px_rgba(139,92,246,0.25)]">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-violet-500 text-white shadow-[0_0_28px_rgba(139,92,246,0.25)]">
               <Command className="size-5" strokeWidth={2.2} />
             </span>
             <span className={cn(isCollapsed && "lg:hidden")}>
@@ -85,13 +86,19 @@ export function Sidebar({
         </div>
 
         <nav aria-label="Ana menü" className="mt-7 flex-1">
-          <p className="app-muted mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.2em]">
+          <p
+            className={cn(
+              "app-muted mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.2em]",
+              isCollapsed && "lg:hidden",
+            )}
+          >
             {t("nav.workspace")}
           </p>
           <div className="space-y-0.5">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               const Icon = item.icon;
+              const label = navLabels[item.href] ?? item.label;
 
               return (
                 <Link
@@ -106,48 +113,22 @@ export function Sidebar({
                   href={item.href}
                   key={item.href}
                   onClick={onClose}
+                  title={isCollapsed ? label : undefined}
                 >
                   <Icon
                     className={cn(
-                      "size-[17px] transition-colors",
-                      isActive
-                        ? "app-primary"
-                        : "app-nav-icon",
+                      "size-[17px] shrink-0 transition-colors",
+                      isActive ? "app-primary" : "app-nav-icon",
                     )}
                   />
-                  <span className={cn(isCollapsed && "lg:hidden")}>
-                    {navLabels[item.href] ?? item.label}
-                  </span>
+                  <span className={cn(isCollapsed && "lg:hidden")}>{label}</span>
                 </Link>
               );
             })}
           </div>
         </nav>
 
-        <div
-          className={cn(
-            "app-card rounded-xl border p-3",
-            isCollapsed && "lg:p-2",
-          )}
-        >
-          <div className="flex items-center gap-3">
-            <span className="relative flex size-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
-              <HardDrive className="size-4" />
-              <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full border-2 border-[var(--surface)] bg-emerald-400" />
-            </span>
-            <div className={cn("min-w-0", isCollapsed && "lg:hidden")}>
-              <p className="app-text text-xs font-semibold">
-                {isSupabaseConfigured ? "Supabase Aktif" : "Local Mode"}
-              </p>
-              <p className="app-muted mt-0.5 truncate text-[10px]">
-                {isSupabaseConfigured
-                  ? "Veriler güvenli şekilde bağlı"
-                  : "Bağlantı bekleniyor"}
-              </p>
-            </div>
-          </div>
-        </div>
-        <LogoutButton onLogout={onClose} />
+        <LogoutButton compact={isCollapsed} onLogout={onClose} />
       </aside>
     </>
   );

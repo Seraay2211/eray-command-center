@@ -29,6 +29,10 @@ import { Card } from "@/components/ui/card";
 import { useSettings } from "@/components/providers/settings-provider";
 import { useDebounce } from "@/hooks/use-debounce";
 import { getCategoryDisplayName } from "@/lib/categories/display";
+import {
+  formatAiOutputForDisplay,
+  formatAiOutputForNote,
+} from "@/lib/ai/format-ai-output";
 import { trackRecentItem } from "@/lib/recent-items";
 import {
   applyTemplateVariables,
@@ -729,7 +733,9 @@ export function NotesClient({
     }
 
     try {
-      await navigator.clipboard.writeText(aiOutput.output);
+      await navigator.clipboard.writeText(
+        formatAiOutputForDisplay(aiOutput.output),
+      );
       showNotice("AI çıktısı panoya kopyalandı.");
     } catch {
       setPageError("Çıktı panoya kopyalanamadı. Lütfen tekrar dene.");
@@ -800,7 +806,7 @@ export function NotesClient({
 
     const result = await createNote({
       title: nextTitle,
-      content: aiOutput.output,
+      content: formatAiOutputForNote(aiOutput.output),
       categoryId: sourceNote?.category_id ?? null,
       tags: sourceNote?.tags.map((tag) => tag.name) ?? [],
       isPinned: false,

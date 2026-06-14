@@ -4,8 +4,11 @@ import type { TaskStatus, TaskWithCategory } from "@/types";
 
 interface TaskBoardProps {
   busyTaskId: string;
+  isArchived: (task: TaskWithCategory) => boolean;
+  onArchive: (task: TaskWithCategory) => void;
   onDelete: (task: TaskWithCategory) => void;
   onEdit: (task: TaskWithCategory) => void;
+  onRestore: (task: TaskWithCategory) => void;
   onStatusChange: (task: TaskWithCategory, status: TaskStatus) => void;
   referenceTime: string;
   tasks: TaskWithCategory[];
@@ -15,8 +18,11 @@ const columns: TaskStatus[] = ["todo", "in_progress", "waiting", "done"];
 
 export function TaskBoard({
   busyTaskId,
+  isArchived,
+  onArchive,
   onDelete,
   onEdit,
+  onRestore,
   onStatusChange,
   referenceTime,
   tasks,
@@ -44,11 +50,14 @@ export function TaskBoard({
               {columnTasks.length > 0 ? (
                 columnTasks.map((task) => (
                   <TaskCard
+                    isArchived={isArchived(task)}
                     isBusy={busyTaskId === task.id}
                     key={task.id}
                     mode="board"
+                    onArchive={onArchive}
                     onDelete={onDelete}
                     onEdit={onEdit}
+                    onRestore={onRestore}
                     onStatusChange={onStatusChange}
                     referenceTime={referenceTime}
                     task={task}

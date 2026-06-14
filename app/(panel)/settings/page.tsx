@@ -3,7 +3,6 @@ import {
   getAiProviderLabel,
   resolveAiProvider,
 } from "@/lib/ai/config";
-import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import { getCategories } from "@/features/notes/actions";
 import { getUserSettings } from "@/services/settings-service";
@@ -27,7 +26,6 @@ export default async function SettingsPage() {
       aiProviderLabel={getAiProviderLabel(resolveAiProvider())}
       categories={categoriesResult.data ?? []}
       initialError={settingsResult.error ?? categoriesResult.error ?? ""}
-      isSupabaseConfigured={hasSupabaseEnv()}
       userCreatedAt={data.user?.created_at ?? ""}
       userEmail={data.user?.email ?? "Kullanıcı"}
     />

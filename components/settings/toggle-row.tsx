@@ -18,10 +18,14 @@ export function ToggleRow({
   onChange,
 }: ToggleRowProps) {
   return (
-    <div className="app-surface-2 app-border flex items-center justify-between gap-5 rounded-xl border px-4 py-3">
-      <div>
-        <p className="app-text text-sm font-medium">{label}</p>
-        <p className="app-muted mt-1 text-[11px] leading-5">{description}</p>
+    <div className="app-surface-2 app-border flex w-full min-w-0 max-w-full items-start justify-between gap-3 overflow-hidden rounded-xl border px-3 py-3 sm:items-center sm:gap-5 sm:px-4">
+      <div className="min-w-0 flex-1">
+        <p className="app-text text-sm font-medium [overflow-wrap:anywhere]">
+          {label}
+        </p>
+        <p className="app-muted mt-1 break-words text-[11px] leading-5 [overflow-wrap:anywhere]">
+          {description}
+        </p>
       </div>
       <Switch
         checked={checked}

@@ -13,6 +13,7 @@ import {
 import { getCategoryDisplayName } from "@/lib/categories/display";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ColorSwatchPicker } from "@/components/ui/color-swatch-picker";
 import type { ManagedCategory, ManagedTag } from "@/types";
 
 interface TaxonomyClientProps {
@@ -173,7 +174,7 @@ export function TaxonomyClient({
   const unusedTags = tags.filter((tag) => tag.usageCount === 0);
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-6xl min-w-0 space-y-5">
       <div>
         <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-400">
           Düzen Merkezi
@@ -197,10 +198,10 @@ export function TaxonomyClient({
         </div>
       ) : null}
 
-      <div className="grid gap-6 xl:grid-cols-2">
-        <Card className="p-5">
-          <div className="flex items-center justify-between gap-3">
-            <div>
+      <div className="grid min-w-0 gap-4 xl:grid-cols-2">
+        <Card className="min-w-0 p-4 sm:p-5">
+          <div className="flex min-w-0 items-start justify-between gap-3">
+            <div className="min-w-0">
               <h2 className="text-lg font-semibold app-text">Kategoriler</h2>
               <p className="mt-1 text-xs app-muted">
                 Hızlı Kayıt kategorisi korunur. Diğer kategorileri isim ve renk ile yönetebilirsin.
@@ -217,7 +218,7 @@ export function TaxonomyClient({
           </div>
 
           <form
-            className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_120px_auto]"
+            className="mt-4 grid min-w-0 gap-3"
             onSubmit={(event) => void handleCategorySubmit(event)}
           >
             <input
@@ -232,30 +233,29 @@ export function TaxonomyClient({
               placeholder="Kategori adı"
               value={categoryDraft.name}
             />
-            <input
-              className="h-11 rounded-xl border px-2 app-border app-surface"
-              onChange={(event) =>
-                setCategoryDraft((current) => ({
-                  ...current,
-                  color: event.target.value,
-                }))
+            <ColorSwatchPicker
+              label="Kategori rengi"
+              onChange={(color) =>
+                setCategoryDraft((current) => ({ ...current, color }))
               }
-              type="color"
               value={categoryDraft.color}
             />
-            <Button
-              disabled={isSavingCategory || !categoryDraft.name.trim()}
-              size="sm"
-              type="submit"
-            >
-              {categoryDraft.id ? "Güncelle" : "Kaydet"}
-            </Button>
+            <div className="flex justify-end">
+              <Button
+                className="w-full sm:w-auto"
+                disabled={isSavingCategory || !categoryDraft.name.trim()}
+                size="sm"
+                type="submit"
+              >
+                {categoryDraft.id ? "Güncelle" : "Kaydet"}
+              </Button>
+            </div>
           </form>
 
           <div className="mt-5 space-y-3">
             {categories.map((category) => (
               <div
-                className="flex items-center justify-between gap-3 rounded-2xl border p-4 app-border app-surface-2"
+                className="flex min-w-0 flex-col gap-3 rounded-xl border p-3.5 app-border app-surface-2 sm:flex-row sm:items-center sm:justify-between"
                 key={category.id}
               >
                 <div className="min-w-0">
@@ -277,8 +277,9 @@ export function TaxonomyClient({
                     {category.usageCount} kullanım
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
                   <Button
+                    className="min-w-0"
                     onClick={() =>
                       setCategoryDraft({
                         color: category.color,
@@ -293,7 +294,7 @@ export function TaxonomyClient({
                     Düzenle
                   </Button>
                   <Button
-                    className="text-rose-300"
+                    className="min-w-0 text-rose-300"
                     onClick={() => void handleDeleteCategory(category)}
                     size="sm"
                     variant="secondary"
@@ -307,9 +308,9 @@ export function TaxonomyClient({
           </div>
         </Card>
 
-        <Card className="p-5">
-          <div className="flex items-center justify-between gap-3">
-            <div>
+        <Card className="min-w-0 p-4 sm:p-5">
+          <div className="flex min-w-0 items-start justify-between gap-3">
+            <div className="min-w-0">
               <h2 className="text-lg font-semibold app-text">Etiketler</h2>
               <p className="mt-1 text-xs app-muted">
                 Etiketleri sade tutup kullanılmayanları kolayca görebilirsin.
@@ -326,7 +327,7 @@ export function TaxonomyClient({
           </div>
 
           <form
-            className="mt-4 grid gap-3 md:grid-cols-[1fr_120px_auto]"
+            className="mt-4 grid min-w-0 gap-3"
             onSubmit={(event) => void handleTagSubmit(event)}
           >
             <input
@@ -341,28 +342,27 @@ export function TaxonomyClient({
               placeholder="Etiket adı"
               value={tagDraft.name}
             />
-            <input
-              className="h-11 rounded-xl border px-2 app-border app-surface"
-              onChange={(event) =>
-                setTagDraft((current) => ({
-                  ...current,
-                  color: event.target.value,
-                }))
+            <ColorSwatchPicker
+              label="Etiket rengi"
+              onChange={(color) =>
+                setTagDraft((current) => ({ ...current, color }))
               }
-              type="color"
               value={tagDraft.color}
             />
-            <Button
-              disabled={isSavingTag || !tagDraft.name.trim()}
-              size="sm"
-              type="submit"
-            >
-              {tagDraft.id ? "Güncelle" : "Kaydet"}
-            </Button>
+            <div className="flex justify-end">
+              <Button
+                className="w-full sm:w-auto"
+                disabled={isSavingTag || !tagDraft.name.trim()}
+                size="sm"
+                type="submit"
+              >
+                {tagDraft.id ? "Güncelle" : "Kaydet"}
+              </Button>
+            </div>
           </form>
 
           {unusedTags.length > 0 ? (
-            <div className="mt-4 rounded-2xl border p-4 app-border app-surface-2">
+            <div className="mt-4 rounded-xl border p-3.5 app-border app-surface-2">
               <p className="text-xs font-semibold app-text">Kullanılmayan etiketler</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {unusedTags.map((tag) => (
@@ -381,7 +381,7 @@ export function TaxonomyClient({
           <div className="mt-5 space-y-3">
             {tags.map((tag) => (
               <div
-                className="flex items-center justify-between gap-3 rounded-2xl border p-4 app-border app-surface-2"
+                className="flex min-w-0 flex-col gap-3 rounded-xl border p-3.5 app-border app-surface-2 sm:flex-row sm:items-center sm:justify-between"
                 key={tag.id}
               >
                 <div className="min-w-0">
@@ -398,8 +398,9 @@ export function TaxonomyClient({
                     {tag.usageCount} kullanım
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
                   <Button
+                    className="min-w-0"
                     onClick={() =>
                       setTagDraft({
                         color: tag.color,
@@ -414,7 +415,7 @@ export function TaxonomyClient({
                     Düzenle
                   </Button>
                   <Button
-                    className="text-rose-300"
+                    className="min-w-0 text-rose-300"
                     onClick={() => void handleDeleteTag(tag)}
                     size="sm"
                     variant="secondary"

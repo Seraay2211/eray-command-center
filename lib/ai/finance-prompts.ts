@@ -1,4 +1,5 @@
 import type { Debt, DebtPayment } from "@/types";
+import { AI_PLAIN_TEXT_INSTRUCTION } from "@/lib/ai/format-ai-output";
 
 export type FinanceAiMode =
   | "payment_plan"
@@ -16,6 +17,7 @@ Yalnızca verilen borç ve ödeme kayıtlarını özetle; eksik veya belirsiz ve
 Çıktıyı kısa başlıklar, net tutarlar ve uygulanabilir takip maddeleriyle yaz.
 Her çıktının sonunda şu uyarıyı aynen ekle:
 "${FINANCE_DISCLAIMER}"
+${AI_PLAIN_TEXT_INSTRUCTION}
 `.trim();
 
 const modeLabels: Record<FinanceAiMode, string> = {

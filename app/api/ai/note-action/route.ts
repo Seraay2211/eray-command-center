@@ -3,6 +3,7 @@ import { isAiActionKey } from "@/lib/ai/actions";
 import { AI_GENERIC_ERROR, AI_MAX_INPUT_CHARS, resolveAiProvider } from "@/lib/ai/config";
 import { generateWithDemo } from "@/lib/ai/providers/demo";
 import { generateWithGemini } from "@/lib/ai/providers/gemini";
+import { formatAiOutputForDisplay } from "@/lib/ai/format-ai-output";
 import { createClient } from "@/lib/supabase/server";
 import type { AiActionRequest, AiActionResponse, AiProvider } from "@/types";
 
@@ -206,12 +207,13 @@ export async function POST(request: Request) {
       text,
       title,
     });
+    const output = formatAiOutputForDisplay(result.output);
 
     await logAiAction({
       action: actionValue,
       inputText: text,
       noteId,
-      outputText: result.output,
+      outputText: output,
       supabase,
       userId,
     });
@@ -219,7 +221,7 @@ export async function POST(request: Request) {
     return jsonResponse({
       success: true,
       provider: result.provider,
-      output: result.output,
+      output,
       action: actionValue,
     });
   } catch (error) {

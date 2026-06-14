@@ -26,7 +26,7 @@ export function Topbar({
   const avatarLetter = userEmail.charAt(0).toLocaleUpperCase("tr-TR") || "E";
 
   return (
-    <header className="app-topbar app-topbar-safe sticky top-0 z-30 flex items-center justify-between border-b px-3 backdrop-blur-xl sm:px-6 lg:px-8">
+    <header className="app-topbar app-topbar-safe sticky top-0 z-30 flex items-center justify-between border-b px-3 backdrop-blur-xl sm:px-5 lg:px-7">
       <div className="flex min-w-0 items-center gap-3">
         <button
           aria-label="Menüyü aç"
@@ -40,21 +40,19 @@ export function Topbar({
           <span className="sr-only">Ara veya komut çalıştır</span>
           <Search className="app-muted absolute left-3 top-1/2 size-4 -translate-y-1/2" />
           <button
-            className="app-input flex h-10 w-56 items-center rounded-lg border pl-9 pr-16 text-left text-sm outline-none transition lg:w-80"
+            className="app-input flex h-9 w-52 items-center rounded-lg border pl-9 pr-16 text-left text-xs outline-none transition lg:w-72 xl:w-80"
             onClick={openPalette}
             type="button"
           >
-            <span className="truncate app-muted">
-              Ara veya komut çalıştır...
-            </span>
+            <span className="app-muted truncate">Ara veya komut çalıştır...</span>
           </button>
-          <span className="app-kbd absolute right-3 top-1/2 -translate-y-1/2 rounded border px-1.5 py-0.5 text-[9px] font-medium">
+          <span className="app-kbd absolute right-2.5 top-1/2 -translate-y-1/2 rounded border px-1.5 py-0.5 text-[9px] font-medium">
             Ctrl K
           </span>
         </div>
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-3">
+      <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
         <button
           aria-label="Arama paletini aç"
           className="app-control flex size-9 items-center justify-center rounded-lg border transition sm:hidden"
@@ -69,32 +67,30 @@ export function Topbar({
             initialUnreadCount={initialUnreadCount}
           />
         ) : null}
-        <div className="hidden sm:block">
-          <Link
-            className={buttonClassName({ size: "sm", variant: "secondary" })}
-            href="/notes?quick=1"
-          >
-            Hızlı Kayıt
-          </Link>
-        </div>
-        <div className="hidden sm:block">
-          <Link
-            className={buttonClassName({ size: "sm" })}
-            href="/notes?new=1"
-          >
-            <Plus className="size-4" />
-            {t("topbar.newNote")}
-          </Link>
-        </div>
-        <div className="app-border ml-1 flex items-center gap-2 border-l pl-3">
-          <div className="flex size-9 items-center justify-center rounded-full bg-gradient-to-br from-violet-400 to-indigo-600 text-xs font-bold text-white ring-2 ring-white/[0.08]">
+        <Link
+          className={`${buttonClassName({ size: "sm", variant: "secondary" })} hidden lg:inline-flex`}
+          href="/notes?quick=1"
+        >
+          Hızlı Kayıt
+        </Link>
+        <Link
+          className={`${buttonClassName({ size: "sm" })} hidden md:inline-flex`}
+          href="/notes?new=1"
+        >
+          <Plus className="size-4" />
+          {t("topbar.newNote")}
+        </Link>
+        <div className="app-border ml-1 flex min-w-0 items-center gap-2 border-l pl-2 sm:pl-3">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-400 to-indigo-600 text-xs font-bold text-white ring-2 ring-white/[0.08] sm:size-9">
             {avatarLetter}
           </div>
-          <div className="hidden max-w-44 xl:block">
-            <p className="app-text text-xs font-semibold">
+          <div className="hidden min-w-0 max-w-36 xl:block">
+            <p className="app-text truncate text-xs font-semibold">
               {settings.display_name || "Eray"}
             </p>
-            <p className="app-muted truncate text-[10px]">{userEmail}</p>
+            <p className="app-muted truncate text-[10px]" title={userEmail}>
+              {userEmail}
+            </p>
           </div>
         </div>
       </div>

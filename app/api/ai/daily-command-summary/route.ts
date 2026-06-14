@@ -5,6 +5,7 @@ import {
   type DailyCommandAiInput,
 } from "@/lib/ai/daily-command-summary";
 import { generateDailyCommandSummaryWithGemini } from "@/lib/ai/providers/daily-command-gemini";
+import { formatAiOutputForDisplay } from "@/lib/ai/format-ai-output";
 import {
   getIstanbulDateKey,
   getIstanbulDayRange,
@@ -40,6 +41,7 @@ export async function POST() {
           .from("tasks")
           .select("title,description,priority,due_date")
           .eq("user_id", userId)
+          .is("archived_at", null)
           .neq("status", "done")
           .order("due_date", { ascending: true, nullsFirst: false })
           .limit(10),
@@ -116,18 +118,22 @@ export async function POST() {
       return NextResponse.json({
         success: true,
         provider: "demo",
-        output: demoOutput,
+        output: formatAiOutputForDisplay(demoOutput),
       });
     }
 
     try {
       const output = await generateDailyCommandSummaryWithGemini(input);
-      return NextResponse.json({ success: true, provider: "gemini", output });
+      return NextResponse.json({
+        success: true,
+        provider: "gemini",
+        output: formatAiOutputForDisplay(output),
+      });
     } catch {
       return NextResponse.json({
         success: true,
         provider: "demo",
-        output: demoOutput,
+        output: formatAiOutputForDisplay(demoOutput),
       });
     }
   } catch {

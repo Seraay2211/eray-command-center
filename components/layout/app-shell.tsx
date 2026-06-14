@@ -12,7 +12,6 @@ interface AppShellProps {
   children: ReactNode;
   initialNotifications: AppNotification[];
   initialUnreadCount: number;
-  isSupabaseConfigured: boolean;
   userEmail: string;
 }
 
@@ -20,7 +19,6 @@ export function AppShell({
   children,
   initialNotifications,
   initialUnreadCount,
-  isSupabaseConfigured,
   userEmail,
 }: AppShellProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -41,7 +39,6 @@ export function AppShell({
     <CommandPaletteProvider>
       <div className="app-shell min-h-screen">
         <Sidebar
-          isSupabaseConfigured={isSupabaseConfigured}
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
         />

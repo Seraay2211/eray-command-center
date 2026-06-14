@@ -412,6 +412,7 @@ export async function getDashboardStats(
       .from("tasks")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
+      .is("archived_at", null)
       .neq("status", "done"),
     supabase
       .from("reports")
@@ -516,6 +517,7 @@ export async function getOpenTasks(
     .from("tasks")
     .select("id,title,status,priority,due_date,created_at")
     .eq("user_id", userId)
+    .is("archived_at", null)
     .neq("status", "done")
     .order("due_date", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: false })
@@ -613,12 +615,14 @@ export async function getTodayTodoStats(
       .from("tasks")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
+      .is("archived_at", null)
       .gte("due_date", startIso)
       .lte("due_date", endIso),
     supabase
       .from("tasks")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
+      .is("archived_at", null)
       .gte("due_date", startIso)
       .lte("due_date", endIso)
       .neq("status", "done"),
@@ -662,6 +666,7 @@ async function getDashboardIntelligence(
       .from("tasks")
       .select("id,title,status,priority,due_date,created_at")
       .eq("user_id", userId)
+      .is("archived_at", null)
       .neq("status", "done")
       .order("due_date", { ascending: true, nullsFirst: false })
       .order("created_at", { ascending: false })
@@ -688,6 +693,7 @@ async function getDashboardIntelligence(
       .from("tasks")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
+      .is("archived_at", null)
       .neq("status", "done")
       .gte("due_date", startIso)
       .lt("due_date", endIso),
@@ -695,12 +701,14 @@ async function getDashboardIntelligence(
       .from("tasks")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
+      .is("archived_at", null)
       .neq("status", "done")
       .lt("due_date", startIso),
     supabase
       .from("tasks")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
+      .is("archived_at", null)
       .neq("status", "done")
       .gte("due_date", endIso)
       .lt("due_date", weekEndIso),
@@ -737,6 +745,7 @@ async function getDashboardIntelligence(
       .from("tasks")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
+      .is("archived_at", null)
       .neq("status", "done")
       .in("priority", ["high", "critical"]),
   ]);

@@ -95,15 +95,15 @@ ${text}`,
 
 Format:
 
-# Genel Durum
+Genel Durum:
 
-# Tamamlanan İşler
+Tamamlanan İşler:
 
-# Bekleyen Konular
+Bekleyen Konular:
 
-# Riskler
+Riskler:
 
-# Aksiyon Planı
+Aksiyon Planı:
 
 Kurallar:
 

@@ -1,6 +1,7 @@
 import "server-only";
 
 import { GEMINI_MODEL } from "@/lib/ai/config";
+import { AI_PLAIN_TEXT_INSTRUCTION } from "@/lib/ai/format-ai-output";
 import type { DailyCommandAiInput } from "@/lib/ai/daily-command-summary";
 
 interface GeminiResponse {
@@ -39,7 +40,7 @@ export async function generateDailyCommandSummaryWithGemini(
                 "FİNANS UYARILARI",
                 "ÖNERİLEN 3 AKSİYON",
                 "KISA YÖNETİCİ ÖZETİ",
-              ].join("\n"),
+              ].concat(AI_PLAIN_TEXT_INSTRUCTION).join("\n"),
             },
           ],
         },

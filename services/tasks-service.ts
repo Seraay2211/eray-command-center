@@ -25,6 +25,7 @@ const taskSelect = `
   priority,
   due_date,
   completed_at,
+  archived_at,
   created_at,
   updated_at,
   category:categories (
@@ -68,6 +69,10 @@ function getErrorMessage(error: unknown): string {
         ? String(error.message)
         : String(error);
 
+  if (message.includes("archived_at") || message.includes("PGRST204")) {
+    return "Görev arşivi henüz hazır değil. database/phase-19.1-task-archive.sql dosyasını Supabase SQL Editor içinde bir kez çalıştırın.";
+  }
+
   if (
     message.includes("PGRST205") ||
     message.includes("schema cache") ||
@@ -94,6 +99,7 @@ function mapTask(rawTask: RawTask): TaskWithCategory {
     priority: rawTask.priority,
     due_date: rawTask.due_date,
     completed_at: rawTask.completed_at,
+    archived_at: rawTask.archived_at,
     created_at: rawTask.created_at,
     updated_at: rawTask.updated_at,
     category: Array.isArray(rawTask.category)
@@ -235,6 +241,7 @@ export async function getTodayTasks(
       .from("tasks")
       .select(taskSelect)
       .eq("user_id", user.id)
+      .is("archived_at", null)
       .gte("due_date", startIso)
       .lt("due_date", endIso)
       .order("status", { ascending: true })
@@ -286,6 +293,7 @@ export async function createTask(
         priority: values.priority ?? "medium",
         due_date: values.due_date ?? null,
         completed_at: status === "done" ? new Date().toISOString() : null,
+        archived_at: null,
       })
       .select("id")
       .single();
@@ -383,6 +391,76 @@ export async function updateTaskStatus(
   return updateTask(taskId, { status });
 }
 
+export async function archiveTask(
+  taskId: string,
+): Promise<ActionResult<TaskWithCategory>> {
+  try {
+    const { supabase, user } = await getAuthenticatedContext();
+    const { data, error } = await supabase
+      .from("tasks")
+      .update({ archived_at: new Date().toISOString() })
+      .eq("id", taskId)
+      .eq("user_id", user.id)
+      .select("id")
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) {
+      throw new Error("Görev bulunamadı veya arşivleme yetkiniz yok.");
+    }
+
+    const task = await fetchTaskById(supabase, user.id, taskId);
+    revalidateTaskViews();
+    return { data: task, error: null };
+  } catch (error) {
+    return { data: null, error: getErrorMessage(error) };
+  }
+}
+
+export async function restoreArchivedTask(
+  taskId: string,
+): Promise<ActionResult<TaskWithCategory>> {
+  try {
+    const { supabase, user } = await getAuthenticatedContext();
+    const { data: existingTask, error: readError } = await supabase
+      .from("tasks")
+      .select("status")
+      .eq("id", taskId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (readError) throw readError;
+    if (!existingTask) {
+      throw new Error("Görev bulunamadı veya arşivden çıkarma yetkiniz yok.");
+    }
+
+    const updateValues: Record<string, unknown> = { archived_at: null };
+    if (existingTask.status === "done") {
+      updateValues.status = "todo";
+      updateValues.completed_at = null;
+    }
+
+    const { data, error } = await supabase
+      .from("tasks")
+      .update(updateValues)
+      .eq("id", taskId)
+      .eq("user_id", user.id)
+      .select("id")
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) {
+      throw new Error("Görev bulunamadı veya arşivden çıkarma yetkiniz yok.");
+    }
+
+    const task = await fetchTaskById(supabase, user.id, taskId);
+    revalidateTaskViews();
+    return { data: task, error: null };
+  } catch (error) {
+    return { data: null, error: getErrorMessage(error) };
+  }
+}
+
 export async function getTaskStats(): Promise<ActionResult<TaskStats>> {
   try {
     const { supabase, user } = await getAuthenticatedContext();
@@ -390,11 +468,13 @@ export async function getTaskStats(): Promise<ActionResult<TaskStats>> {
       supabase
         .from("tasks")
         .select("id", { count: "exact", head: true })
-        .eq("user_id", user.id),
+        .eq("user_id", user.id)
+        .is("archived_at", null),
       supabase
         .from("tasks")
         .select("id", { count: "exact", head: true })
         .eq("user_id", user.id)
+        .is("archived_at", null)
         .eq("status", "done"),
     ]);
 

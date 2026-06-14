@@ -3,6 +3,7 @@ import type {
   AiReportSourceTask,
   ReportType,
 } from "@/types";
+import { AI_PLAIN_TEXT_INSTRUCTION } from "@/lib/ai/format-ai-output";
 
 interface ReportPromptInput {
   manualText: string;
@@ -80,7 +81,7 @@ export function buildReportPrompt({
   title,
 }: ReportPromptInput): string {
   const format = reportFormats[reportType]
-    .map((heading) => `# ${heading}`)
+    .map((heading) => `${heading}:`)
     .join("\n");
   const noteText =
     notes.length > 0
@@ -108,6 +109,7 @@ Dönem: ${periodStart || "belirtilmedi"} - ${periodEnd || "belirtilmedi"}
 
 Zorunlu bölüm düzeni:
 ${format}
+${AI_PLAIN_TEXT_INSTRUCTION}
 
 Kurallar:
 - Türkçe yaz.
@@ -118,7 +120,7 @@ Kurallar:
 - Notlardaki önemli kararları koru.
 - Gereksiz uzun yazma ancak önemli bilgileri atlama.
 - Çıktıyı yalnızca geçerli JSON olarak ver.
-- JSON şeması: {"title":"...","summary":"...","content":"markdown rapor içeriği"}
+- JSON şeması: {"title":"...","summary":"...","content":"düz metin rapor içeriği"}
 
 NOTLAR
 ${noteText}
@@ -183,7 +185,7 @@ export function buildDemoReport(input: ReportPromptInput) {
     title,
     summary: sourceSummary,
     content: headings
-      .map((heading) => `# ${heading}\n\n${sectionContent(heading)}`)
+      .map((heading) => `${heading}:\n\n${sectionContent(heading)}`)
       .join("\n\n"),
   };
 }

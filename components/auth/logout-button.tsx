@@ -7,10 +7,11 @@ import { useSettings } from "@/components/providers/settings-provider";
 import { createClient } from "@/lib/supabase/client";
 
 interface LogoutButtonProps {
+  compact?: boolean;
   onLogout?: () => void;
 }
 
-export function LogoutButton({ onLogout }: LogoutButtonProps) {
+export function LogoutButton({ compact = false, onLogout }: LogoutButtonProps) {
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
   const { t } = useSettings();
@@ -31,6 +32,7 @@ export function LogoutButton({ onLogout }: LogoutButtonProps) {
 
   return (
     <button
+      aria-label={compact ? t("auth.logout") : undefined}
       className="flex h-10 w-full items-center justify-center gap-3 rounded-[10px] border px-3 text-xs font-medium app-border app-muted transition hover:bg-rose-500/[0.07] hover:text-rose-300 disabled:cursor-wait disabled:opacity-60"
       disabled={isPending}
       onClick={handleLogout}
@@ -41,7 +43,9 @@ export function LogoutButton({ onLogout }: LogoutButtonProps) {
       ) : (
         <LogOut className="size-4" />
       )}
-      {isPending ? t("auth.loggingOut") : t("auth.logout")}
+      <span className={compact ? "lg:hidden" : undefined}>
+        {isPending ? t("auth.loggingOut") : t("auth.logout")}
+      </span>
     </button>
   );
 }

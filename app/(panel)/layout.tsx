@@ -62,7 +62,6 @@ export default async function PanelLayout({ children }: PanelLayoutProps) {
       <AppShell
         initialNotifications={notificationsResult.data ?? []}
         initialUnreadCount={unreadResult.data ?? 0}
-        isSupabaseConfigured={isSupabaseConfigured}
         userEmail={userEmail}
       >
         {children}

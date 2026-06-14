@@ -3,6 +3,7 @@ import { getAiActionDefinition } from "@/lib/ai/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { formatAiOutputForDisplay } from "@/lib/ai/format-ai-output";
 import type { AiActionKey, AiProvider } from "@/types";
 
 interface AiOutputPanelProps {
@@ -39,16 +40,17 @@ function PanelBody({
   sourceTitle,
 }: Omit<AiOutputPanelProps, "inline" | "isVisible">) {
   const actionLabel = action ? getAiActionDefinition(action).label : "AI Aksiyonu";
-  const canUseOutput = Boolean(output) && !isLoading && !error;
+  const cleanOutput = formatAiOutputForDisplay(output);
+  const canUseOutput = Boolean(cleanOutput) && !isLoading && !error;
 
   return (
     <>
-      <div className="flex items-start justify-between gap-4 border-b border-white/[0.06] px-5 py-4 sm:px-6">
+      <div className="app-border flex items-start justify-between gap-4 border-b px-5 py-4 sm:px-6">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-400">
             AI Çıktısı
           </p>
-          <h2 className="mt-1 text-lg font-semibold text-zinc-100">
+          <h2 className="app-text mt-1 text-lg font-semibold">
             {actionLabel}
           </h2>
           <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -58,13 +60,13 @@ function PanelBody({
               </Badge>
             ) : null}
             {sourceTitle ? (
-              <p className="text-xs text-zinc-500">{sourceTitle}</p>
+              <p className="app-muted text-xs">{sourceTitle}</p>
             ) : null}
           </div>
         </div>
         <button
           aria-label="AI çıktı panelini kapat"
-          className="flex size-9 items-center justify-center rounded-lg text-zinc-600 transition hover:bg-white/[0.05] hover:text-zinc-200"
+          className="app-button-ghost flex size-9 items-center justify-center rounded-lg transition"
           onClick={onClose}
           type="button"
         >
@@ -92,13 +94,13 @@ function PanelBody({
             {error}
           </div>
         ) : (
-          <div className="min-h-56 whitespace-pre-wrap rounded-2xl border border-white/[0.07] bg-black/20 p-4 text-sm leading-7 text-zinc-200">
-            {output}
+          <div className="app-surface-2 app-border app-text min-h-56 whitespace-pre-wrap break-words rounded-2xl border p-4 text-sm leading-7">
+            {cleanOutput}
           </div>
         )}
       </div>
 
-      <div className="flex flex-wrap justify-end gap-2 border-t border-white/[0.06] bg-[#0d0d10]/95 px-5 py-4 sm:px-6">
+      <div className="app-surface app-border flex flex-wrap justify-end gap-2 border-t px-5 py-4 sm:px-6">
         <Button disabled={!canUseOutput} onClick={onCopy} size="sm" variant="secondary">
           <ClipboardCopy className="size-3.5" />
           Kopyala
@@ -159,7 +161,7 @@ export function AiOutputPanel({
       <aside
         aria-labelledby="ai-output-panel-title"
         aria-modal="true"
-        className="absolute inset-y-0 right-0 flex w-full max-w-2xl flex-col border-l border-white/[0.08] bg-[#0d0d10] shadow-[-30px_0_80px_rgba(0,0,0,0.4)]"
+        className="app-surface app-border absolute inset-y-0 right-0 flex w-full max-w-2xl flex-col border-l shadow-[-30px_0_80px_rgba(0,0,0,0.4)]"
         role="dialog"
       >
         <div className="sr-only" id="ai-output-panel-title">

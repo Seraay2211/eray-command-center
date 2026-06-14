@@ -5,6 +5,7 @@ import { LoaderCircle, X } from "lucide-react";
 import { DarkSelect } from "@/components/ui/dark-select";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ColorSwatchPicker } from "@/components/ui/color-swatch-picker";
 import type {
   CreatePlannerEventInput,
   NoteWithRelations,
@@ -281,20 +282,16 @@ export function PlannerEventForm({
               />
             </div>
 
-            <label className="text-xs font-medium app-muted">
-              Renk
-              <input
-                className="app-input mt-2 h-11 w-full rounded-xl border p-2"
-                onChange={(inputEvent) =>
-                  setState((current) => ({
-                    ...current,
-                    color: inputEvent.target.value,
-                  }))
+            <div className="sm:col-span-2">
+              <p className="mb-3 text-xs font-medium app-muted">Plan rengi</p>
+              <ColorSwatchPicker
+                label="Hazır renkler"
+                onChange={(color) =>
+                  setState((current) => ({ ...current, color }))
                 }
-                type="color"
                 value={state.color}
               />
-            </label>
+            </div>
 
             <label className="flex items-center gap-3 rounded-xl border px-3 py-3 text-sm app-border app-surface-2 app-text sm:col-span-2">
               <input

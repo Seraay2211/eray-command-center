@@ -15,9 +15,13 @@ create table if not exists public.tasks (
     check (priority in ('low', 'medium', 'high', 'critical')),
   due_date timestamptz,
   completed_at timestamptz,
+  archived_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.tasks
+  add column if not exists archived_at timestamptz;
 
 create index if not exists tasks_user_created_at_idx
   on public.tasks(user_id, created_at desc);
@@ -30,6 +34,9 @@ create index if not exists tasks_user_due_date_idx
 
 create index if not exists tasks_user_category_idx
   on public.tasks(user_id, category_id);
+
+create index if not exists tasks_user_archived_at_idx
+  on public.tasks(user_id, archived_at);
 
 do $$
 begin

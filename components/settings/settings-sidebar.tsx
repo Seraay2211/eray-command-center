@@ -23,7 +23,7 @@ export function SettingsSidebar({
 }: SettingsSidebarProps) {
   return (
     <>
-      <div className="lg:hidden">
+      <div className="min-w-0 max-w-full lg:hidden">
         <DarkSelect
           ariaLabel="Ayarlar bölümü"
           onChange={onChange}
@@ -33,7 +33,7 @@ export function SettingsSidebar({
       </div>
       <nav
         aria-label="Ayarlar menüsü"
-        className="app-card hidden rounded-[14px] border p-1.5 lg:block"
+        className="app-card sticky top-20 hidden min-w-0 rounded-xl border p-1 lg:block"
       >
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -43,7 +43,7 @@ export function SettingsSidebar({
             <button
               aria-current={isActive ? "page" : undefined}
               className={cn(
-                "app-settings-nav-row flex w-full items-center gap-3 rounded-[10px] px-3 py-2.5 text-left text-xs font-medium transition",
+                "app-settings-nav-row flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[11px] font-medium transition",
                 isActive
                   ? "bg-[color-mix(in_srgb,var(--primary)_12%,var(--surface-2))] app-text"
                   : "app-muted hover:bg-[var(--surface-2)] hover:text-[var(--text)]",

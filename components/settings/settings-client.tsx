@@ -9,9 +9,7 @@ import {
   Database,
   Download,
   Eye,
-  Gauge,
   Home,
-  Info,
   LayoutDashboard,
   LoaderCircle,
   RotateCcw,
@@ -32,6 +30,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { DarkSelect } from "@/components/ui/dark-select";
 import { APP_THEMES } from "@/lib/settings/themes";
+import { cn } from "@/lib/utils";
 import {
   TASK_PRIORITY_OPTIONS,
   TASK_STATUS_OPTIONS,
@@ -57,7 +56,6 @@ interface SettingsClientProps {
   aiProviderLabel: string;
   categories: Category[];
   initialError: string;
-  isSupabaseConfigured: boolean;
   userCreatedAt: string;
   userEmail: string;
 }
@@ -70,7 +68,6 @@ const tabs: SettingsTab[] = [
   { id: "ai", label: "AI Tercihleri", icon: Bot },
   { id: "workspace", label: "Çalışma Alanı", icon: SlidersHorizontal },
   { id: "data", label: "Veri ve Yedekleme", icon: Database },
-  { id: "system", label: "Sistem Bilgisi", icon: Info },
 ];
 
 const fontOptions = [
@@ -121,12 +118,14 @@ export function SettingsClient({
   aiProviderLabel,
   categories,
   initialError,
-  isSupabaseConfigured,
   userCreatedAt,
   userEmail,
 }: SettingsClientProps) {
   const { replaceSettings, settings, updateSettings } = useSettings();
   const [activeTab, setActiveTab] = useState("appearance");
+  const [themeFilter, setThemeFilter] = useState<
+    "all" | "dark" | "light" | "colorful"
+  >("all");
   const [displayName, setDisplayName] = useState(settings.display_name ?? "");
   const [criticalThreshold, setCriticalThreshold] = useState(
     String(settings.critical_debt_threshold),
@@ -139,6 +138,11 @@ export function SettingsClient({
   const activeTheme =
     APP_THEMES.find((theme) => theme.id === settings.app_theme)?.name ??
     settings.app_theme;
+  const filteredThemes = APP_THEMES.filter((theme) => {
+    if (themeFilter === "all") return true;
+    if (themeFilter === "colorful") return theme.category === "colorful";
+    return theme.mode === themeFilter;
+  });
 
   useEffect(
     () => () => {
@@ -225,9 +229,12 @@ export function SettingsClient({
       value: category.id,
     })),
   ];
+  const visibleError = error.includes("phase-18-settings-center.sql")
+    ? "Ayarlar şu anda kaydedilemiyor. Lütfen daha sonra tekrar dene."
+    : error;
 
   return (
-    <div className="app-page-stack space-y-5">
+    <div className="app-page-stack mx-auto w-full max-w-6xl min-w-0 space-y-5">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="app-primary text-[10px] font-semibold tracking-[0.18em]">
@@ -261,31 +268,25 @@ export function SettingsClient({
           className="rounded-xl border border-[color-mix(in_srgb,var(--danger)_45%,var(--border))] bg-[color-mix(in_srgb,var(--danger)_8%,var(--surface))] p-4 text-xs leading-6 app-text"
           role="alert"
         >
-          <p>{error}</p>
-          {error.includes("phase-18-settings-center.sql") ? (
-            <p className="app-muted mt-2">
-              Yeni tercihlerin kaydedilmesi için belirtilen SQL dosyasını
-              Supabase SQL Editor içinde bir kez çalıştırın.
-            </p>
-          ) : null}
+          <p>{visibleError}</p>
         </div>
       ) : null}
 
-      <div className="grid items-start gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
+      <div className="grid min-w-0 items-start gap-4 lg:grid-cols-[200px_minmax(0,1fr)]">
         <SettingsSidebar
           activeTab={activeTab}
           onChange={setActiveTab}
           tabs={tabs}
         />
 
-        <div className="min-w-0">
+        <div className="min-w-0 max-w-5xl">
           {activeTab === "appearance" ? (
             <SettingsSection
               description="Tema, yazı tipi, yoğunluk ve hareket tercihlerini düzenle."
               icon={Eye}
               title="Görünüm"
             >
-              <div className="grid gap-4 sm:grid-cols-3">
+              <div className="grid gap-3 md:grid-cols-3">
                 <div>
                   <p className="app-muted mb-2 text-xs font-medium">Yazı Tipi</p>
                   <DarkSelect
@@ -341,9 +342,42 @@ export function SettingsClient({
               />
 
               <div>
-                <p className="app-text mb-3 text-sm font-medium">Tema</p>
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  {APP_THEMES.map((theme) => (
+                <div className="mb-3 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="app-text text-sm font-medium">Tema</p>
+                  <div
+                    aria-label="Tema filtresi"
+                    className="app-surface-2 app-border grid w-full grid-cols-4 rounded-lg border p-1 sm:w-auto"
+                    role="group"
+                  >
+                    {[
+                      { label: "Tümü", value: "all" },
+                      { label: "Koyu", value: "dark" },
+                      { label: "Açık", value: "light" },
+                      { label: "Renkli", value: "colorful" },
+                    ].map((filter) => (
+                      <button
+                        aria-pressed={themeFilter === filter.value}
+                        className={cn(
+                          "min-w-0 rounded-md px-2 py-1.5 text-[10px] font-medium transition",
+                          themeFilter === filter.value
+                            ? "bg-[var(--surface)] app-text shadow-sm"
+                            : "app-muted hover:app-text",
+                        )}
+                        key={filter.value}
+                        onClick={() =>
+                          setThemeFilter(
+                            filter.value as typeof themeFilter,
+                          )
+                        }
+                        type="button"
+                      >
+                        {filter.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="grid auto-rows-fr gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
+                  {filteredThemes.map((theme) => (
                     <ThemeCard
                       isActive={settings.app_theme === theme.id}
                       key={theme.id}
@@ -581,13 +615,13 @@ export function SettingsClient({
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="app-surface-2 app-border rounded-xl border p-4">
                   <p className="app-muted text-[10px] font-medium">
-                    Aktif AI Sağlayıcısı
+                    AI Modu
                   </p>
                   <p className="app-text mt-2 text-sm font-semibold">
                     {aiProviderLabel}
                   </p>
                   <p className="app-muted mt-1 text-[11px]">
-                    API anahtarları yalnızca sunucu tarafında tutulur.
+                    Seçili akıllı asistan modu uygulama genelinde kullanılır.
                   </p>
                 </div>
                 <div>
@@ -824,47 +858,6 @@ export function SettingsClient({
             </SettingsSection>
           ) : null}
 
-          {activeTab === "system" ? (
-            <SettingsSection
-              description="Aktif görünüm ve bağlantı bilgilerini kontrol et."
-              icon={Info}
-              title="Sistem Bilgisi"
-            >
-              <div className="app-surface-2 app-border divide-y divide-[var(--border)] overflow-hidden rounded-xl border">
-                {[
-                  ["Uygulama", "Eray Command Center"],
-                  ["Sürüm", "v1.0.0"],
-                  ["Supabase", isSupabaseConfigured ? "Aktif" : "Bekleniyor"],
-                  ["AI Sağlayıcısı", aiProviderLabel],
-                  ["Aktif Tema", activeTheme],
-                  [
-                    "Aktif Yoğunluk",
-                    settings.density === "compact" ? "Kompakt" : "Rahat",
-                  ],
-                  [
-                    "Aktif Yazı Tipi",
-                    fontOptions.find(
-                      (option) => option.value === settings.font_family,
-                    )?.label ?? "Geist",
-                  ],
-                ].map(([label, value]) => (
-                  <div
-                    className="flex items-center justify-between gap-4 px-4 py-3 text-xs"
-                    key={label}
-                  >
-                    <span className="app-muted">{label}</span>
-                    <span className="app-text text-right font-medium">
-                      {value}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <div className="app-muted flex items-center gap-2 text-[11px]">
-                <Gauge className="size-4 text-[var(--success)]" />
-                Tema, font ve yoğunluk tercihleri uygulama genelinde aktiftir.
-              </div>
-            </SettingsSection>
-          ) : null}
         </div>
       </div>
 

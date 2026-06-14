@@ -38,7 +38,7 @@ export function AccountCard({
 }: AccountCardProps) {
   return (
     <Card className="overflow-hidden">
-      <div className="app-surface-2 border-b p-5 app-border">
+      <div className="app-surface-2 app-border border-b p-5">
         <div className="flex items-start gap-3">
           <span className="app-primary-bg flex size-11 shrink-0 items-center justify-center rounded-2xl">
             <UserRound className="size-5" />
@@ -46,13 +46,13 @@ export function AccountCard({
           <div className="min-w-0">
             <p className="app-text truncate text-sm font-semibold">{email}</p>
             <p className="app-muted mt-1 text-xs">
-              Verilerin Supabase hesabına bağlıdır.
+              Tercihlerin ve çalışma verilerin hesabınla eşitlenir.
             </p>
           </div>
         </div>
       </div>
       <div className="grid gap-3 p-5 sm:grid-cols-2">
-        <div className="app-surface-2 rounded-xl border p-3 app-border">
+        <div className="app-surface-2 app-border rounded-xl border p-3">
           <CalendarDays className="app-primary size-4" />
           <p className="app-muted mt-2 text-[10px] uppercase tracking-[0.12em]">
             Hesap Oluşturma
@@ -61,29 +61,29 @@ export function AccountCard({
             {formatAccountDate(createdAt)}
           </p>
         </div>
-        <div className="app-surface-2 rounded-xl border p-3 app-border">
+        <div className="app-surface-2 app-border rounded-xl border p-3">
           <Paintbrush className="app-primary size-4" />
           <p className="app-muted mt-2 text-[10px] uppercase tracking-[0.12em]">
             Aktif Tema
           </p>
           <p className="app-text mt-1 text-xs font-medium">{activeTheme}</p>
         </div>
-        <div className="app-surface-2 rounded-xl border p-3 app-border sm:col-span-2">
+        <div className="app-surface-2 app-border rounded-xl border p-3 sm:col-span-2">
           <div className="flex items-start gap-3">
             <Smartphone className="app-primary mt-0.5 size-4 shrink-0" />
             <div>
               <p className="app-text text-xs font-medium">
-                Mobil ve PWA kullanımı hazır
+                Telefonda uygulama gibi kullan
               </p>
               <p className="app-muted mt-1 text-[11px] leading-5">
-                Tarayıcı menüsündeki “Ana ekrana ekle” seçeneğiyle paneli
-                uygulama gibi kullanabilirsin.
+                Tarayıcı menüsündeki “Ana ekrana ekle” seçeneğiyle panele daha
+                hızlı erişebilirsin.
               </p>
             </div>
           </div>
         </div>
       </div>
-      <div className="border-t p-5 app-border">
+      <div className="app-border border-t p-5">
         <div className="flex flex-col gap-2 sm:flex-row">
           <Button
             className="sm:flex-1"
@@ -92,7 +92,7 @@ export function AccountCard({
             variant="secondary"
           >
             <PlayCircle className="size-4" />
-            Onboarding’i Tekrar Göster
+            Tanıtımı Tekrar Göster
           </Button>
           <div className="sm:flex-1">
             <LogoutButton />
@@ -100,7 +100,7 @@ export function AccountCard({
         </div>
         <p className="app-muted mt-3 flex items-center gap-2 text-[10px]">
           <ShieldCheck className="size-3.5 text-[var(--success)]" />
-          Oturum ve kullanıcı verileri Supabase Auth ve RLS ile korunur.
+          Oturumun ve kişisel verilerin güvenli erişim kurallarıyla korunur.
         </p>
       </div>
     </Card>

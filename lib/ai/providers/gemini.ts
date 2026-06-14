@@ -2,6 +2,7 @@ import "server-only";
 
 import { getAiActionDefinition } from "@/lib/ai/actions";
 import { AI_GENERIC_ERROR, GEMINI_MODEL } from "@/lib/ai/config";
+import { AI_PLAIN_TEXT_INSTRUCTION } from "@/lib/ai/format-ai-output";
 import type { AiActionKey } from "@/types";
 
 interface GeminiApiError {
@@ -102,7 +103,11 @@ export async function generateWithGemini({
       cache: "no-store",
       body: JSON.stringify({
         systemInstruction: {
-          parts: [{ text: definition.systemInstruction }],
+          parts: [
+            {
+              text: `${definition.systemInstruction}\n${AI_PLAIN_TEXT_INSTRUCTION}`,
+            },
+          ],
         },
         contents: [
           {

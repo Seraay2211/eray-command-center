@@ -29,6 +29,10 @@ import { ImagePreviewModal } from "@/components/notes/image-preview-modal";
 import { ImageUploader } from "@/components/notes/image-uploader";
 import { NoteImageGallery } from "@/components/notes/note-image-gallery";
 import { getCategoryDisplayName } from "@/lib/categories/display";
+import {
+  formatAiOutputForDisplay,
+  formatAiOutputForNote,
+} from "@/lib/ai/format-ai-output";
 import { Button } from "@/components/ui/button";
 import { DarkSelect } from "@/components/ui/dark-select";
 import type {
@@ -310,7 +314,9 @@ export function FullscreenNoteEditor({
       return;
     }
 
-    await navigator.clipboard.writeText(aiState.output);
+    await navigator.clipboard.writeText(
+      formatAiOutputForDisplay(aiState.output),
+    );
   }
 
   function appendAiOutput() {
@@ -318,9 +324,12 @@ export function FullscreenNoteEditor({
       return;
     }
 
-    setContent((current) =>
-      current.trim() ? `${current.trim()}\n\n${aiState.output}` : aiState.output,
-    );
+    setContent((current) => {
+      const cleanOutput = formatAiOutputForNote(aiState.output);
+      return current.trim()
+        ? `${current.trim()}\n\n${cleanOutput}`
+        : cleanOutput;
+    });
   }
 
   async function handleConfirmDeleteImage() {

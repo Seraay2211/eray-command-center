@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { GEMINI_MODEL } from "@/lib/ai/config";
+import { formatAiOutputForDisplay } from "@/lib/ai/format-ai-output";
 import { FINANCE_FILES_BUCKET } from "@/lib/finance/attachment-config";
 import { createClient } from "@/lib/supabase/server";
 import { updateAttachmentOcrText } from "@/services/finance-attachments-service";
@@ -179,8 +180,8 @@ Yalnızca şu JSON nesnesini döndür:
     }
     const updated = await updateAttachmentOcrText(
       attachment.id,
-      result.ocr_text,
-      result.ai_summary,
+      formatAiOutputForDisplay(result.ocr_text),
+      formatAiOutputForDisplay(result.ai_summary),
     );
     if (updated.error || !updated.data) {
       return jsonError(updated.error ?? "OCR sonucu kaydedilemedi.", 500);

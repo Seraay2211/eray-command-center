@@ -5,6 +5,7 @@ import {
   type FinanceAiMode,
 } from "@/lib/ai/finance-prompts";
 import { generateFinanceSummaryWithGemini } from "@/lib/ai/providers/finance-gemini";
+import { formatAiOutputForDisplay } from "@/lib/ai/format-ai-output";
 import { createClient } from "@/lib/supabase/server";
 import type { Debt, DebtPayment } from "@/types";
 
@@ -89,7 +90,11 @@ export async function POST(request: Request) {
       output = buildDemoFinanceSummary(input);
     }
 
-    return NextResponse.json({ success: true, provider, output });
+    return NextResponse.json({
+      success: true,
+      provider,
+      output: formatAiOutputForDisplay(output),
+    });
   } catch {
     return NextResponse.json(
       {

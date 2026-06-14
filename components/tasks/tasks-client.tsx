@@ -25,10 +25,14 @@ import { Card } from "@/components/ui/card";
 import { useSettings } from "@/components/providers/settings-provider";
 import { useDebounce } from "@/hooks/use-debounce";
 import { trackRecentItem } from "@/lib/recent-items";
+import { getIstanbulDateKey } from "@/lib/dates/istanbul";
+import { cn } from "@/lib/utils";
 import {
+  archiveTask,
   createTask,
   getTasks,
   deleteTask,
+  restoreArchivedTask,
   updateTask,
   updateTaskStatus,
 } from "@/services/tasks-service";
@@ -49,6 +53,32 @@ interface TasksClientProps {
   initialOpen: boolean;
   initialTaskId: string;
   initialTasks: TaskWithCategory[];
+}
+
+type TaskCollectionTab =
+  | "active"
+  | "today"
+  | "completed"
+  | "archive"
+  | "all";
+
+const taskCollectionTabs: Array<{
+  id: TaskCollectionTab;
+  label: string;
+}> = [
+  { id: "active", label: "Aktif" },
+  { id: "today", label: "Bugün" },
+  { id: "completed", label: "Tamamlanan" },
+  { id: "archive", label: "Arşiv" },
+  { id: "all", label: "Tümü" },
+];
+
+function isTaskAutoArchived(task: TaskWithCategory, todayKey: string) {
+  return Boolean(
+    task.status === "done" &&
+      task.completed_at &&
+      getIstanbulDateKey(new Date(task.completed_at)) < todayKey,
+  );
 }
 
 export function TasksClient({
@@ -73,6 +103,8 @@ export function TasksClient({
   const [categoryId, setCategoryId] = useState("all");
   const [sort, setSort] = useState<TasksSort>("newest");
   const [view, setView] = useState<TasksView>("list");
+  const [collectionTab, setCollectionTab] =
+    useState<TaskCollectionTab>("active");
   const selectedTaskFromRoute = initialTaskId
     ? initialTasks.find((task) => task.id === initialTaskId) ?? null
     : null;
@@ -97,16 +129,43 @@ export function TasksClient({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(initialTasks.length >= 50);
   const debouncedQuery = useDebounce(query, 250);
+  const todayKey = getIstanbulDateKey(new Date(initialNow));
 
-  const schemaMissing = pageError.includes("phase-6-tasks.sql");
-  const openTaskCount = tasks.filter((task) => task.status !== "done").length;
-  const completedTaskCount = tasks.length - openTaskCount;
+  const schemaMissing =
+    pageError.includes("phase-6-tasks.sql") ||
+    pageError.includes("phase-19.1-task-archive.sql");
+  const isTaskArchived = useCallback(
+    (task: TaskWithCategory) =>
+      Boolean(task.archived_at) || isTaskAutoArchived(task, todayKey),
+    [todayKey],
+  );
+  const openTaskCount = tasks.filter(
+    (task) => !isTaskArchived(task) && task.status !== "done",
+  ).length;
+  const completedTaskCount = tasks.filter(
+    (task) => !isTaskArchived(task) && task.status === "done",
+  ).length;
+  const archivedTaskCount = tasks.filter(isTaskArchived).length;
 
   const filteredTasks = useMemo(() => {
     const normalizedQuery = debouncedQuery.trim().toLocaleLowerCase("tr-TR");
 
     return tasks
       .filter((task) => {
+        const taskArchived = isTaskArchived(task);
+        const dueToday =
+          Boolean(task.due_date) &&
+          getIstanbulDateKey(new Date(task.due_date as string)) === todayKey;
+        const matchesCollection =
+          collectionTab === "all" ||
+          (collectionTab === "active" &&
+            !taskArchived &&
+            task.status !== "done") ||
+          (collectionTab === "today" && !taskArchived && dueToday) ||
+          (collectionTab === "completed" &&
+            !taskArchived &&
+            task.status === "done") ||
+          (collectionTab === "archive" && taskArchived);
         const matchesQuery =
           !normalizedQuery ||
           task.title.toLocaleLowerCase("tr-TR").includes(normalizedQuery) ||
@@ -122,6 +181,7 @@ export function TasksClient({
           task.category_id === categoryId;
 
         return (
+          matchesCollection &&
           matchesQuery &&
           matchesStatus &&
           matchesPriority &&
@@ -157,11 +217,23 @@ export function TasksClient({
           new Date(first.created_at).getTime()
         );
       });
-  }, [categoryId, debouncedQuery, priority, sort, status, tasks]);
+  }, [
+    categoryId,
+    collectionTab,
+    debouncedQuery,
+    isTaskArchived,
+    priority,
+    sort,
+    status,
+    tasks,
+    todayKey,
+  ]);
   const filterKey = useMemo(
     () =>
-      [categoryId, debouncedQuery, priority, sort, status].join("|"),
-    [categoryId, debouncedQuery, priority, sort, status],
+      [categoryId, collectionTab, debouncedQuery, priority, sort, status].join(
+        "|",
+      ),
+    [categoryId, collectionTab, debouncedQuery, priority, sort, status],
   );
   const visibleCount =
     visibleState.key === filterKey ? visibleState.count : 50;
@@ -285,6 +357,40 @@ export function TasksClient({
     );
   }
 
+  async function handleArchive(task: TaskWithCategory) {
+    setBusyTaskId(task.id);
+    setPageError("");
+    const result = await archiveTask(task.id);
+    setBusyTaskId("");
+
+    if (result.error || !result.data) {
+      setPageError(result.error ?? "Görev arşivlenemedi.");
+      return;
+    }
+
+    setTasks((current) =>
+      current.map((item) => (item.id === task.id ? result.data! : item)),
+    );
+    showNotice("Görev arşivlendi.");
+  }
+
+  async function handleRestore(task: TaskWithCategory) {
+    setBusyTaskId(task.id);
+    setPageError("");
+    const result = await restoreArchivedTask(task.id);
+    setBusyTaskId("");
+
+    if (result.error || !result.data) {
+      setPageError(result.error ?? "Görev arşivden çıkarılamadı.");
+      return;
+    }
+
+    setTasks((current) =>
+      current.map((item) => (item.id === task.id ? result.data! : item)),
+    );
+    showNotice("Görev yeniden aktif listeye alındı.");
+  }
+
   async function performDelete(taskToDelete: TaskWithCategory) {
     setIsDeleting(true);
     setPageError("");
@@ -323,13 +429,15 @@ export function TasksClient({
     setPriority("all");
     setCategoryId("all");
     setSort("newest");
+    setCollectionTab("active");
   }
 
   const isFiltered = Boolean(
     query ||
       status !== "all" ||
       priority !== "all" ||
-      categoryId !== "all",
+      categoryId !== "all" ||
+      collectionTab !== "active",
   );
 
   async function handleLoadMore() {
@@ -402,7 +510,9 @@ export function TasksClient({
             <p className="app-muted mt-2 text-sm leading-6">
               Supabase SQL Editor içinde{" "}
               <code className="app-surface-2 app-primary rounded px-1.5 py-0.5 font-mono text-xs">
-                database/phase-6-tasks.sql
+                {pageError.includes("phase-19.1")
+                  ? "database/phase-19.1-task-archive.sql"
+                  : "database/phase-6-tasks.sql"}
               </code>{" "}
               dosyasının tamamını çalıştırın. Bu işlem mevcut notları veya
               kullanıcıları silmez.
@@ -410,7 +520,11 @@ export function TasksClient({
             <div className="mt-5 flex flex-col gap-2 sm:flex-row">
               <Button
                 onClick={() => {
-                  navigator.clipboard.writeText("database/phase-6-tasks.sql");
+                  navigator.clipboard.writeText(
+                    pageError.includes("phase-19.1")
+                      ? "database/phase-19.1-task-archive.sql"
+                      : "database/phase-6-tasks.sql",
+                  );
                   showNotice("SQL dosya yolu kopyalandı.");
                 }}
                 variant="secondary"
@@ -446,7 +560,7 @@ export function TasksClient({
             </div>
           ) : null}
 
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <Card className="p-4">
               <p className="app-muted text-[10px] uppercase tracking-[0.16em]">
                 Toplam
@@ -471,6 +585,38 @@ export function TasksClient({
                 {completedTaskCount}
               </p>
             </Card>
+            <Card className="p-4">
+              <p className="app-muted text-[10px] uppercase tracking-[0.16em]">
+                Arşiv
+              </p>
+              <p className="app-text mt-2 text-2xl font-semibold">
+                {archivedTaskCount}
+              </p>
+            </Card>
+          </div>
+
+          <div
+            aria-label="Görev görünümü"
+            className="app-card flex gap-1 overflow-x-auto rounded-xl border p-1.5"
+            role="tablist"
+          >
+            {taskCollectionTabs.map((tab) => (
+              <button
+                aria-selected={collectionTab === tab.id}
+                className={cn(
+                  "min-h-9 shrink-0 rounded-lg px-3 text-xs font-medium transition",
+                  collectionTab === tab.id
+                    ? "app-primary-bg"
+                    : "app-muted hover:bg-[var(--surface-2)] hover:text-[var(--text)]",
+                )}
+                key={tab.id}
+                onClick={() => setCollectionTab(tab.id)}
+                role="tab"
+                type="button"
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
 
           <TasksToolbar
@@ -494,8 +640,11 @@ export function TasksClient({
             view === "list" ? (
               <TaskList
                 busyTaskId={busyTaskId}
+                isArchived={isTaskArchived}
+                onArchive={handleArchive}
                 onDelete={requestDelete}
                 onEdit={openEditTask}
+                onRestore={handleRestore}
                 onStatusChange={handleStatusChange}
                 referenceTime={initialNow}
                 tasks={visibleTasks}
@@ -503,8 +652,11 @@ export function TasksClient({
             ) : (
               <TaskBoard
                 busyTaskId={busyTaskId}
+                isArchived={isTaskArchived}
+                onArchive={handleArchive}
                 onDelete={requestDelete}
                 onEdit={openEditTask}
+                onRestore={handleRestore}
                 onStatusChange={handleStatusChange}
                 referenceTime={initialNow}
                 tasks={visibleTasks}
@@ -522,11 +674,11 @@ export function TasksClient({
                   )}
                 </span>
                 <h2 className="app-text mt-5 text-lg font-semibold">
-                  {isFiltered ? "Eşleşen görev bulunamadı" : "Henüz görev yok"}
+                  {isFiltered ? "Bu görünümde görev bulunamadı" : "Henüz görev yok"}
                 </h2>
                 <p className="app-muted mt-2 max-w-md text-sm leading-6">
                   {isFiltered
-                    ? "Arama veya filtre seçimlerini değiştirerek tekrar dene."
+                    ? "Filtreleri temizleyebilir veya başka bir görev görünümüne geçebilirsin."
                     : "Günlük işleri ve operasyon adımlarını takip etmek için ilk görevini oluştur."}
                 </p>
                 <Button

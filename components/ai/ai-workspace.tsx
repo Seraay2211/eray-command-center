@@ -4,6 +4,10 @@ import { useMemo, useState } from "react";
 import { Bot, CheckCircle2, LoaderCircle, ShieldAlert, Sparkles } from "lucide-react";
 import { getAiActionDefinition } from "@/lib/ai/actions";
 import { AI_MAX_INPUT_CHARS } from "@/lib/ai/config";
+import {
+  formatAiOutputForDisplay,
+  formatAiOutputForNote,
+} from "@/lib/ai/format-ai-output";
 import { createNote } from "@/features/notes/actions";
 import { AiActionButtons } from "@/components/ai/ai-action-buttons";
 import { AiOutputPanel } from "@/components/ai/ai-output-panel";
@@ -165,7 +169,9 @@ export function AiWorkspace({
     }
 
     try {
-      await navigator.clipboard.writeText(outputState.output);
+      await navigator.clipboard.writeText(
+        formatAiOutputForDisplay(outputState.output),
+      );
       showNotice("AI çıktısı panoya kopyalandı.");
     } catch {
       setPageError("Çıktı panoya kopyalanamadı. Lütfen tekrar dene.");
@@ -182,7 +188,7 @@ export function AiWorkspace({
 
     const result = await createNote({
       title: buildNoteTitle(outputState.sourceTitle),
-      content: outputState.output,
+      content: formatAiOutputForNote(outputState.output),
       categoryId: null,
       tags: [],
       isPinned: false,

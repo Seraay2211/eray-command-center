@@ -5,6 +5,10 @@ import {
   REPORT_TYPE_LABELS,
 } from "@/lib/ai/report-prompts";
 import { generateReportWithGemini } from "@/lib/ai/providers/report-gemini";
+import {
+  formatAiOutputForDisplay,
+  formatAiOutputForNote,
+} from "@/lib/ai/format-ai-output";
 import { createClient } from "@/lib/supabase/server";
 import type {
   AiReportRequest,
@@ -163,6 +167,8 @@ export async function POST(request: Request) {
       provider === "gemini"
         ? await generateReportWithGemini(input)
         : buildDemoReport(input);
+    const cleanSummary = formatAiOutputForDisplay(generated.summary);
+    const cleanContent = formatAiOutputForNote(generated.content);
 
     try {
       const { data: settings, error: settingsError } = await supabase
@@ -175,7 +181,7 @@ export async function POST(request: Request) {
         await supabase.from("ai_actions").insert({
           action_type: `report:${reportType}`,
           input_text: `${requestedNotes.length} not, ${requestedTasks.length} görev, ${manualText.length} manuel karakter`,
-          output_text: generated.content,
+          output_text: cleanContent,
           user_id: authData.user.id,
         });
       }
@@ -190,8 +196,8 @@ export async function POST(request: Request) {
         generated.title ||
         input.title ||
         REPORT_TYPE_LABELS[reportType],
-      summary: generated.summary,
-      content: generated.content,
+      summary: cleanSummary,
+      content: cleanContent,
       reportType,
     });
   } catch (error) {

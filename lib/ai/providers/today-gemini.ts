@@ -1,6 +1,7 @@
 import "server-only";
 
 import { GEMINI_MODEL } from "@/lib/ai/config";
+import { AI_PLAIN_TEXT_INSTRUCTION } from "@/lib/ai/format-ai-output";
 import type { TodaySummary } from "@/types/today";
 
 interface GeminiResponse {
@@ -61,7 +62,7 @@ export async function generateTodaySummaryWithGemini(
                 "Finansal, hukuki veya profesyonel tavsiye verme.",
                 "Türkçe, kısa, doğrudan ve uygulanabilir yaz.",
                 "Çıktıyı şu başlıklarla üret: GÜNÜN ANA RİSKİ, İLK 3 ÖNCELİK, KISA AKSİYON ÖNERİSİ, FİNANSAL UYARI.",
-              ].join("\n"),
+              ].concat(AI_PLAIN_TEXT_INSTRUCTION).join("\n"),
             },
           ],
         },

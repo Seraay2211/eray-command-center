@@ -59,13 +59,13 @@ export function DarkSelect({
   }, [isOpen]);
 
   return (
-    <div className={cn("relative", className)} ref={rootRef}>
+    <div className={cn("relative min-w-0 max-w-full", className)} ref={rootRef}>
       <button
         aria-controls={listboxId}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
         aria-label={ariaLabel}
-        className="app-select flex h-10 w-full items-center gap-2 rounded-[10px] border px-3 text-left text-xs outline-none transition focus-visible:ring-2 disabled:cursor-wait disabled:opacity-60"
+        className="app-select flex h-10 w-full min-w-0 max-w-full items-center gap-2 rounded-[10px] border px-2.5 text-left text-xs outline-none transition focus-visible:ring-2 disabled:cursor-wait disabled:opacity-60"
         disabled={disabled}
         onClick={() => setIsOpen((current) => !current)}
         type="button"
@@ -84,7 +84,7 @@ export function DarkSelect({
 
       {isOpen ? (
         <div
-          className="app-select-menu absolute inset-x-0 top-full z-[120] mt-2 max-h-64 overflow-y-auto rounded-xl border p-1.5 shadow-[0_24px_70px_rgba(0,0,0,0.55)]"
+          className="app-select-menu absolute inset-x-0 top-full z-[120] mt-1.5 max-h-56 min-w-full max-w-full overflow-x-hidden overflow-y-auto rounded-lg border p-1 shadow-[0_20px_55px_rgba(0,0,0,0.45)]"
           id={listboxId}
           role="listbox"
         >
@@ -95,7 +95,7 @@ export function DarkSelect({
               <button
                 aria-selected={isSelected}
                 className={cn(
-                  "app-select-option flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-xs transition",
+                  "app-select-option flex w-full min-w-0 items-center gap-2 rounded-md px-2.5 py-2 text-left text-xs transition",
                   isSelected && "app-select-option-active",
                 )}
                 key={option.value}

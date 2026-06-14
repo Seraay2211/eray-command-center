@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { hasGeminiApiKey } from "@/lib/ai/config";
 import { generateTodaySummaryWithGemini } from "@/lib/ai/providers/today-gemini";
+import { formatAiOutputForDisplay } from "@/lib/ai/format-ai-output";
 import { createClient } from "@/lib/supabase/server";
 import { getTodaySummary } from "@/lib/today/today-summary";
 
@@ -32,25 +33,29 @@ export async function POST() {
       return NextResponse.json({
         success: true,
         provider: "demo",
-        output: fallback,
+        output: formatAiOutputForDisplay(fallback),
       });
     }
 
     try {
       const output = await generateTodaySummaryWithGemini(summaryResult.data);
-      return NextResponse.json({ success: true, provider: "gemini", output });
+      return NextResponse.json({
+        success: true,
+        provider: "gemini",
+        output: formatAiOutputForDisplay(output),
+      });
     } catch {
       return NextResponse.json({
         success: true,
         provider: "demo",
-        output: fallback,
+        output: formatAiOutputForDisplay(fallback),
       });
     }
   } catch {
     return NextResponse.json({
       success: true,
       provider: "demo",
-      output: fallback,
+      output: formatAiOutputForDisplay(fallback),
     });
   }
 }
