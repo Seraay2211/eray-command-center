@@ -64,7 +64,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     : undefined;
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#09090b] px-4 py-10 sm:px-6">
+    <main className="auth-fixed-theme relative flex min-h-screen items-center justify-center overflow-hidden bg-[#09090b] px-4 py-10 sm:px-6">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute left-1/2 top-[-18rem] size-[38rem] -translate-x-1/2 rounded-full bg-violet-600/[0.13] blur-[110px]" />
         <div className="absolute bottom-[-12rem] right-[-10rem] size-[30rem] rounded-full bg-indigo-600/[0.08] blur-[100px]" />

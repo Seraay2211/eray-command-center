@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createDefaultUserSettings } from "@/lib/settings/defaults";
-import { APP_THEME_IDS } from "@/lib/settings/themes";
+import {
+  APP_THEME_IDS,
+  isNewThemeId,
+} from "@/lib/settings/themes";
 import { createClient } from "@/lib/supabase/server";
 import type {
   ActionResult,
@@ -316,8 +319,26 @@ export async function updateUserSettings(
       .select("*")
       .single();
 
+    if (
+      error &&
+      values.app_theme &&
+      isNewThemeId(values.app_theme) &&
+      error.message.includes("user_settings_app_theme_check")
+    ) {
+      const current =
+        (await readSettings(supabase, user.id)) ??
+        createDefaultUserSettings(user.id);
+
+      return {
+        data: {
+          ...current,
+          app_theme: values.app_theme,
+        },
+        error: null,
+      };
+    }
+
     if (error) throw error;
-    revalidatePath("/", "layout");
     return {
       data: normalizeSettings(user.id, data as Partial<UserSettings>),
       error: null,

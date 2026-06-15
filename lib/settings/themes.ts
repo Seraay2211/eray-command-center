@@ -2,6 +2,14 @@ import type { AppTheme } from "@/types";
 
 export type ThemeMode = "dark" | "light";
 export type ThemeCategory = "dark" | "light" | "colorful" | "premium";
+export type ThemeFilter =
+  | "all"
+  | "dark"
+  | "light"
+  | "colorful"
+  | "premium"
+  | "simple";
+export type ThemeTag = Exclude<ThemeFilter, "all">;
 
 export interface ThemeDefinition {
   description: string;
@@ -9,6 +17,8 @@ export interface ThemeDefinition {
   name: string;
   mode: ThemeMode;
   category: ThemeCategory;
+  tags?: ThemeTag[];
+  previewColors?: readonly string[];
   colors: {
     background: string;
     surface: string;
@@ -406,14 +416,548 @@ export const APP_THEMES: ThemeDefinition[] = [
       danger: "#dc2626",
     },
   },
+  {
+    id: "royal-amethyst",
+    name: "Royal Amethyst",
+    description: "Derin ametist tonlarında seçkin yönetici çalışma alanı.",
+    mode: "dark",
+    category: "premium",
+    tags: ["dark", "premium"],
+    colors: {
+      background: "#080512",
+      surface: "#120b22",
+      surface2: "#1d1233",
+      border: "#49336f",
+      text: "#faf7ff",
+      muted: "#b9a7d3",
+      primary: "#9b5de5",
+      success: "#34d399",
+      warning: "#f4b942",
+      danger: "#fb7185",
+    },
+  },
+  {
+    id: "carbon-mint",
+    name: "Carbon Mint",
+    description: "Karbon siyahı yüzeylerde dengeli mint vurgular.",
+    mode: "dark",
+    category: "colorful",
+    tags: ["dark", "colorful"],
+    colors: {
+      background: "#070a09",
+      surface: "#0e1412",
+      surface2: "#17201d",
+      border: "#2b3a35",
+      text: "#eefbf6",
+      muted: "#91a9a0",
+      primary: "#2dd4a7",
+      success: "#34d399",
+      warning: "#fbbf24",
+      danger: "#fb7185",
+    },
+  },
+  {
+    id: "deep-space",
+    name: "Deep Space",
+    description: "Koyu lacivert tonlarla sakin ve odaklı minimal görünüm.",
+    mode: "dark",
+    category: "dark",
+    tags: ["dark", "simple"],
+    colors: {
+      background: "#050914",
+      surface: "#0a1120",
+      surface2: "#111b30",
+      border: "#243450",
+      text: "#eef4ff",
+      muted: "#8fa3bf",
+      primary: "#4f8cff",
+      success: "#34d399",
+      warning: "#fbbf24",
+      danger: "#fb7185",
+    },
+  },
+  {
+    id: "coffee-bronze",
+    name: "Coffee Bronze",
+    description: "Koyu kahve yüzey ve bronz vurguyla sıcak profesyonel tema.",
+    mode: "dark",
+    category: "premium",
+    tags: ["dark", "premium"],
+    colors: {
+      background: "#100a07",
+      surface: "#1b120d",
+      surface2: "#281a12",
+      border: "#553a25",
+      text: "#fff7ed",
+      muted: "#c9a788",
+      primary: "#c0834d",
+      success: "#3fbf7f",
+      warning: "#e8a43a",
+      danger: "#e96f62",
+    },
+  },
+  {
+    id: "arctic-glass",
+    name: "Arctic Glass",
+    description: "Buz beyazı ve yumuşak mavi-gri tonlarda ferah çalışma alanı.",
+    mode: "light",
+    category: "light",
+    tags: ["light", "simple"],
+    colors: {
+      background: "#eff6fb",
+      surface: "#ffffff",
+      surface2: "#e6f0f7",
+      border: "#bfd0dc",
+      text: "#14212b",
+      muted: "#60717e",
+      primary: "#4f86a6",
+      success: "#16835b",
+      warning: "#b66a16",
+      danger: "#c43d4f",
+    },
+  },
+  {
+    id: "night-sakura",
+    name: "Night Sakura",
+    description: "Gece yüzeylerinde modern ve yumuşak sakura pembesi.",
+    mode: "dark",
+    category: "colorful",
+    tags: ["dark", "colorful"],
+    colors: {
+      background: "#10070d",
+      surface: "#1a0d16",
+      surface2: "#291323",
+      border: "#56203f",
+      text: "#fff1f7",
+      muted: "#d8a0bc",
+      primary: "#f05a9d",
+      success: "#35c58a",
+      warning: "#f5b94c",
+      danger: "#f06476",
+    },
+  },
+  {
+    id: "military-olive",
+    name: "Military Olive",
+    description: "Taktik zeytin tonlarında ciddi ve sade operasyon teması.",
+    mode: "dark",
+    category: "dark",
+    tags: ["dark", "simple"],
+    colors: {
+      background: "#0c0e08",
+      surface: "#15190f",
+      surface2: "#202719",
+      border: "#414a31",
+      text: "#f2f4e8",
+      muted: "#aeb79a",
+      primary: "#8da34f",
+      success: "#65a955",
+      warning: "#d2a640",
+      danger: "#d86458",
+    },
+  },
+  {
+    id: "ice-lavender",
+    name: "Ice Lavender",
+    description: "Açık lavanta yüzeylerle sakin ve premium çalışma alanı.",
+    mode: "light",
+    category: "premium",
+    tags: ["light", "premium"],
+    colors: {
+      background: "#f5f2fb",
+      surface: "#ffffff",
+      surface2: "#ece7f6",
+      border: "#d1c7e2",
+      text: "#261d35",
+      muted: "#716582",
+      primary: "#8066b3",
+      success: "#21855d",
+      warning: "#b86b1d",
+      danger: "#c4475a",
+    },
+  },
+  {
+    id: "graphite-cyan",
+    name: "Graphite Cyan",
+    description: "Grafit yüzeylerde teknik, dengeli ve premium camgöbeği.",
+    mode: "dark",
+    category: "colorful",
+    tags: ["dark", "colorful"],
+    colors: {
+      background: "#080b0d",
+      surface: "#101619",
+      surface2: "#192327",
+      border: "#30434a",
+      text: "#effcff",
+      muted: "#91aeb8",
+      primary: "#22c7d6",
+      success: "#39c58a",
+      warning: "#efb64a",
+      danger: "#f06b75",
+    },
+  },
+  {
+    id: "sandstone-light",
+    name: "Sandstone Light",
+    description: "Sıcak kum tonlarında okunaklı ve sade günlük çalışma alanı.",
+    mode: "light",
+    category: "light",
+    tags: ["light", "simple"],
+    colors: {
+      background: "#f5efe5",
+      surface: "#fffaf2",
+      surface2: "#ece1d2",
+      border: "#d3c1aa",
+      text: "#2d261f",
+      muted: "#746657",
+      primary: "#a26b3f",
+      success: "#397b4d",
+      warning: "#b66c21",
+      danger: "#b94747",
+    },
+  },
+  {
+    id: "ruby-noir",
+    name: "Ruby Noir",
+    description: "Siyah kiraz yüzeylerde güçlü ve seçkin yakut vurgusu.",
+    mode: "dark",
+    category: "premium",
+    tags: ["dark", "premium"],
+    colors: {
+      background: "#0b0508",
+      surface: "#160a10",
+      surface2: "#241019",
+      border: "#552038",
+      text: "#fff2f5",
+      muted: "#d5a1ad",
+      primary: "#d63b62",
+      success: "#36b77d",
+      warning: "#e4a43d",
+      danger: "#f05c6c",
+    },
+  },
+  {
+    id: "azure-command",
+    name: "Azure Command",
+    description: "Derin mavi komuta yüzeylerinde dengeli azure vurgular.",
+    mode: "dark",
+    category: "colorful",
+    tags: ["dark", "colorful"],
+    colors: {
+      background: "#050b18",
+      surface: "#0b1428",
+      surface2: "#11213c",
+      border: "#274b78",
+      text: "#f0f7ff",
+      muted: "#91acd0",
+      primary: "#2587e8",
+      success: "#37bd86",
+      warning: "#eeb64b",
+      danger: "#ef6573",
+    },
+  },
+  {
+    id: "pearl-minimal",
+    name: "Pearl Minimal",
+    description: "İnci beyazı tonlarda sakin ve dikkat dağıtmayan çalışma alanı.",
+    mode: "light",
+    category: "light",
+    tags: ["light", "simple"],
+    colors: {
+      background: "#f7f7f5",
+      surface: "#ffffff",
+      surface2: "#efefec",
+      border: "#d7d8d3",
+      text: "#20231f",
+      muted: "#6d746b",
+      primary: "#6b7c73",
+      success: "#2d8055",
+      warning: "#ad681c",
+      danger: "#bd4350",
+    },
+  },
+  {
+    id: "solar-amber",
+    name: "Solar Amber",
+    description: "Koyu zeminde kontrollü amber enerjisi ve sıcak vurgu.",
+    mode: "dark",
+    category: "colorful",
+    tags: ["dark", "colorful"],
+    colors: {
+      background: "#0e0903",
+      surface: "#181007",
+      surface2: "#26190b",
+      border: "#563817",
+      text: "#fff7e6",
+      muted: "#c9a66d",
+      primary: "#f2a51a",
+      success: "#46b97b",
+      warning: "#f6c453",
+      danger: "#e86a5c",
+    },
+  },
+  {
+    id: "titanium-blue",
+    name: "Titanium Blue",
+    description: "Titanyum gri ve çelik mavisiyle sade kurumsal görünüm.",
+    mode: "dark",
+    category: "dark",
+    tags: ["dark", "simple"],
+    colors: {
+      background: "#0c1015",
+      surface: "#141a21",
+      surface2: "#1e2731",
+      border: "#3a4858",
+      text: "#f1f5f9",
+      muted: "#9eacbb",
+      primary: "#5f8fbf",
+      success: "#42b883",
+      warning: "#dfaa47",
+      danger: "#df6671",
+    },
+  },
+  {
+    id: "velvet-plum",
+    name: "Velvet Plum",
+    description: "Zengin erik tonlarında yumuşak ve lüks yönetim ekranı.",
+    mode: "dark",
+    category: "premium",
+    tags: ["dark", "premium"],
+    colors: {
+      background: "#0e0710",
+      surface: "#1a0d1c",
+      surface2: "#28142b",
+      border: "#56305c",
+      text: "#fff3ff",
+      muted: "#cda9cf",
+      primary: "#a85eb5",
+      success: "#42bd86",
+      warning: "#e6ad4a",
+      danger: "#e8667d",
+    },
+  },
+  {
+    id: "glacier-mint",
+    name: "Glacier Mint",
+    description: "Serin açık yüzeylerde temiz ve sakin mint vurgusu.",
+    mode: "light",
+    category: "light",
+    tags: ["light", "simple"],
+    colors: {
+      background: "#eef8f6",
+      surface: "#ffffff",
+      surface2: "#e1f1ed",
+      border: "#b9d7cf",
+      text: "#16312c",
+      muted: "#5e7771",
+      primary: "#2f9d83",
+      success: "#21815f",
+      warning: "#ae6e20",
+      danger: "#c04454",
+    },
+  },
+  {
+    id: "neon-orchid",
+    name: "Neon Orchid",
+    description: "Kontrollü orkide neonuyla modern ve teknik çalışma alanı.",
+    mode: "dark",
+    category: "colorful",
+    tags: ["dark", "colorful"],
+    colors: {
+      background: "#09050f",
+      surface: "#140b20",
+      surface2: "#211132",
+      border: "#482565",
+      text: "#fbf2ff",
+      muted: "#c5a0d8",
+      primary: "#c24ef0",
+      success: "#3fc48a",
+      warning: "#eeb449",
+      danger: "#f16582",
+    },
+  },
+  {
+    id: "walnut-cream",
+    name: "Walnut Cream",
+    description: "Sıcak krem yüzey ve ceviz kontrastıyla rahat okunabilirlik.",
+    mode: "light",
+    category: "light",
+    tags: ["light", "simple"],
+    colors: {
+      background: "#f7f0e5",
+      surface: "#fffaf2",
+      surface2: "#ecdfcf",
+      border: "#cfbda8",
+      text: "#30271f",
+      muted: "#756556",
+      primary: "#8a5a38",
+      success: "#397c50",
+      warning: "#ad671d",
+      danger: "#b94747",
+    },
+  },
+  {
+    id: "storm-indigo",
+    name: "Storm Indigo",
+    description: "Fırtınalı indigo tonlarında odaklı premium komuta ekranı.",
+    mode: "dark",
+    category: "premium",
+    tags: ["dark", "premium"],
+    colors: {
+      background: "#070915",
+      surface: "#101426",
+      surface2: "#191f38",
+      border: "#343f67",
+      text: "#f2f4ff",
+      muted: "#9da7ca",
+      primary: "#6574d9",
+      success: "#3dba82",
+      warning: "#e6ad48",
+      danger: "#e75f72",
+    },
+  },
+  {
+    id: "matrix-lime",
+    name: "Matrix Lime",
+    description: "Terminal koyuluğunda canlı fakat dengeli lime vurgusu.",
+    mode: "dark",
+    category: "colorful",
+    tags: ["dark", "colorful"],
+    colors: {
+      background: "#030603",
+      surface: "#081008",
+      surface2: "#102010",
+      border: "#285229",
+      text: "#efffe9",
+      muted: "#91c785",
+      primary: "#84e34d",
+      success: "#5fd36b",
+      warning: "#e4c64d",
+      danger: "#ed6b68",
+    },
+  },
+  {
+    id: "cloud-silver",
+    name: "Cloud Silver",
+    description: "Gümüş beyazı tonlarda temiz ve kurumsal çalışma alanı.",
+    mode: "light",
+    category: "light",
+    tags: ["light", "simple"],
+    colors: {
+      background: "#f3f5f7",
+      surface: "#ffffff",
+      surface2: "#e8ecef",
+      border: "#c9d0d6",
+      text: "#1e252b",
+      muted: "#65717b",
+      primary: "#667c8c",
+      success: "#2b8059",
+      warning: "#ad681f",
+      danger: "#c04452",
+    },
+  },
+  {
+    id: "crimson-executive",
+    name: "Crimson Executive",
+    description: "Koyu yönetici kırmızısıyla ciddi ve güçlü premium arayüz.",
+    mode: "dark",
+    category: "premium",
+    tags: ["dark", "premium"],
+    colors: {
+      background: "#0c0506",
+      surface: "#180a0c",
+      surface2: "#251013",
+      border: "#572129",
+      text: "#fff2f3",
+      muted: "#d0a0a5",
+      primary: "#bd3345",
+      success: "#3ab47a",
+      warning: "#e4aa43",
+      danger: "#ef5966",
+    },
+  },
+  {
+    id: "oceanic-teal",
+    name: "Oceanic Teal",
+    description: "Okyanus derinliği ve teal odak rengiyle dengeli teknoloji teması.",
+    mode: "dark",
+    category: "colorful",
+    tags: ["dark", "colorful"],
+    colors: {
+      background: "#041012",
+      surface: "#081b1e",
+      surface2: "#0d292d",
+      border: "#1e5157",
+      text: "#edffff",
+      muted: "#86b9bd",
+      primary: "#1ca7a8",
+      success: "#36bd83",
+      warning: "#e7b348",
+      danger: "#e8666f",
+    },
+  },
+  {
+    id: "desert-night",
+    name: "Desert Night",
+    description: "Koyu çöl kahvesinde sıcak ve sade operasyon paneli.",
+    mode: "dark",
+    category: "dark",
+    tags: ["dark", "simple"],
+    colors: {
+      background: "#0e0a07",
+      surface: "#18110d",
+      surface2: "#241a13",
+      border: "#4a392b",
+      text: "#f7eee5",
+      muted: "#b8a28f",
+      primary: "#a8794f",
+      success: "#4aaf79",
+      warning: "#dda847",
+      danger: "#dd685d",
+    },
+  },
 ];
 
 export const APP_THEME_IDS = APP_THEMES.map((theme) => theme.id);
+export const NEW_THEME_IDS: AppTheme[] = [
+  "royal-amethyst",
+  "carbon-mint",
+  "deep-space",
+  "coffee-bronze",
+  "arctic-glass",
+  "night-sakura",
+  "military-olive",
+  "ice-lavender",
+  "graphite-cyan",
+  "sandstone-light",
+  "ruby-noir",
+  "azure-command",
+  "pearl-minimal",
+  "solar-amber",
+  "titanium-blue",
+  "velvet-plum",
+  "glacier-mint",
+  "neon-orchid",
+  "walnut-cream",
+  "storm-indigo",
+  "matrix-lime",
+  "cloud-silver",
+  "crimson-executive",
+  "oceanic-teal",
+  "desert-night",
+];
 export const LIGHT_THEME_IDS = APP_THEMES.filter(
   (theme) => theme.mode === "light",
 ).map((theme) => theme.id);
 
+const APP_THEME_MAP = new Map(
+  APP_THEMES.map((theme) => [theme.id, theme] as const),
+);
 const APP_THEME_ID_SET = new Set<AppTheme>(APP_THEME_IDS);
+
+export function getThemeById(themeId: AppTheme): ThemeDefinition | undefined {
+  return APP_THEME_MAP.get(themeId);
+}
 
 export function isThemeId(value: string): value is AppTheme {
   return APP_THEME_ID_SET.has(value as AppTheme);
@@ -421,4 +965,32 @@ export function isThemeId(value: string): value is AppTheme {
 
 export function isLightTheme(themeId: AppTheme): boolean {
   return LIGHT_THEME_IDS.includes(themeId);
+}
+
+export function isNewThemeId(themeId: AppTheme): boolean {
+  return NEW_THEME_IDS.includes(themeId);
+}
+
+export function getThemeTags(theme: ThemeDefinition): ThemeTag[] {
+  if (theme.tags) return theme.tags;
+
+  const styleTag: ThemeTag =
+    theme.category === "colorful" || theme.category === "premium"
+      ? theme.category
+      : "simple";
+
+  return [theme.mode, styleTag];
+}
+
+export function getThemePreviewColors(
+  theme: ThemeDefinition,
+): readonly string[] {
+  return (
+    theme.previewColors ?? [
+      theme.colors.background,
+      theme.colors.surface,
+      theme.colors.primary,
+      theme.colors.success,
+    ]
+  ).slice(0, 4);
 }

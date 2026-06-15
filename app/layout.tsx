@@ -42,7 +42,7 @@ export const viewport: Viewport = {
   width: "device-width",
 };
 
-const themeBootstrapScript = `try{const root=document.documentElement;const lightThemes=${JSON.stringify(LIGHT_THEME_IDS)};const saved=JSON.parse(localStorage.getItem("eray-command-center-settings")||"{}");const theme=localStorage.getItem("ecc-theme")||saved.app_theme;const language=localStorage.getItem("ecc-language")||saved.language;if(theme){root.dataset.theme=theme;root.style.colorScheme=lightThemes.includes(theme)?"light":"dark";}root.dataset.font=saved.font_family||"geist";root.dataset.density=saved.density||"compact";root.dataset.sidebar=saved.sidebar_mode||"expanded";root.dataset.reduceMotion=String(saved.reduce_motion===true);if(language){root.lang=language;}}catch{}`;
+const themeBootstrapScript = `try{const root=document.documentElement;const lightThemes=${JSON.stringify(LIGHT_THEME_IDS)};const saved=JSON.parse(localStorage.getItem("eray-command-center-settings")||"{}");const theme=localStorage.getItem("ecc-theme")||saved.app_theme;const language=localStorage.getItem("ecc-language")||saved.language;if(theme){const mode=lightThemes.includes(theme)?"light":"dark";root.dataset.theme=theme;root.dataset.colorScheme=mode;root.style.colorScheme=mode;}root.dataset.font=saved.font_family||"geist";root.dataset.density=saved.density||"compact";root.dataset.sidebar=saved.sidebar_mode||"expanded";root.dataset.reduceMotion=String(saved.reduce_motion===true);if(language){root.lang=language;}}catch{}`;
 
 export default function RootLayout({
   children,
@@ -53,6 +53,7 @@ export default function RootLayout({
     <html
       data-density="compact"
       data-font="geist"
+      data-color-scheme="dark"
       data-reduce-motion="false"
       data-theme="command_dark"
       lang="tr"

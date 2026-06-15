@@ -692,7 +692,32 @@ export type AppTheme =
   | "matrix_green"
   | "rose_noir"
   | "arctic_light"
-  | "paper_pro";
+  | "paper_pro"
+  | "royal-amethyst"
+  | "carbon-mint"
+  | "deep-space"
+  | "coffee-bronze"
+  | "arctic-glass"
+  | "night-sakura"
+  | "military-olive"
+  | "ice-lavender"
+  | "graphite-cyan"
+  | "sandstone-light"
+  | "ruby-noir"
+  | "azure-command"
+  | "pearl-minimal"
+  | "solar-amber"
+  | "titanium-blue"
+  | "velvet-plum"
+  | "glacier-mint"
+  | "neon-orchid"
+  | "walnut-cream"
+  | "storm-indigo"
+  | "matrix-lime"
+  | "cloud-silver"
+  | "crimson-executive"
+  | "oceanic-teal"
+  | "desert-night";
 
 export type AppLanguage = "tr" | "en";
 

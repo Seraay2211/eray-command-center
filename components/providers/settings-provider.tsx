@@ -15,6 +15,7 @@ import {
 } from "@/lib/i18n/dictionaries";
 import {
   isLightTheme,
+  isNewThemeId,
   isThemeId,
 } from "@/lib/settings/themes";
 import { updateUserSettings } from "@/services/settings-service";
@@ -41,6 +42,9 @@ const SettingsContext = createContext<SettingsContextValue | null>(null);
 function applyDocumentSettings(settings: UserSettings) {
   const root = document.documentElement;
   root.dataset.theme = settings.app_theme;
+  root.dataset.colorScheme = isLightTheme(settings.app_theme)
+    ? "light"
+    : "dark";
   root.dataset.density = settings.density;
   root.dataset.sidebar = settings.sidebar_mode;
   root.dataset.font = settings.font_family;
@@ -124,17 +128,20 @@ function readLocalFallback(): Partial<UserSettings> {
 
 function mergePersistedSettings(settings: UserSettings): UserSettings {
   const localFallback = readLocalFallback();
+  const localTheme = localFallback.app_theme;
   const shouldUseLocalFallback =
     settings.id === "local-default" || !settings.updated_at;
 
-  if (!shouldUseLocalFallback) {
-    return settings;
+  if (shouldUseLocalFallback) {
+    return {
+      ...settings,
+      ...localFallback,
+    };
   }
 
-  return {
-    ...settings,
-    ...localFallback,
-  };
+  return localTheme && isNewThemeId(localTheme)
+    ? { ...settings, app_theme: localTheme }
+    : settings;
 }
 
 interface SettingsProviderProps {
@@ -177,9 +184,12 @@ export function SettingsProvider({
         return result.error ?? "Ayarlar kaydedilemedi.";
       }
 
-      setSettings(result.data);
-      applyDocumentSettings(result.data);
-      saveLocalFallback(result.data);
+      const resolvedSettings = isNewThemeId(optimistic.app_theme)
+        ? { ...result.data, app_theme: optimistic.app_theme }
+        : result.data;
+      setSettings(resolvedSettings);
+      applyDocumentSettings(resolvedSettings);
+      saveLocalFallback(resolvedSettings);
       return null;
     },
     [settings],

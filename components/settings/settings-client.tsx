@@ -24,13 +24,12 @@ import {
   SettingsSidebar,
   type SettingsTab,
 } from "@/components/settings/settings-sidebar";
-import { ThemeCard } from "@/components/settings/theme-card";
+import { ThemeLibrary } from "@/components/settings/theme-library";
 import { ToggleRow } from "@/components/settings/toggle-row";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { DarkSelect } from "@/components/ui/dark-select";
-import { APP_THEMES } from "@/lib/settings/themes";
-import { cn } from "@/lib/utils";
+import { getThemeById } from "@/lib/settings/themes";
 import {
   TASK_PRIORITY_OPTIONS,
   TASK_STATUS_OPTIONS,
@@ -123,9 +122,6 @@ export function SettingsClient({
 }: SettingsClientProps) {
   const { replaceSettings, settings, updateSettings } = useSettings();
   const [activeTab, setActiveTab] = useState("appearance");
-  const [themeFilter, setThemeFilter] = useState<
-    "all" | "dark" | "light" | "colorful"
-  >("all");
   const [displayName, setDisplayName] = useState(settings.display_name ?? "");
   const [criticalThreshold, setCriticalThreshold] = useState(
     String(settings.critical_debt_threshold),
@@ -136,13 +132,7 @@ export function SettingsClient({
   const [isResetOpen, setIsResetOpen] = useState(false);
   const noticeTimer = useRef<number | null>(null);
   const activeTheme =
-    APP_THEMES.find((theme) => theme.id === settings.app_theme)?.name ??
-    settings.app_theme;
-  const filteredThemes = APP_THEMES.filter((theme) => {
-    if (themeFilter === "all") return true;
-    if (themeFilter === "colorful") return theme.category === "colorful";
-    return theme.mode === themeFilter;
-  });
+    getThemeById(settings.app_theme)?.name ?? settings.app_theme;
 
   useEffect(
     () => () => {
@@ -341,58 +331,16 @@ export function SettingsClient({
                 }
               />
 
-              <div>
-                <div className="mb-3 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="app-text text-sm font-medium">Tema</p>
-                  <div
-                    aria-label="Tema filtresi"
-                    className="app-surface-2 app-border grid w-full grid-cols-4 rounded-lg border p-1 sm:w-auto"
-                    role="group"
-                  >
-                    {[
-                      { label: "Tümü", value: "all" },
-                      { label: "Koyu", value: "dark" },
-                      { label: "Açık", value: "light" },
-                      { label: "Renkli", value: "colorful" },
-                    ].map((filter) => (
-                      <button
-                        aria-pressed={themeFilter === filter.value}
-                        className={cn(
-                          "min-w-0 rounded-md px-2 py-1.5 text-[10px] font-medium transition",
-                          themeFilter === filter.value
-                            ? "bg-[var(--surface)] app-text shadow-sm"
-                            : "app-muted hover:app-text",
-                        )}
-                        key={filter.value}
-                        onClick={() =>
-                          setThemeFilter(
-                            filter.value as typeof themeFilter,
-                          )
-                        }
-                        type="button"
-                      >
-                        {filter.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="grid auto-rows-fr gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
-                  {filteredThemes.map((theme) => (
-                    <ThemeCard
-                      isActive={settings.app_theme === theme.id}
-                      key={theme.id}
-                      onSelect={() =>
-                        void savePatch(
-                          `theme-${theme.id}`,
-                          { app_theme: theme.id },
-                          "Tema uygulandı.",
-                        )
-                      }
-                      theme={theme}
-                    />
-                  ))}
-                </div>
-              </div>
+              <ThemeLibrary
+                activeThemeId={settings.app_theme}
+                onSelect={(themeId) =>
+                  void savePatch(
+                    `theme-${themeId}`,
+                    { app_theme: themeId },
+                    "Tema uygulandı.",
+                  )
+                }
+              />
             </SettingsSection>
           ) : null}
 
