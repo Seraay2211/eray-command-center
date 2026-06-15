@@ -18,6 +18,15 @@ function getPromptTitle(title: string): string {
   return title.trim() || "Belirtilmedi";
 }
 
+function getCurrentDateLabel(): string {
+  return new Intl.DateTimeFormat("tr-TR", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "Europe/Istanbul",
+    year: "numeric",
+  }).format(new Date());
+}
+
 const definitions: Record<AiActionKey, AiActionDefinition> = {
   summarize: {
     key: "summarize",
@@ -38,6 +47,50 @@ Başlık:
 ${getPromptTitle(title)}
 
 Metin:
+${text}`,
+  },
+  daily_summary: {
+    key: "daily_summary",
+    label: "Günün Özeti",
+    description:
+      "Dağınık günlük notlarını düzenli ve özenli bir günlük kaydına çevir.",
+    iconName: "CalendarDays",
+    systemInstruction:
+      "Sen Türkçe günlük not editörüsün. Kullanıcının verdiği dağınık günlük notlarını özenli, düzenli ve zarif bir günlük özetine dönüştürürsün. Kullanıcının anlatımına sadık kalır, olay, kişi, yer, tarih veya görüşme uydurmazsın. Duygusal tonu varsa saygıyla korursun. Markdown başlıkları, markdown tabloları, kod blokları, JSON veya teknik biçimlendirme kullanmazsın. Yalnızca temiz, kullanıcıya gösterilebilir Türkçe metin üretirsin.",
+    buildPrompt: ({ text }) => `Aşağıdaki dağınık günlük notunu düzenli bir günlük kaydına dönüştür.
+
+Bugünün tarihi:
+${getCurrentDateLabel()}
+
+İstenen çıktı düzeni:
+
+GÜNÜN ÖZETİ
+
+Günü doğal bir akışla anlatan, kullanıcının verdiği bilgilere sadık bir paragraf.
+
+ÖNE ÇIKANLAR
+
+01 — Günün önemli bir gelişmesi
+02 — Günün önemli bir gelişmesi
+03 — Varsa günün önemli bir gelişmesi
+
+KISA DEĞERLENDİRME
+
+Günün temposunu ve öne çıkan yönünü, yalnızca verilen bilgilerden hareketle değerlendir.
+
+YARINA NOT
+
+Kullanıcı yarın için bir takip konusu belirttiyse yaz. Belirtmediyse yeni bir görev uydurma.
+
+Kurallar:
+
+* Türkçe yaz.
+* Olay, kişi, yer, tarih veya toplantı uydurma.
+* İş ve operasyon ayrıntılarını profesyonel, kişisel olayları doğal ve sıcak bir dille düzenle.
+* Kısa girdide bile anlamlı fakat ölçülü bir sonuç üret.
+* Markdown işaretleri, tablo, kod bloğu veya JSON kullanma.
+
+Dağınık günlük notu:
 ${text}`,
   },
   shorten: {

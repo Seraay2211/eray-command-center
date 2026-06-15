@@ -1,5 +1,6 @@
 import {
   Bot,
+  CalendarDays,
   FileText,
   LoaderCircle,
   WandSparkles,
@@ -12,6 +13,7 @@ import type { AiActionKey } from "@/types";
 interface AiActionButtonsProps {
   activeAction: AiActionKey | null;
   disabled?: boolean;
+  includeDailySummary?: boolean;
   mode?: "run" | "select";
   onAction: (action: AiActionKey) => void;
   selectedAction?: AiActionKey;
@@ -19,6 +21,7 @@ interface AiActionButtonsProps {
 
 const iconMap = {
   Bot,
+  CalendarDays,
   FileText,
   WandSparkles,
   Zap,
@@ -27,12 +30,15 @@ const iconMap = {
 export function AiActionButtons({
   activeAction,
   disabled = false,
+  includeDailySummary = false,
   onAction,
   selectedAction,
 }: AiActionButtonsProps) {
   return (
     <div className="grid gap-2 sm:grid-cols-2">
-      {AI_ACTIONS.map((action) => {
+      {AI_ACTIONS.filter(
+        (action) => includeDailySummary || action.key !== "daily_summary",
+      ).map((action) => {
         const Icon = action.iconName ? iconMap[action.iconName as keyof typeof iconMap] : Bot;
         const isActive = activeAction === action.key;
         const isSelected = selectedAction === action.key;
@@ -41,7 +47,7 @@ export function AiActionButtons({
           <Button
             className={`h-auto min-h-12 justify-start px-3 py-3 text-left ${
               isSelected
-                ? "border-violet-400/25 bg-violet-500/[0.10] text-violet-100"
+                ? "border-[color-mix(in_srgb,var(--primary)_45%,var(--border))] bg-[color-mix(in_srgb,var(--primary)_12%,var(--surface-2))] app-text"
                 : ""
             }`}
             disabled={disabled}

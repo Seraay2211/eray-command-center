@@ -7,12 +7,17 @@ import { createPlannerEvent } from "@/services/planner-service";
 import { removeFinanceReceipt } from "@/services/finance-receipts-service";
 import { createNotification } from "@/services/notifications-service";
 import { createClient } from "@/lib/supabase/server";
+import {
+  addMonthsClamped,
+  getInstallmentDisplayStatus,
+} from "@/lib/finance/installments";
 import { formatTRY } from "@/lib/utils/currency";
 import type {
   ActionResult,
   CreateDebtInput,
   CreateDebtPaymentInput,
   Debt,
+  DebtInstallment,
   DebtPayment,
   DebtPriority,
   DebtStatus,
@@ -38,15 +43,33 @@ const debtPriorities: DebtPriority[] = [
 ];
 
 const debtSelect =
+  "id,user_id,title,creditor,total_amount,paid_amount,currency,status,priority,due_date,installment_count,is_installment,installment_amount,installment_start_date,installment_day,installment_note,notes,created_at,updated_at";
+const legacyDebtSelect =
   "id,user_id,title,creditor,total_amount,paid_amount,currency,status,priority,due_date,installment_count,notes,created_at,updated_at";
 const paymentSelect =
+  "id,user_id,debt_id,installment_id,amount,payment_date,method,note,receipt_url,receipt_path,receipt_file_name,receipt_mime_type,ocr_status,ocr_result,created_at";
+const legacyPaymentSelect =
   "id,user_id,debt_id,amount,payment_date,method,note,receipt_url,receipt_path,receipt_file_name,receipt_mime_type,ocr_status,ocr_result,created_at";
+const installmentSelect =
+  "id,user_id,debt_id,installment_no,due_date,expected_amount,paid_amount,status,paid_at,note,created_at,updated_at";
 
 function isSchemaMissing(message: string): boolean {
   return (
     message.includes("PGRST205") ||
     message.includes("schema cache") ||
     message.includes("Could not find the table")
+  );
+}
+
+function isInstallmentSchemaMissing(message: string): boolean {
+  return (
+    message.includes("debt_installments") ||
+    message.includes("installment_id") ||
+    message.includes("is_installment") ||
+    message.includes("installment_amount") ||
+    message.includes("installment_start_date") ||
+    message.includes("installment_day") ||
+    message.includes("installment_note")
   );
 }
 
@@ -63,10 +86,13 @@ function getErrorMessage(error: unknown): string {
     message.includes("receipt_url") ||
     message.includes("ocr_status")
   ) {
-    return "Dekont altyapısı henüz hazır değil. database/phase-15.3-finance-receipts.sql dosyasını Supabase SQL Editor içinde çalıştırın.";
+    return "Dekont özelliği şu anda kullanılamıyor. Lütfen daha sonra tekrar dene.";
+  }
+  if (isInstallmentSchemaMissing(message)) {
+    return "Taksit sistemi henüz etkin değil. Kurulum tamamlandıktan sonra tekrar dene.";
   }
   if (isSchemaMissing(message)) {
-    return "Finans veritabanı henüz hazır değil. database/phase-15-finance.sql dosyasını Supabase SQL Editor içinde çalıştırın.";
+    return "Finans alanı şu anda kullanılamıyor. Lütfen daha sonra tekrar dene.";
   }
   if (message.toLowerCase().includes("jwt")) {
     return "Oturum doğrulanamadı. Lütfen yeniden giriş yapın.";
@@ -74,7 +100,20 @@ function getErrorMessage(error: unknown): string {
   if (message.includes("duplicate")) {
     return "Bu finans kaydı zaten mevcut.";
   }
-  return message || "Finans işlemi tamamlanamadı.";
+  const safeMessages = [
+    "Borç adı",
+    "Toplam tutar",
+    "Taksit",
+    "Ödeme tutarı",
+    "Borç tamamen",
+    "Borç kaydı bulunamadı",
+    "Ödeme kaydı bulunamadı",
+    "Ödeme kaydı bulunan",
+    "Toplam tutar kaydedilmiş",
+  ];
+  return safeMessages.some((item) => message.startsWith(item))
+    ? message
+    : "Finans işlemi tamamlanamadı. Lütfen tekrar dene.";
 }
 
 function toNumber(value: unknown): number {
@@ -90,7 +129,24 @@ function mapDebt(raw: Record<string, unknown>): Debt {
     total_amount: toNumber(raw.total_amount),
     paid_amount: toNumber(raw.paid_amount),
     installment_count:
-      raw.installment_count === null ? null : toNumber(raw.installment_count),
+      raw.installment_count === null || raw.installment_count === undefined
+        ? null
+        : toNumber(raw.installment_count),
+    is_installment: raw.is_installment === true,
+    installment_amount:
+      raw.installment_amount === null || raw.installment_amount === undefined
+        ? null
+        : toNumber(raw.installment_amount),
+    installment_start_date:
+      typeof raw.installment_start_date === "string"
+        ? raw.installment_start_date
+        : null,
+    installment_day:
+      raw.installment_day === null || raw.installment_day === undefined
+        ? null
+        : toNumber(raw.installment_day),
+    installment_note:
+      typeof raw.installment_note === "string" ? raw.installment_note : "",
   };
 }
 
@@ -104,6 +160,8 @@ function mapPayment(raw: Record<string, unknown>): DebtPayment {
 
   return {
     ...(raw as unknown as DebtPayment),
+    installment_id:
+      typeof raw.installment_id === "string" ? raw.installment_id : null,
     amount: toNumber(raw.amount),
     method: typeof raw.method === "string" ? raw.method : "",
     note: typeof raw.note === "string" ? raw.note : "",
@@ -124,6 +182,22 @@ function mapPayment(raw: Record<string, unknown>): DebtPayment {
       raw.ocr_result && typeof raw.ocr_result === "object"
         ? (raw.ocr_result as FinanceOcrResult)
         : null,
+  };
+}
+
+function mapInstallment(raw: Record<string, unknown>): DebtInstallment {
+  const installment = {
+    ...(raw as unknown as DebtInstallment),
+    installment_no: toNumber(raw.installment_no),
+    expected_amount: toNumber(raw.expected_amount),
+    paid_amount: toNumber(raw.paid_amount),
+    note: typeof raw.note === "string" ? raw.note : "",
+    paid_at: typeof raw.paid_at === "string" ? raw.paid_at : null,
+  };
+
+  return {
+    ...installment,
+    status: getInstallmentDisplayStatus(installment),
   };
 }
 
@@ -181,8 +255,171 @@ function validateDebtInput(
     }
     values.installment_count = count;
   }
+  if (input.is_installment !== undefined) {
+    values.is_installment = Boolean(input.is_installment);
+  }
+  if (input.installment_amount !== undefined) {
+    const amount =
+      input.installment_amount === null
+        ? null
+        : toNumber(input.installment_amount);
+    if (amount !== null && amount <= 0) {
+      throw new Error("Taksit tutarı sıfırdan büyük olmalıdır.");
+    }
+    values.installment_amount = amount;
+  }
+  if (input.installment_start_date !== undefined) {
+    values.installment_start_date =
+      input.installment_start_date?.trim() || null;
+  }
+  if (input.installment_day !== undefined) {
+    const day =
+      input.installment_day === null ? null : Number(input.installment_day);
+    if (day !== null && (!Number.isInteger(day) || day < 1 || day > 31)) {
+      throw new Error("Taksit ödeme günü 1 ile 31 arasında olmalıdır.");
+    }
+    values.installment_day = day;
+  }
+  if (input.installment_note !== undefined) {
+    values.installment_note = input.installment_note?.trim() ?? "";
+  }
+
+  if (values.is_installment) {
+    const count = values.installment_count;
+    if (!count) throw new Error("Taksit sayısı zorunludur.");
+    const totalAmount = values.total_amount;
+    const installmentAmount =
+      values.installment_amount ??
+      (totalAmount ? Number((totalAmount / count).toFixed(2)) : null);
+    if (!installmentAmount || installmentAmount <= 0) {
+      throw new Error("Taksit tutarı zorunludur.");
+    }
+    values.installment_amount = installmentAmount;
+    if (!values.installment_start_date) {
+      values.installment_start_date = values.due_date ?? getIstanbulDateKey();
+    }
+    values.installment_day =
+      values.installment_day ??
+      Number(values.installment_start_date.slice(8, 10));
+  }
 
   return values;
+}
+
+async function syncInstallmentSchedule(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  debt: Debt,
+) {
+  const { data: existingRows, error: existingError } = await supabase
+    .from("debt_installments")
+    .select(installmentSelect)
+    .eq("user_id", userId)
+    .eq("debt_id", debt.id)
+    .order("installment_no", { ascending: true });
+  if (existingError) throw existingError;
+
+  const existing = (existingRows ?? []).map(mapInstallment);
+  if (
+    !debt.is_installment ||
+    !debt.installment_count ||
+    !debt.installment_amount ||
+    !debt.installment_start_date
+  ) {
+    const { error } = await supabase
+      .from("debt_installments")
+      .delete()
+      .eq("user_id", userId)
+      .eq("debt_id", debt.id)
+      .eq("paid_amount", 0);
+    if (error) throw error;
+    return;
+  }
+
+  const today = getIstanbulDateKey();
+  const existingByNumber = new Map(
+    existing.map((item) => [item.installment_no, item]),
+  );
+  const rows = Array.from(
+    { length: debt.installment_count },
+    (_, index) => {
+      const installmentNo = index + 1;
+      const current = existingByNumber.get(installmentNo);
+      if (current && current.paid_amount > 0) return null;
+      const dueDate =
+        index === 0
+          ? debt.installment_start_date!
+          : addMonthsClamped(
+              debt.installment_start_date!,
+              index,
+              debt.installment_day,
+            );
+      return {
+        user_id: userId,
+        debt_id: debt.id,
+        installment_no: installmentNo,
+        due_date: dueDate,
+        expected_amount: debt.installment_amount,
+        paid_amount: 0,
+        status: dueDate < today ? "overdue" : "pending",
+        paid_at: null,
+        note: debt.installment_note ?? "",
+      };
+    },
+  ).filter((row): row is NonNullable<typeof row> => Boolean(row));
+
+  if (rows.length > 0) {
+    const { error } = await supabase
+      .from("debt_installments")
+      .upsert(rows, { onConflict: "debt_id,installment_no" });
+    if (error) throw error;
+  }
+
+  const { error: deleteError } = await supabase
+    .from("debt_installments")
+    .delete()
+    .eq("user_id", userId)
+    .eq("debt_id", debt.id)
+    .eq("paid_amount", 0)
+    .gt("installment_no", debt.installment_count);
+  if (deleteError) throw deleteError;
+}
+
+async function assertInstallmentPlanChangeIsSafe(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  debtId: string,
+  current: Debt,
+  values: UpdateDebtInput,
+) {
+  if (!current.is_installment) return;
+
+  const nextIsInstallment = values.is_installment ?? current.is_installment;
+  const nextCount = values.installment_count ?? current.installment_count;
+  if (nextIsInstallment && nextCount === current.installment_count) return;
+
+  const { data, error } = await supabase
+    .from("debt_installments")
+    .select("installment_no")
+    .eq("user_id", userId)
+    .eq("debt_id", debtId)
+    .gt("paid_amount", 0)
+    .order("installment_no", { ascending: false });
+  if (error) throw error;
+  if (!data?.length) return;
+
+  if (!nextIsInstallment) {
+    throw new Error(
+      "Ödeme kaydı bulunan bir taksit planı kapatılamaz.",
+    );
+  }
+
+  const highestPaidInstallment = Number(data[0].installment_no) || 0;
+  if (!nextCount || nextCount < highestPaidInstallment) {
+    throw new Error(
+      `Taksit sayısı, ödeme kaydı bulunan ${highestPaidInstallment}. taksitten düşük olamaz.`,
+    );
+  }
 }
 
 function revalidateFinanceViews() {
@@ -213,12 +450,22 @@ async function fetchDebtById(
   userId: string,
   debtId: string,
 ): Promise<Debt> {
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("debts")
     .select(debtSelect)
     .eq("id", debtId)
     .eq("user_id", userId)
     .maybeSingle();
+  if (error && isInstallmentSchemaMissing(error.message)) {
+    const legacyResult = await supabase
+      .from("debts")
+      .select(legacyDebtSelect)
+      .eq("id", debtId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    data = legacyResult.data as typeof data;
+    error = legacyResult.error;
+  }
   if (error) throw error;
   if (!data) throw new Error("Borç kaydı bulunamadı veya erişim yetkiniz yok.");
   return mapDebt(data);
@@ -230,13 +477,24 @@ export async function getDebts(
   try {
     const limit = Math.min(Math.max(limitValue, 1), 50);
     const { supabase, userId } = await getContext();
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from("debts")
       .select(debtSelect)
       .eq("user_id", userId)
       .order("due_date", { ascending: true, nullsFirst: false })
       .order("created_at", { ascending: false })
       .limit(limit);
+    if (error && isInstallmentSchemaMissing(error.message)) {
+      const legacyResult = await supabase
+        .from("debts")
+        .select(legacyDebtSelect)
+        .eq("user_id", userId)
+        .order("due_date", { ascending: true, nullsFirst: false })
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      data = legacyResult.data as typeof data;
+      error = legacyResult.error;
+    }
     if (error) throw error;
     return { data: (data ?? []).map(mapDebt), error: null };
   } catch (error) {
@@ -261,24 +519,68 @@ export async function createDebt(
   try {
     const values = validateDebtInput(input, true);
     const { supabase, userId } = await getContext();
-    const { data, error } = await supabase
+    const insertValues = {
+      user_id: userId,
+      title: values.title,
+      creditor: values.creditor ?? "",
+      total_amount: values.total_amount,
+      currency: values.currency ?? "TRY",
+      status: values.status ?? "active",
+      priority: values.priority ?? "medium",
+      due_date: values.due_date ?? null,
+      installment_count: values.installment_count ?? null,
+      is_installment: values.is_installment ?? false,
+      installment_amount: values.installment_amount ?? null,
+      installment_start_date: values.installment_start_date ?? null,
+      installment_day: values.installment_day ?? null,
+      installment_note: values.installment_note ?? "",
+      notes: values.notes ?? "",
+    };
+    let { data, error } = await supabase
       .from("debts")
-      .insert({
-        user_id: userId,
-        title: values.title,
-        creditor: values.creditor ?? "",
-        total_amount: values.total_amount,
-        currency: values.currency ?? "TRY",
-        status: values.status ?? "active",
-        priority: values.priority ?? "medium",
-        due_date: values.due_date ?? null,
-        installment_count: values.installment_count ?? null,
-        notes: values.notes ?? "",
-      })
+      .insert(insertValues)
       .select("id")
       .single();
+    if (
+      error &&
+      isInstallmentSchemaMissing(error.message) &&
+      !values.is_installment
+    ) {
+      const legacyResult = await supabase
+        .from("debts")
+        .insert({
+          user_id: userId,
+          title: values.title,
+          creditor: values.creditor ?? "",
+          total_amount: values.total_amount,
+          currency: values.currency ?? "TRY",
+          status: values.status ?? "active",
+          priority: values.priority ?? "medium",
+          due_date: values.due_date ?? null,
+          installment_count: values.installment_count ?? null,
+          notes: values.notes ?? "",
+        })
+        .select("id")
+        .single();
+      data = legacyResult.data as typeof data;
+      error = legacyResult.error;
+    }
     if (error) throw error;
-    const debt = await fetchDebtById(supabase, userId, data.id);
+    if (!data) throw new Error("Borç kaydı oluşturulamadı.");
+    let debt = await fetchDebtById(supabase, userId, data.id);
+    if (debt.is_installment) {
+      try {
+        await syncInstallmentSchedule(supabase, userId, debt);
+      } catch (scheduleError) {
+        await supabase
+          .from("debts")
+          .delete()
+          .eq("id", debt.id)
+          .eq("user_id", userId);
+        throw scheduleError;
+      }
+      debt = await fetchDebtById(supabase, userId, debt.id);
+    }
     await refreshFinanceAlerts([debt]);
     revalidateFinanceViews();
     return { data: debt, error: null };
@@ -296,21 +598,68 @@ export async function updateDebt(
     const { supabase, userId } = await getContext();
     const current = await fetchDebtById(supabase, userId, debtId);
     const total = values.total_amount ?? current.total_amount;
+    if (total < current.paid_amount) {
+      throw new Error(
+        "Toplam tutar kaydedilmiş ödemelerden düşük olamaz.",
+      );
+    }
+    await assertInstallmentPlanChangeIsSafe(
+      supabase,
+      userId,
+      debtId,
+      current,
+      values,
+    );
     if (current.paid_amount >= total && current.status !== "cancelled") {
       values.status = "paid";
     } else if (values.status === "paid" && current.paid_amount < total) {
       throw new Error("Borç tamamen ödenmeden durum 'Ödendi' yapılamaz.");
     }
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from("debts")
       .update(values)
       .eq("id", debtId)
       .eq("user_id", userId)
       .select("id")
       .maybeSingle();
+    if (
+      error &&
+      isInstallmentSchemaMissing(error.message) &&
+      !values.is_installment
+    ) {
+      const legacyValues = Object.fromEntries(
+        Object.entries(values).filter(
+          ([key]) =>
+            ![
+              "is_installment",
+              "installment_amount",
+              "installment_start_date",
+              "installment_day",
+              "installment_note",
+            ].includes(key),
+        ),
+      ) as UpdateDebtInput;
+      const legacyResult = await supabase
+        .from("debts")
+        .update(legacyValues)
+        .eq("id", debtId)
+        .eq("user_id", userId)
+        .select("id")
+        .maybeSingle();
+      data = legacyResult.data as typeof data;
+      error = legacyResult.error;
+    }
     if (error) throw error;
     if (!data) throw new Error("Borç kaydı bulunamadı veya düzenleme yetkiniz yok.");
-    const debt = await fetchDebtById(supabase, userId, debtId);
+    let debt = await fetchDebtById(supabase, userId, debtId);
+    if (
+      debt.is_installment ||
+      current.is_installment ||
+      values.is_installment === false
+    ) {
+      await syncInstallmentSchedule(supabase, userId, debt);
+      debt = await fetchDebtById(supabase, userId, debtId);
+    }
     if (current.status !== "paid" && debt.status === "paid") {
       await notifyFinanceEvent({
         type: "finance_debt_paid",
@@ -375,13 +724,24 @@ export async function getDebtPayments(
   try {
     const { supabase, userId } = await getContext();
     await fetchDebtById(supabase, userId, debtId);
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from("debt_payments")
       .select(paymentSelect)
       .eq("user_id", userId)
       .eq("debt_id", debtId)
       .order("payment_date", { ascending: false })
       .order("created_at", { ascending: false });
+    if (error && isInstallmentSchemaMissing(error.message)) {
+      const legacyResult = await supabase
+        .from("debt_payments")
+        .select(legacyPaymentSelect)
+        .eq("user_id", userId)
+        .eq("debt_id", debtId)
+        .order("payment_date", { ascending: false })
+        .order("created_at", { ascending: false });
+      data = legacyResult.data as typeof data;
+      error = legacyResult.error;
+    }
     if (error) throw error;
     return { data: (data ?? []).map(mapPayment), error: null };
   } catch (error) {
@@ -389,19 +749,93 @@ export async function getDebtPayments(
   }
 }
 
+export async function getFinanceInstallments(
+  limitValue = 200,
+): Promise<ActionResult<DebtInstallment[]>> {
+  try {
+    const limit = Math.min(Math.max(limitValue, 1), 300);
+    const { supabase, userId } = await getContext();
+    const { data, error } = await supabase
+      .from("debt_installments")
+      .select(installmentSelect)
+      .eq("user_id", userId)
+      .order("due_date", { ascending: true })
+      .order("installment_no", { ascending: true })
+      .limit(limit);
+    if (error) {
+      if (isInstallmentSchemaMissing(error.message) || isSchemaMissing(error.message)) {
+        return { data: [], error: null };
+      }
+      throw error;
+    }
+    return { data: (data ?? []).map(mapInstallment), error: null };
+  } catch (error) {
+    return { data: null, error: getErrorMessage(error) };
+  }
+}
+
+export async function getDebtInstallments(
+  debtId: string,
+): Promise<ActionResult<DebtInstallment[]>> {
+  try {
+    const { supabase, userId } = await getContext();
+    await fetchDebtById(supabase, userId, debtId);
+    const { data, error } = await supabase
+      .from("debt_installments")
+      .select(installmentSelect)
+      .eq("user_id", userId)
+      .eq("debt_id", debtId)
+      .order("installment_no", { ascending: true });
+    if (error) {
+      if (isInstallmentSchemaMissing(error.message) || isSchemaMissing(error.message)) {
+        return { data: [], error: null };
+      }
+      throw error;
+    }
+    return { data: (data ?? []).map(mapInstallment), error: null };
+  } catch (error) {
+    return { data: null, error: getErrorMessage(error) };
+  }
+}
+
 export async function createDebtPayment(
   input: CreateDebtPaymentInput,
-): Promise<ActionResult<{ debt: Debt; payment: DebtPayment }>> {
+): Promise<
+  ActionResult<{
+    debt: Debt;
+    installment: DebtInstallment | null;
+    payment: DebtPayment;
+  }>
+> {
   try {
     const amount = toNumber(input.amount);
     if (amount <= 0) throw new Error("Ödeme tutarı sıfırdan büyük olmalıdır.");
     const { supabase, userId } = await getContext();
     const previousDebt = await fetchDebtById(supabase, userId, input.debt_id);
-    const { data, error } = await supabase
+    const remainingDebt = Math.max(
+      previousDebt.total_amount - previousDebt.paid_amount,
+      0,
+    );
+    if (amount > remainingDebt + 0.005) {
+      throw new Error("Ödeme tutarı kalan borç tutarını aşamaz.");
+    }
+    if (input.installment_id) {
+      const { data: installment, error: installmentError } = await supabase
+        .from("debt_installments")
+        .select("id")
+        .eq("id", input.installment_id)
+        .eq("debt_id", input.debt_id)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (installmentError) throw installmentError;
+      if (!installment) throw new Error("Taksit kaydı bulunamadı.");
+    }
+    let { data, error } = await supabase
       .from("debt_payments")
       .insert({
         user_id: userId,
         debt_id: input.debt_id,
+        installment_id: input.installment_id ?? null,
         amount,
         payment_date: input.payment_date || getIstanbulDateKey(),
         method: input.method?.trim() ?? "",
@@ -409,7 +843,28 @@ export async function createDebtPayment(
       })
       .select(paymentSelect)
       .single();
+    if (
+      error &&
+      isInstallmentSchemaMissing(error.message) &&
+      !input.installment_id
+    ) {
+      const legacyResult = await supabase
+        .from("debt_payments")
+        .insert({
+          user_id: userId,
+          debt_id: input.debt_id,
+          amount,
+          payment_date: input.payment_date || getIstanbulDateKey(),
+          method: input.method?.trim() ?? "",
+          note: input.note?.trim() ?? "",
+        })
+        .select(legacyPaymentSelect)
+        .single();
+      data = legacyResult.data as typeof data;
+      error = legacyResult.error;
+    }
     if (error) throw error;
+    if (!data) throw new Error("Ödeme kaydı oluşturulamadı.");
     const debt = await fetchDebtById(supabase, userId, input.debt_id);
     await notifyFinanceEvent({
       type: "finance_payment_added",
@@ -435,7 +890,21 @@ export async function createDebtPayment(
     }
     await refreshFinanceAlerts([debt]);
     revalidateFinanceViews();
-    return { data: { debt, payment: mapPayment(data) }, error: null };
+    let installment: DebtInstallment | null = null;
+    if (input.installment_id) {
+      const { data: installmentData, error: installmentError } = await supabase
+        .from("debt_installments")
+        .select(installmentSelect)
+        .eq("id", input.installment_id)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (installmentError) throw installmentError;
+      installment = installmentData ? mapInstallment(installmentData) : null;
+    }
+    return {
+      data: { debt, installment, payment: mapPayment(data) },
+      error: null,
+    };
   } catch (error) {
     return { data: null, error: getErrorMessage(error) };
   }
@@ -443,15 +912,32 @@ export async function createDebtPayment(
 
 export async function deleteDebtPayment(
   paymentId: string,
-): Promise<ActionResult<{ debt: Debt; id: string; warning?: string }>> {
+): Promise<
+  ActionResult<{
+    debt: Debt;
+    id: string;
+    installment: DebtInstallment | null;
+    warning?: string;
+  }>
+> {
   try {
     const { supabase, userId } = await getContext();
-    const { data: payment, error: readError } = await supabase
+    let { data: payment, error: readError } = await supabase
       .from("debt_payments")
-      .select("id,debt_id,amount,receipt_path")
+      .select("id,debt_id,installment_id,amount,receipt_path")
       .eq("id", paymentId)
       .eq("user_id", userId)
       .maybeSingle();
+    if (readError && isInstallmentSchemaMissing(readError.message)) {
+      const legacyResult = await supabase
+        .from("debt_payments")
+        .select("id,debt_id,amount,receipt_path")
+        .eq("id", paymentId)
+        .eq("user_id", userId)
+        .maybeSingle();
+      payment = legacyResult.data as typeof payment;
+      readError = legacyResult.error;
+    }
     if (readError) throw readError;
     if (!payment) throw new Error("Ödeme kaydı bulunamadı.");
     const currentDebt = await fetchDebtById(
@@ -466,6 +952,17 @@ export async function deleteDebtPayment(
       .eq("user_id", userId);
     if (error) throw error;
     const debt = await fetchDebtById(supabase, userId, payment.debt_id);
+    let installment: DebtInstallment | null = null;
+    if ("installment_id" in payment && payment.installment_id) {
+      const { data: installmentData, error: installmentError } = await supabase
+        .from("debt_installments")
+        .select(installmentSelect)
+        .eq("id", payment.installment_id)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (installmentError) throw installmentError;
+      installment = installmentData ? mapInstallment(installmentData) : null;
+    }
     let warning: string | undefined;
     if (payment.receipt_path) {
       try {
@@ -487,7 +984,10 @@ export async function deleteDebtPayment(
     });
     await refreshFinanceAlerts([debt]);
     revalidateFinanceViews();
-    return { data: { debt, id: paymentId, warning }, error: null };
+    return {
+      data: { debt, id: paymentId, installment, warning },
+      error: null,
+    };
   } catch (error) {
     return { data: null, error: getErrorMessage(error) };
   }
@@ -522,14 +1022,74 @@ function calculateStats(debts: Debt[]): FinanceStats {
         debt.status === "overdue" ||
         Boolean(debt.due_date && debt.due_date < today),
     ).length,
+    dueTodayInstallmentCount: 0,
+    dueSoonInstallmentCount: 0,
+    overdueInstallmentCount: 0,
+    monthlyInstallmentBurden: 0,
   };
 }
 
 export async function getFinanceStats(): Promise<ActionResult<FinanceStats>> {
-  const debts = await getDebts(50);
+  const [debts, installments] = await Promise.all([
+    getDebts(50),
+    getFinanceInstallments(300),
+  ]);
   return debts.error || !debts.data
     ? { data: null, error: debts.error }
-    : { data: calculateStats(debts.data), error: null };
+    : {
+        data: (() => {
+          const stats = calculateStats(debts.data);
+          const today = getIstanbulDateKey();
+          const sevenDaysLater = getIstanbulDateKey(
+            new Date(
+              new Date(`${today}T12:00:00+03:00`).getTime() + 7 * 86400000,
+            ),
+          );
+          const currentMonth = today.slice(0, 7);
+          const openInstallments = (installments.data ?? []).filter(
+            (item) => getInstallmentDisplayStatus(item) !== "paid",
+          );
+          return {
+            ...stats,
+            dueThisMonth: [
+              ...debts.data
+                .filter(
+                  (debt) =>
+                    !debt.is_installment &&
+                    debt.due_date?.startsWith(currentMonth) &&
+                    debt.status !== "paid" &&
+                    debt.status !== "cancelled",
+                )
+                .map((debt) =>
+                  Math.max(debt.total_amount - debt.paid_amount, 0),
+                ),
+              ...openInstallments
+                .filter((item) => item.due_date.startsWith(currentMonth))
+                .map((item) =>
+                  Math.max(item.expected_amount - item.paid_amount, 0),
+                ),
+            ].reduce((sum, amount) => sum + amount, 0),
+            dueTodayInstallmentCount: openInstallments.filter(
+              (item) => item.due_date === today,
+            ).length,
+            dueSoonInstallmentCount: openInstallments.filter(
+              (item) =>
+                item.due_date > today && item.due_date <= sevenDaysLater,
+            ).length,
+            overdueInstallmentCount: openInstallments.filter(
+              (item) => item.due_date < today,
+            ).length,
+            monthlyInstallmentBurden: openInstallments
+              .filter((item) => item.due_date.startsWith(currentMonth))
+              .reduce(
+                (sum, item) =>
+                  sum + Math.max(item.expected_amount - item.paid_amount, 0),
+                0,
+              ),
+          };
+        })(),
+        error: null,
+      };
 }
 
 export async function getCriticalDebts(): Promise<ActionResult<Debt[]>> {
@@ -577,13 +1137,24 @@ export async function getRecentPayments(
   try {
     const limit = Math.min(Math.max(limitValue, 1), 20);
     const { supabase, userId } = await getContext();
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from("debt_payments")
       .select(paymentSelect)
       .eq("user_id", userId)
       .order("payment_date", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(limit);
+    if (error && isInstallmentSchemaMissing(error.message)) {
+      const legacyResult = await supabase
+        .from("debt_payments")
+        .select(legacyPaymentSelect)
+        .eq("user_id", userId)
+        .order("payment_date", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      data = legacyResult.data as typeof data;
+      error = legacyResult.error;
+    }
     if (error) throw error;
     return { data: (data ?? []).map(mapPayment), error: null };
   } catch (error) {
@@ -596,13 +1167,31 @@ export async function getFinanceExportData(): Promise<
 > {
   try {
     const { supabase, userId } = await getContext();
-    const [debtsResult, paymentsResult] = await Promise.all([
+    let [debtsResult, paymentsResult] = await Promise.all([
       supabase.from("debts").select(debtSelect).eq("user_id", userId),
       supabase
         .from("debt_payments")
         .select(paymentSelect)
         .eq("user_id", userId),
     ]);
+    if (
+      debtsResult.error &&
+      isInstallmentSchemaMissing(debtsResult.error.message)
+    ) {
+      debtsResult = (await supabase
+        .from("debts")
+        .select(legacyDebtSelect)
+        .eq("user_id", userId)) as typeof debtsResult;
+    }
+    if (
+      paymentsResult.error &&
+      isInstallmentSchemaMissing(paymentsResult.error.message)
+    ) {
+      paymentsResult = (await supabase
+        .from("debt_payments")
+        .select(legacyPaymentSelect)
+        .eq("user_id", userId)) as typeof paymentsResult;
+    }
     if (debtsResult.error) throw debtsResult.error;
     if (paymentsResult.error) throw paymentsResult.error;
     return {
@@ -650,9 +1239,10 @@ export async function createDebtReminder(
 }
 
 export async function getDashboardFinanceSummary(): Promise<FinanceDashboardSummary> {
-  const [debtsResult, paymentsResult] = await Promise.all([
+  const [debtsResult, paymentsResult, installmentsResult] = await Promise.all([
     getDebts(50),
     getRecentPayments(1),
+    getFinanceInstallments(100),
   ]);
   if (debtsResult.error || !debtsResult.data) {
     return {
@@ -662,6 +1252,10 @@ export async function getDashboardFinanceSummary(): Promise<FinanceDashboardSumm
       dueThisWeekCount: 0,
       criticalCount: 0,
       overdueCount: 0,
+      installmentsAvailable: false,
+      dueTodayInstallmentCount: 0,
+      overdueInstallmentCount: 0,
+      upcomingInstallments: [],
       lastPayment: null,
       upcomingDebts: [],
     };
@@ -683,10 +1277,38 @@ export async function getDashboardFinanceSummary(): Promise<FinanceDashboardSumm
       (first.due_date ?? "").localeCompare(second.due_date ?? ""),
     )
     .slice(0, 3);
+  const debtById = new Map(debtsResult.data.map((debt) => [debt.id, debt]));
+  const openInstallments = (installmentsResult.data ?? [])
+    .filter((item) => getInstallmentDisplayStatus(item) !== "paid")
+    .sort((first, second) => first.due_date.localeCompare(second.due_date));
+  const installmentDebtIds = new Set(
+    openInstallments.map((item) => item.debt_id),
+  );
+  const dueThisMonth =
+    debtsResult.data
+      .filter(
+        (debt) =>
+          !installmentDebtIds.has(debt.id) &&
+          debt.due_date?.startsWith(today.slice(0, 7)) &&
+          debt.status !== "paid" &&
+          debt.status !== "cancelled",
+      )
+      .reduce(
+        (sum, debt) =>
+          sum + Math.max(debt.total_amount - debt.paid_amount, 0),
+        0,
+      ) +
+    openInstallments
+      .filter((item) => item.due_date.startsWith(today.slice(0, 7)))
+      .reduce(
+        (sum, item) =>
+          sum + Math.max(item.expected_amount - item.paid_amount, 0),
+        0,
+      );
   return {
     available: true,
     remainingDebt: stats.remainingDebt,
-    dueThisMonth: stats.dueThisMonth,
+    dueThisMonth,
     dueThisWeekCount: debtsResult.data.filter(
       (debt) =>
         debt.due_date &&
@@ -697,6 +1319,30 @@ export async function getDashboardFinanceSummary(): Promise<FinanceDashboardSumm
     ).length,
     criticalCount: stats.criticalCount,
     overdueCount: stats.overdueCount,
+    installmentsAvailable: Boolean(installmentsResult.data),
+    dueTodayInstallmentCount: openInstallments.filter(
+      (item) => item.due_date === today,
+    ).length,
+    overdueInstallmentCount: openInstallments.filter(
+      (item) => item.due_date < today,
+    ).length,
+    upcomingInstallments: openInstallments
+      .filter((item) => item.due_date <= weekEnd)
+      .slice(0, 5)
+      .map((item) => {
+        const debt = debtById.get(item.debt_id);
+        return {
+          id: item.id,
+          debtId: item.debt_id,
+          debtTitle: debt?.title ?? "Borç kaydı",
+          creditor: debt?.creditor ?? "",
+          installmentNo: item.installment_no,
+          dueDate: item.due_date,
+          expectedAmount: item.expected_amount,
+          paidAmount: item.paid_amount,
+          status: getInstallmentDisplayStatus(item),
+        };
+      }),
     lastPayment: lastPayment
       ? {
           amount: lastPayment.amount,

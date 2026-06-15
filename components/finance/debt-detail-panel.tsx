@@ -3,6 +3,7 @@
 import { CalendarPlus, Pencil, X } from "lucide-react";
 import { DebtPriorityBadge, DebtStatusBadge } from "@/components/finance/debt-badges";
 import { FinanceAttachments } from "@/components/finance/finance-attachments";
+import { InstallmentSchedule } from "@/components/finance/installment-schedule";
 import { PaymentForm } from "@/components/finance/payment-form";
 import { PaymentList } from "@/components/finance/payment-list";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { formatTRY } from "@/lib/utils/currency";
 import type {
   CreateDebtPaymentWithReceiptInput,
   Debt,
+  DebtInstallment,
   DebtPayment,
 } from "@/types";
 
@@ -18,12 +20,14 @@ interface DebtDetailPanelProps {
   isDeletingPayment: string;
   isLoadingPayments: boolean;
   isSavingPayment: boolean;
+  installments: DebtInstallment[];
   onAddReminder: (debt: Debt) => void;
   onClose: () => void;
   onDeletePayment: (payment: DebtPayment) => void;
   onDeleteReceipt: (payment: DebtPayment) => void;
   onEdit: (debt: Debt) => void;
   onPayment: (input: CreateDebtPaymentWithReceiptInput) => void;
+  onInstallmentPayment: (installment: DebtInstallment) => void;
   onViewReceipt: (payment: DebtPayment) => void;
   paymentError: string;
   paymentHistoryError: string;
@@ -37,12 +41,14 @@ export function DebtDetailPanel({
   isDeletingPayment,
   isLoadingPayments,
   isSavingPayment,
+  installments,
   onAddReminder,
   onClose,
   onDeletePayment,
   onDeleteReceipt,
   onEdit,
   onPayment,
+  onInstallmentPayment,
   onViewReceipt,
   paymentError,
   paymentHistoryError,
@@ -144,13 +150,20 @@ export function DebtDetailPanel({
           <Button onClick={() => onEdit(debt)} size="sm" variant="secondary"><Pencil className="size-3.5" /> Düzenle</Button>
           {debt.due_date ? <Button onClick={() => onAddReminder(debt)} size="sm" variant="secondary"><CalendarPlus className="size-3.5" /> Takvime Ekle</Button> : null}
         </div>
-        {debt.installment_count ? (
-          <p className="app-muted text-xs">
-            Taksit sayısı:{" "}
-            <span className="app-text font-medium">
-              {debt.installment_count}
-            </span>
-          </p>
+        {debt.is_installment ? (
+          <section>
+            <div className="mb-3">
+              <p className="app-text text-sm font-semibold">Taksit Planı</p>
+              <p className="app-muted mt-1 text-[11px]">
+                {debt.installment_count ?? installments.length} dönem ·{" "}
+                {formatTRY(debt.installment_amount ?? 0)} dönemlik ödeme
+              </p>
+            </div>
+            <InstallmentSchedule
+              installments={installments}
+              onPayment={onInstallmentPayment}
+            />
+          </section>
         ) : null}
         <FinanceAttachments debtId={debt.id} />
         <PaymentForm

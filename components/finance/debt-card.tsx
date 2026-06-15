@@ -2,26 +2,36 @@
 
 import { CalendarClock, CreditCard, Pencil, Trash2 } from "lucide-react";
 import { DebtPriorityBadge, DebtStatusBadge } from "@/components/finance/debt-badges";
+import { InstallmentStatusBadge } from "@/components/finance/installment-status-badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import {
+  formatFinanceDate,
+  getInstallmentDisplayStatus,
+  getNextOpenInstallment,
+} from "@/lib/finance/installments";
 import { formatTRY } from "@/lib/utils/currency";
-import type { Debt } from "@/types";
+import type { Debt, DebtInstallment } from "@/types";
 
 interface DebtCardProps {
   debt: Debt;
   isSelected: boolean;
+  installments: DebtInstallment[];
   onDelete: (debt: Debt) => void;
   onEdit: (debt: Debt) => void;
   onPayment: (debt: Debt) => void;
+  onInstallmentPayment: (debt: Debt, installment: DebtInstallment) => void;
   onSelect: (debt: Debt) => void;
 }
 
 export function DebtCard({
   debt,
   isSelected,
+  installments,
   onDelete,
   onEdit,
   onPayment,
+  onInstallmentPayment,
   onSelect,
 }: DebtCardProps) {
   const remaining = Math.max(debt.total_amount - debt.paid_amount, 0);
@@ -29,6 +39,10 @@ export function DebtCard({
     debt.total_amount > 0
       ? Math.min((debt.paid_amount / debt.total_amount) * 100, 100)
       : 0;
+  const nextInstallment = getNextOpenInstallment(installments);
+  const paidInstallmentCount = installments.filter(
+    (item) => getInstallmentDisplayStatus(item) === "paid",
+  ).length;
 
   return (
     <Card
@@ -93,7 +107,51 @@ export function DebtCard({
           : "Son ödeme tarihi yok"}
       </div>
 
+      {debt.is_installment ? (
+        <div className="app-surface-2 mt-3 rounded-xl border p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="app-text text-xs font-semibold">
+              Taksit: {paidInstallmentCount} /{" "}
+              {debt.installment_count ?? installments.length}
+            </p>
+            {nextInstallment ? (
+              <InstallmentStatusBadge installment={nextInstallment} />
+            ) : null}
+          </div>
+          <div className="app-muted mt-2 grid gap-1 text-[10px] min-[440px]:grid-cols-2">
+            <span>
+              Dönemlik ödeme:{" "}
+              <strong className="app-text font-medium">
+                {formatTRY(
+                  debt.installment_amount ??
+                    nextInstallment?.expected_amount ??
+                    0,
+                )}
+              </strong>
+            </span>
+            <span>
+              Sonraki ödeme:{" "}
+              <strong className="app-text font-medium">
+                {nextInstallment
+                  ? formatFinanceDate(nextInstallment.due_date)
+                  : "Plan tamamlandı"}
+              </strong>
+            </span>
+          </div>
+        </div>
+      ) : null}
+
       <div className="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap" onClick={(event) => event.stopPropagation()}>
+        {nextInstallment ? (
+          <Button
+            className="col-span-2 w-full sm:w-auto"
+            onClick={() => onInstallmentPayment(debt, nextInstallment)}
+            size="sm"
+          >
+            <CreditCard className="size-3.5" />
+            Taksit Ödendi
+          </Button>
+        ) : null}
         <Button className="w-full sm:w-auto" onClick={() => onPayment(debt)} size="sm">
           <CreditCard className="size-3.5" />
           Ödeme Ekle

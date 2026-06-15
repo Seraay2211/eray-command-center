@@ -190,6 +190,12 @@ export type DebtStatus =
 
 export type DebtPriority = "low" | "medium" | "high" | "critical";
 
+export type DebtInstallmentStatus =
+  | "pending"
+  | "partial"
+  | "paid"
+  | "overdue";
+
 export interface Debt {
   id: string;
   user_id: string;
@@ -202,6 +208,11 @@ export interface Debt {
   priority: DebtPriority;
   due_date: string | null;
   installment_count: number | null;
+  is_installment: boolean;
+  installment_amount: number | null;
+  installment_start_date: string | null;
+  installment_day: number | null;
+  installment_note: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -211,6 +222,7 @@ export interface DebtPayment {
   id: string;
   user_id: string;
   debt_id: string;
+  installment_id: string | null;
   amount: number;
   payment_date: string;
   method: string | null;
@@ -222,6 +234,21 @@ export interface DebtPayment {
   ocr_status: FinanceOcrStatus;
   ocr_result: FinanceOcrResult | null;
   created_at: string;
+}
+
+export interface DebtInstallment {
+  id: string;
+  user_id: string;
+  debt_id: string;
+  installment_no: number;
+  due_date: string;
+  expected_amount: number;
+  paid_amount: number;
+  status: DebtInstallmentStatus;
+  paid_at: string | null;
+  note: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export type FinanceAttachmentType =
@@ -271,6 +298,11 @@ export interface CreateDebtInput {
   priority?: DebtPriority;
   due_date?: string | null;
   installment_count?: number | null;
+  is_installment?: boolean;
+  installment_amount?: number | null;
+  installment_start_date?: string | null;
+  installment_day?: number | null;
+  installment_note?: string | null;
   notes?: string | null;
 }
 
@@ -278,6 +310,7 @@ export type UpdateDebtInput = Partial<CreateDebtInput>;
 
 export interface CreateDebtPaymentInput {
   debt_id: string;
+  installment_id?: string | null;
   amount: number;
   payment_date?: string;
   method?: string | null;
@@ -302,6 +335,22 @@ export interface FinanceStats {
   dueThisMonth: number;
   criticalCount: number;
   overdueCount: number;
+  dueTodayInstallmentCount: number;
+  dueSoonInstallmentCount: number;
+  overdueInstallmentCount: number;
+  monthlyInstallmentBurden: number;
+}
+
+export interface FinanceDashboardInstallment {
+  id: string;
+  debtId: string;
+  debtTitle: string;
+  creditor: string;
+  installmentNo: number;
+  dueDate: string;
+  expectedAmount: number;
+  paidAmount: number;
+  status: DebtInstallmentStatus;
 }
 
 export interface FinanceDashboardSummary {
@@ -311,6 +360,10 @@ export interface FinanceDashboardSummary {
   dueThisWeekCount: number;
   criticalCount: number;
   overdueCount: number;
+  installmentsAvailable: boolean;
+  dueTodayInstallmentCount: number;
+  overdueInstallmentCount: number;
+  upcomingInstallments: FinanceDashboardInstallment[];
   lastPayment: {
     amount: number;
     date: string;
@@ -612,6 +665,7 @@ export interface RecentItem {
 
 export type AiActionKey =
   | "summarize"
+  | "daily_summary"
   | "shorten"
   | "premium"
   | "manager_report";

@@ -5,6 +5,7 @@ import {
   getDebtPayments,
   getDebts,
   getFinanceStats,
+  getFinanceInstallments,
   getRecentPayments,
 } from "@/services/finance-service";
 
@@ -18,17 +19,20 @@ interface FinancePageProps {
   searchParams: Promise<{
     action?: string;
     debt?: string;
+    installment?: string;
     new?: string;
   }>;
 }
 
 export default async function FinancePage({ searchParams }: FinancePageProps) {
   const query = await searchParams;
-  const [debtsResult, statsResult, paymentsResult] = await Promise.all([
-    getDebts(50),
-    getFinanceStats(),
-    getRecentPayments(8),
-  ]);
+  const [debtsResult, statsResult, paymentsResult, installmentsResult] =
+    await Promise.all([
+      getDebts(50),
+      getFinanceStats(),
+      getRecentPayments(8),
+      getFinanceInstallments(300),
+    ]);
   const debtMissing =
     Boolean(query.debt) &&
     !(debtsResult.data ?? []).some((debt) => debt.id === query.debt);
@@ -46,6 +50,8 @@ export default async function FinancePage({ searchParams }: FinancePageProps) {
     <FinanceClient
       initialAiOpen={query.action === "summary"}
       initialDebts={initialDebts}
+      initialInstallments={installmentsResult.data ?? []}
+      initialInstallmentPaymentId={query.installment ?? ""}
       initialError={
         debtsResult.error ?? statsResult.error ?? paymentsResult.error ?? ""
       }
@@ -66,6 +72,10 @@ export default async function FinancePage({ searchParams }: FinancePageProps) {
           dueThisMonth: 0,
           criticalCount: 0,
           overdueCount: 0,
+          dueTodayInstallmentCount: 0,
+          dueSoonInstallmentCount: 0,
+          overdueInstallmentCount: 0,
+          monthlyInstallmentBurden: 0,
         }
       }
     />

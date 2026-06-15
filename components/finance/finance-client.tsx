@@ -20,6 +20,7 @@ import { DebtForm } from "@/components/finance/debt-form";
 import { FinanceAiPanel } from "@/components/finance/finance-ai-panel";
 import { FinanceExportButton } from "@/components/finance/finance-export-button";
 import { FinanceStatCard } from "@/components/finance/finance-stat-card";
+import { InstallmentPaymentForm } from "@/components/finance/installment-payment-form";
 import { PaymentForm } from "@/components/finance/payment-form";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -34,13 +35,16 @@ import {
   getDebtPayments,
   getDebts,
   getFinanceStats,
+  getFinanceInstallments,
   getRecentPayments,
   updateDebt,
 } from "@/services/finance-service";
 import type {
   CreateDebtInput,
+  CreateDebtPaymentInput,
   CreateDebtPaymentWithReceiptInput,
   Debt,
+  DebtInstallment,
   DebtPayment,
   FinanceStats,
 } from "@/types";
@@ -49,6 +53,8 @@ interface FinanceClientProps {
   initialAiOpen: boolean;
   initialDebts: Debt[];
   initialError: string;
+  initialInstallments: DebtInstallment[];
+  initialInstallmentPaymentId: string;
   initialNewOpen: boolean;
   initialPayments: DebtPayment[];
   initialSelectedPayments: DebtPayment[];
@@ -64,12 +70,18 @@ const emptyStats: FinanceStats = {
   dueThisMonth: 0,
   criticalCount: 0,
   overdueCount: 0,
+  dueTodayInstallmentCount: 0,
+  dueSoonInstallmentCount: 0,
+  overdueInstallmentCount: 0,
+  monthlyInstallmentBurden: 0,
 };
 
 export function FinanceClient({
   initialAiOpen,
   initialDebts,
   initialError,
+  initialInstallments,
+  initialInstallmentPaymentId,
   initialNewOpen,
   initialPayments,
   initialSelectedPayments,
@@ -82,6 +94,7 @@ export function FinanceClient({
   const searchParams = useSearchParams();
   const paymentRequestRef = useRef(0);
   const [debts, setDebts] = useState(initialDebts);
+  const [installments, setInstallments] = useState(initialInstallments);
   const [stats, setStats] = useState(initialStats ?? emptyStats);
   const [recentPayments, setRecentPayments] = useState(initialPayments);
   const [selectedDebtId, setSelectedDebtId] = useState(initialSelectedDebtId);
@@ -90,6 +103,20 @@ export function FinanceClient({
   const [isFormOpen, setIsFormOpen] = useState(initialNewOpen);
   const [editingDebt, setEditingDebt] = useState<Debt | null>(null);
   const [paymentDebt, setPaymentDebt] = useState<Debt | null>(null);
+  const initialInstallment = initialInstallments.find(
+    (item) => item.id === initialInstallmentPaymentId,
+  );
+  const initialInstallmentDebt = initialDebts.find(
+    (item) => item.id === initialInstallment?.debt_id,
+  );
+  const [installmentPayment, setInstallmentPayment] = useState<{
+    debt: Debt;
+    installment: DebtInstallment;
+  } | null>(
+    initialInstallment && initialInstallmentDebt
+      ? { debt: initialInstallmentDebt, installment: initialInstallment }
+      : null,
+  );
   const [isAiOpen, setIsAiOpen] = useState(initialAiOpen);
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingPayment, setIsSavingPayment] = useState(false);
@@ -108,6 +135,13 @@ export function FinanceClient({
     () => debts.find((debt) => debt.id === selectedDebtId) ?? null,
     [debts, selectedDebtId],
   );
+  const selectedInstallments = useMemo(
+    () =>
+      installments.filter(
+        (installment) => installment.debt_id === selectedDebtId,
+      ),
+    [installments, selectedDebtId],
+  );
   const criticalDebts = useMemo(
     () =>
       debts.filter(
@@ -120,7 +154,7 @@ export function FinanceClient({
       ),
     [debts],
   );
-  const schemaMissing = pageError.includes("phase-15-finance.sql");
+  const schemaMissing = pageError.includes("Finans alanı şu anda");
 
   const replaceParams = useCallback(
     (changes: Record<string, string | null>) => {
@@ -135,13 +169,18 @@ export function FinanceClient({
   );
 
   async function refreshData() {
-    const [debtsResult, statsResult, paymentsResult] = await Promise.all([
-      getDebts(50),
-      getFinanceStats(),
-      getRecentPayments(8),
-    ]);
+    const [debtsResult, statsResult, paymentsResult, installmentsResult] =
+      await Promise.all([
+        getDebts(50),
+        getFinanceStats(),
+        getRecentPayments(8),
+        getFinanceInstallments(300),
+      ]);
     const error =
-      debtsResult.error ?? statsResult.error ?? paymentsResult.error;
+      debtsResult.error ??
+      statsResult.error ??
+      paymentsResult.error ??
+      installmentsResult.error;
     if (error) {
       setPageError(error);
       return;
@@ -149,10 +188,11 @@ export function FinanceClient({
     setDebts(debtsResult.data ?? []);
     setStats(statsResult.data ?? emptyStats);
     setRecentPayments(paymentsResult.data ?? []);
+    setInstallments(installmentsResult.data ?? []);
     setPageError("");
   }
 
-  async function selectDebt(debt: Debt) {
+  async function selectDebt(debt: Debt, updateUrl = true) {
     const requestId = paymentRequestRef.current + 1;
     paymentRequestRef.current = requestId;
     setSelectedDebtId(debt.id);
@@ -161,7 +201,7 @@ export function FinanceClient({
     setReceiptError("");
     setPayments([]);
     setIsLoadingPayments(true);
-    replaceParams({ debt: debt.id });
+    if (updateUrl) replaceParams({ debt: debt.id });
     try {
       const result = await getDebtPayments(debt.id);
       if (paymentRequestRef.current !== requestId) return;
@@ -203,6 +243,15 @@ export function FinanceClient({
     setPaymentDebt(debt);
   }
 
+  function openInstallmentPayment(
+    debt: Debt,
+    installment: DebtInstallment,
+  ) {
+    setPaymentError("");
+    setInstallmentPayment({ debt, installment });
+    replaceParams({ debt: debt.id, installment: installment.id });
+  }
+
   function closeForm() {
     setIsFormOpen(false);
     setEditingDebt(null);
@@ -211,6 +260,8 @@ export function FinanceClient({
   }
 
   async function handleSave(input: CreateDebtInput) {
+    if (isSaving) return;
+    const isEditing = Boolean(editingDebt);
     setIsSaving(true);
     setFormError("");
     try {
@@ -218,20 +269,38 @@ export function FinanceClient({
         ? await updateDebt(editingDebt.id, input)
         : await createDebt(input);
       if (result.error || !result.data) {
-        setFormError(result.error ?? "Borç kaydedilemedi.");
+        setFormError(
+          isEditing
+            ? "Borç kaydı güncellenemedi."
+            : "Borç kaydı oluşturulamadı.",
+        );
         return;
       }
-      await refreshData();
-      setSelectedDebtId(result.data.id);
+      const savedDebt = result.data;
+      setDebts((current) => {
+        const exists = current.some((item) => item.id === savedDebt.id);
+        return exists
+          ? current.map((item) => (item.id === savedDebt.id ? savedDebt : item))
+          : [savedDebt, ...current];
+      });
+      setSelectedDebtId(savedDebt.id);
       setNotice(
-        editingDebt
+        isEditing
           ? "Borç kaydı güncellendi."
           : "Yeni borç kaydı oluşturuldu.",
       );
-      closeForm();
-      await selectDebt(result.data);
+      setIsFormOpen(false);
+      setEditingDebt(null);
+      setFormError("");
+      replaceParams({ new: null, debt: savedDebt.id });
+      void refreshData();
+      void selectDebt(savedDebt, false);
     } catch {
-      setFormError("Borç kaydedilemedi. Lütfen tekrar dene.");
+      setFormError(
+        isEditing
+          ? "Borç kaydı güncellenemedi."
+          : "Borç kaydı oluşturulamadı.",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -322,9 +391,46 @@ export function FinanceClient({
             ? "Ödeme ve dekont kaydedildi. Kalan borç güncellendi."
             : "Ödeme kaydedildi ve kalan borç güncellendi.",
       );
-      await refreshData();
+      void refreshData();
     } catch {
       setPaymentError("Ödeme kaydedilemedi. Lütfen tekrar dene.");
+    } finally {
+      setIsSavingPayment(false);
+    }
+  }
+
+  async function handleInstallmentPayment(input: CreateDebtPaymentInput) {
+    if (isSavingPayment) return;
+    setIsSavingPayment(true);
+    setPaymentError("");
+    setPaymentHistoryError("");
+    try {
+      const result = await createDebtPayment(input);
+      if (result.error || !result.data) {
+        setPaymentError("Taksit ödemesi kaydedilemedi. Lütfen tekrar dene.");
+        return;
+      }
+      setDebts((current) =>
+        current.map((debt) =>
+          debt.id === result.data!.debt.id ? result.data!.debt : debt,
+        ),
+      );
+      setPayments((current) => [result.data!.payment, ...current]);
+      if (result.data.installment) {
+        setInstallments((current) =>
+          current.map((item) =>
+            item.id === result.data!.installment!.id
+              ? result.data!.installment!
+              : item,
+          ),
+        );
+      }
+      setInstallmentPayment(null);
+      replaceParams({ debt: result.data.debt.id, installment: null });
+      setNotice("Taksit ödemesi kaydedildi ve kalan borç güncellendi.");
+      void refreshData();
+    } catch {
+      setPaymentError("Taksit ödemesi kaydedilemedi. Lütfen tekrar dene.");
     } finally {
       setIsSavingPayment(false);
     }
@@ -355,11 +461,20 @@ export function FinanceClient({
       setPayments((current) =>
         current.filter((item) => item.id !== payment.id),
       );
+      if (result.data.installment) {
+        setInstallments((current) =>
+          current.map((item) =>
+            item.id === result.data!.installment!.id
+              ? result.data!.installment!
+              : item,
+          ),
+        );
+      }
       setNotice(
         result.data.warning ??
           "Ödeme silindi ve borç toplamı güncellendi.",
       );
-      await refreshData();
+      void refreshData();
     } catch {
       setPaymentHistoryError("Ödeme silinemedi. Lütfen tekrar dene.");
     } finally {
@@ -460,7 +575,7 @@ export function FinanceClient({
     setPaymentHistoryError("");
     setReceiptError("");
     setIsLoadingPayments(false);
-    replaceParams({ debt: null });
+    replaceParams({ debt: null, installment: null });
   }
 
   return (
@@ -483,8 +598,8 @@ export function FinanceClient({
       {schemaMissing ? (
         <Card className="p-6 sm:p-8">
           <AlertCircle className="size-6 text-amber-400" />
-          <h2 className="app-text mt-4 text-lg font-semibold">Finans veritabanı kurulumu gerekiyor</h2>
-          <p className="app-muted mt-2 max-w-2xl text-sm leading-6">Supabase SQL Editor içinde <code className="app-primary">database/phase-15-finance.sql</code> dosyasının tamamını çalıştırın.</p>
+          <h2 className="app-text mt-4 text-lg font-semibold">Finans alanı şu anda hazır değil</h2>
+          <p className="app-muted mt-2 max-w-2xl text-sm leading-6">Kurulum tamamlandıktan sonra borç ve ödeme kayıtların burada yeniden görünecek.</p>
           <Button className="mt-5" onClick={() => router.refresh()}><RefreshCw className="size-4" /> Tekrar Kontrol Et</Button>
         </Card>
       ) : (
@@ -497,6 +612,33 @@ export function FinanceClient({
             <FinanceStatCard description="Bu ay vadeli" icon={CalendarClock} label="Bu Ay Ödenecek" value={formatTRY(stats.dueThisMonth)} />
             <FinanceStatCard description="Yüksek takip önceliği" icon={ShieldAlert} label="Kritik Borçlar" tone="warning" value={String(stats.criticalCount)} />
             <FinanceStatCard description="Vadesi geçmiş kayıt" icon={AlertCircle} label="Gecikenler" tone="danger" value={String(stats.overdueCount)} />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <FinanceStatCard
+              description="Vadesi bugün olan taksitler"
+              icon={CalendarClock}
+              label="Bugün Ödenecek"
+              value={String(stats.dueTodayInstallmentCount)}
+            />
+            <FinanceStatCard
+              description="Önümüzdeki 7 günlük plan"
+              icon={CalendarClock}
+              label="7 Gün İçinde"
+              value={String(stats.dueSoonInstallmentCount)}
+            />
+            <FinanceStatCard
+              description="Vadesi geçen taksitler"
+              icon={AlertCircle}
+              label="Geciken Taksit"
+              tone="danger"
+              value={String(stats.overdueInstallmentCount)}
+            />
+            <FinanceStatCard
+              description="Bu ay açık taksit toplamı"
+              icon={WalletCards}
+              label="Aylık Taksit Yükü"
+              value={formatTRY(stats.monthlyInstallmentBurden)}
+            />
           </div>
 
           <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(400px,0.72fr)]">
@@ -511,7 +653,21 @@ export function FinanceClient({
                 </div>
                 {debts.length ? (
                   <div className="grid gap-4 lg:grid-cols-2">
-                    {debts.map((debt) => <DebtCard debt={debt} isSelected={selectedDebtId === debt.id} key={debt.id} onDelete={(item) => void handleDelete(item)} onEdit={openEdit} onPayment={openPayment} onSelect={(item) => void selectDebt(item)} />)}
+                    {debts.map((debt) => (
+                      <DebtCard
+                        debt={debt}
+                        installments={installments.filter(
+                          (item) => item.debt_id === debt.id,
+                        )}
+                        isSelected={selectedDebtId === debt.id}
+                        key={debt.id}
+                        onDelete={(item) => void handleDelete(item)}
+                        onEdit={openEdit}
+                        onInstallmentPayment={openInstallmentPayment}
+                        onPayment={openPayment}
+                        onSelect={(item) => void selectDebt(item)}
+                      />
+                    ))}
                   </div>
                 ) : (
                   <Card className="flex min-h-64 flex-col items-center justify-center p-8 text-center">
@@ -556,13 +712,51 @@ export function FinanceClient({
                 </Card>
               </section>
             </div>
-            <DebtDetailPanel debt={selectedDebt} isDeletingPayment={isDeletingPayment} isLoadingPayments={isLoadingPayments} isSavingPayment={isSavingPayment} onAddReminder={(debt) => void handleReminder(debt)} onClose={closeDetail} onDeletePayment={(payment) => void handleDeletePayment(payment)} onDeleteReceipt={(payment) => void handleDeleteReceipt(payment)} onEdit={openEdit} onPayment={(input) => void handlePayment(input)} onViewReceipt={(payment) => void handleViewReceipt(payment)} paymentError={paymentError} paymentHistoryError={paymentHistoryError} payments={payments} receiptActionId={receiptActionId} receiptError={receiptError} />
+            <DebtDetailPanel
+              debt={selectedDebt}
+              installments={selectedInstallments}
+              isDeletingPayment={isDeletingPayment}
+              isLoadingPayments={isLoadingPayments}
+              isSavingPayment={isSavingPayment}
+              onAddReminder={(debt) => void handleReminder(debt)}
+              onClose={closeDetail}
+              onDeletePayment={(payment) => void handleDeletePayment(payment)}
+              onDeleteReceipt={(payment) => void handleDeleteReceipt(payment)}
+              onEdit={openEdit}
+              onInstallmentPayment={(installment) => {
+                if (selectedDebt) {
+                  openInstallmentPayment(selectedDebt, installment);
+                }
+              }}
+              onPayment={(input) => void handlePayment(input)}
+              onViewReceipt={(payment) => void handleViewReceipt(payment)}
+              paymentError={paymentError}
+              paymentHistoryError={paymentHistoryError}
+              payments={payments}
+              receiptActionId={receiptActionId}
+              receiptError={receiptError}
+            />
           </div>
         </div>
       )}
 
       <DebtForm debt={editingDebt} error={formError} isOpen={isFormOpen && !schemaMissing} isSaving={isSaving} key={`${isFormOpen}-${editingDebt?.id ?? "new"}`} onClose={closeForm} onSubmit={(input) => void handleSave(input)} />
       {paymentDebt ? <div className="fixed inset-0 z-[88] flex items-center justify-center p-4"><button aria-label="Ödeme formunu kapat" className="absolute inset-0 bg-black/70" onClick={() => setPaymentDebt(null)} type="button" /><div className="relative max-h-[92vh] w-full max-w-2xl overflow-y-auto"><PaymentForm debt={paymentDebt} error={paymentError} isSaving={isSavingPayment} onCancel={() => setPaymentDebt(null)} onSubmit={(input) => void handlePayment(input)} /></div></div> : null}
+      {installmentPayment ? (
+        <InstallmentPaymentForm
+          debt={installmentPayment.debt}
+          error={paymentError}
+          installment={installmentPayment.installment}
+          isSaving={isSavingPayment}
+          onClose={() => {
+            if (!isSavingPayment) {
+              setInstallmentPayment(null);
+              replaceParams({ installment: null });
+            }
+          }}
+          onSubmit={(input) => void handleInstallmentPayment(input)}
+        />
+      ) : null}
       <FinanceAiPanel initialOpen={isAiOpen} key={String(isAiOpen)} onClose={() => { setIsAiOpen(false); replaceParams({ action: null }); }} />
     </div>
   );

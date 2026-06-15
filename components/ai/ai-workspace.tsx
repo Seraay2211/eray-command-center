@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Bot, CheckCircle2, LoaderCircle, ShieldAlert, Sparkles } from "lucide-react";
 import { getAiActionDefinition } from "@/lib/ai/actions";
 import { AI_MAX_INPUT_CHARS } from "@/lib/ai/config";
@@ -39,7 +39,23 @@ function createEmptyOutputState(): AiOutputState {
   };
 }
 
-function buildNoteTitle(sourceTitle: string): string {
+function getTodayDateLabel(): string {
+  return new Intl.DateTimeFormat("tr-TR", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "Europe/Istanbul",
+    year: "numeric",
+  }).format(new Date());
+}
+
+function buildNoteTitle(
+  sourceTitle: string,
+  action: AiActionKey | null,
+): string {
+  if (action === "daily_summary") {
+    return `Günün Özeti — ${getTodayDateLabel()}`;
+  }
+
   const cleanTitle = sourceTitle.trim();
 
   if (cleanTitle) {
@@ -72,22 +88,40 @@ export function AiWorkspace({
   const [pageError, setPageError] = useState("");
   const [notice, setNotice] = useState("");
   const [isSavingAsNote, setIsSavingAsNote] = useState(false);
+  const noticeTimerRef = useRef<number | null>(null);
+  const isDailySummary = selectedAction === "daily_summary";
 
   const remainingCharacters = useMemo(
     () => AI_MAX_INPUT_CHARS - input.length,
     [input.length],
   );
 
+  useEffect(
+    () => () => {
+      if (noticeTimerRef.current) {
+        window.clearTimeout(noticeTimerRef.current);
+      }
+    },
+    [],
+  );
+
   function showNotice(message: string) {
     setNotice(message);
-    window.setTimeout(() => setNotice(""), 3200);
+    if (noticeTimerRef.current) {
+      window.clearTimeout(noticeTimerRef.current);
+    }
+    noticeTimerRef.current = window.setTimeout(() => setNotice(""), 3200);
   }
 
   async function handleRunAction() {
     const text = input.trim();
 
     if (!text) {
-      setPageError("İşlenecek metin boş olamaz.");
+      setPageError(
+        isDailySummary
+          ? "Lütfen gün içinde yaşadıklarını kısaca yaz."
+          : "İşlenecek metin boş olamaz.",
+      );
       return;
     }
 
@@ -125,9 +159,11 @@ export function AiWorkspace({
       const result = (await response.json()) as AiActionResponse;
 
       if (!response.ok || !result.success) {
-        const error = result.success
-          ? "AI işlemi tamamlanamadı. Lütfen tekrar dene."
-          : result.error;
+        const error = isDailySummary
+          ? "Özet oluşturulamadı. Birazdan tekrar deneyebilirsin."
+          : result.success
+            ? "AI işlemi tamamlanamadı. Lütfen tekrar dene."
+            : result.error;
 
         setOutputState({
           action: selectedAction,
@@ -153,7 +189,9 @@ export function AiWorkspace({
     } catch {
       setOutputState({
         action: selectedAction,
-        error: "AI işlemi tamamlanamadı. Lütfen tekrar dene.",
+        error: isDailySummary
+          ? "Özet oluşturulamadı. Birazdan tekrar deneyebilirsin."
+          : "AI işlemi tamamlanamadı. Lütfen tekrar dene.",
         isLoading: false,
         output: "",
         provider: null,
@@ -186,26 +224,57 @@ export function AiWorkspace({
     setIsSavingAsNote(true);
     setPageError("");
 
-    const result = await createNote({
-      title: buildNoteTitle(outputState.sourceTitle),
-      content: formatAiOutputForNote(outputState.output),
-      categoryId: null,
-      tags: [],
-      isPinned: false,
-    });
+    try {
+      const result = await createNote({
+        title: buildNoteTitle(outputState.sourceTitle, outputState.action),
+        content: formatAiOutputForNote(outputState.output),
+        categoryId: null,
+        tags: outputState.action === "daily_summary" ? ["günlük"] : [],
+        isPinned: false,
+      });
 
-    setIsSavingAsNote(false);
+      if (result.error) {
+        setPageError(
+          outputState.action === "daily_summary"
+            ? "Günün özeti nota kaydedilemedi. Lütfen tekrar dene."
+            : result.error,
+        );
+        return;
+      }
 
-    if (result.error) {
-      setPageError(result.error);
-      return;
+      showNotice(
+        outputState.action === "daily_summary"
+          ? "Günün özeti Notlar'a kaydedildi."
+          : "AI çıktısı yeni not olarak kaydedildi.",
+      );
+    } catch {
+      setPageError(
+        outputState.action === "daily_summary"
+          ? "Günün özeti nota kaydedilemedi. Lütfen tekrar dene."
+          : "AI çıktısı nota kaydedilemedi. Lütfen tekrar dene.",
+      );
+    } finally {
+      setIsSavingAsNote(false);
     }
-
-    showNotice("AI çıktısı yeni not olarak kaydedildi.");
   }
 
   function resetOutputPanel() {
     setOutputState(createEmptyOutputState());
+  }
+
+  function handleClearDailySummary() {
+    setInput("");
+    setTitle("");
+    setPageError("");
+    resetOutputPanel();
+  }
+
+  function handleSelectAction(action: AiActionKey) {
+    setSelectedAction(action);
+    setPageError("");
+    if (outputState.action && outputState.action !== action) {
+      resetOutputPanel();
+    }
   }
 
   const selectedDefinition = getAiActionDefinition(selectedAction);
@@ -230,13 +299,13 @@ export function AiWorkspace({
         </div>
       ) : null}
       <div>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-400">
+        <p className="app-primary text-[10px] font-semibold uppercase tracking-[0.18em]">
           {isEnglish ? "Smart tools" : "Akıllı araçlar"}
         </p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white">
+        <h1 className="app-text mt-2 text-2xl font-semibold tracking-tight">
           {isEnglish ? "AI Assistant" : "AI Asistan"}
         </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500">
+        <p className="app-muted mt-2 max-w-2xl text-sm leading-6">
           {isEnglish
             ? "Summarize independent text, improve its tone or create executive-ready output."
             : "Notlardan bağımsız metinleri burada özetleyebilir, daha premium bir dile taşıyabilir ya da yöneticiye sunulabilir çıktılar üretebilirsin."}
@@ -245,7 +314,7 @@ export function AiWorkspace({
 
       {notice ? (
         <div
-          className="fixed right-4 top-20 z-[100] flex items-center gap-2 rounded-xl border border-emerald-400/15 bg-[#101513] px-4 py-3 text-xs font-medium text-emerald-300 shadow-2xl"
+          className="app-surface fixed inset-x-3 top-20 z-[100] flex items-center gap-2 rounded-xl border border-emerald-400/20 px-4 py-3 text-xs font-medium text-emerald-400 shadow-2xl sm:left-auto sm:right-4"
           role="status"
         >
           <CheckCircle2 className="size-4" />
@@ -256,57 +325,65 @@ export function AiWorkspace({
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
         <Card className="p-5 sm:p-6">
           <div className="flex items-center gap-2">
-            <span className="flex size-10 items-center justify-center rounded-xl bg-violet-500/10 text-violet-300">
+            <span className="app-primary-bg flex size-10 items-center justify-center rounded-xl">
               <Sparkles className="size-4" />
             </span>
             <div>
-              <h2 className="text-base font-semibold text-zinc-100">
-                Metin işleme alanı
+              <h2 className="app-text text-base font-semibold">
+                {isDailySummary ? "Günün Özeti" : "Metin işleme alanı"}
               </h2>
-              <p className="text-xs text-zinc-500">
-                {selectedDefinition.description}
+              <p className="app-muted text-xs leading-5">
+                {isDailySummary
+                  ? "Bugün neler yaptığını dağınık şekilde yaz. AI bunu düzenli ve özenli bir günlük nota çevirecek."
+                  : selectedDefinition.description}
               </p>
             </div>
           </div>
 
           <div className="mt-6 space-y-5">
-            <div>
-              <label
-                className="mb-2 block text-xs font-medium text-zinc-400"
-                htmlFor="ai-title"
-              >
-                Başlık (opsiyonel)
-              </label>
-              <input
-                className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.035] px-3 text-sm text-zinc-100 outline-none transition placeholder:text-zinc-700 focus:border-violet-400/45 focus:bg-white/[0.05] focus:ring-2 focus:ring-violet-500/10"
-                id="ai-title"
-                onChange={(event) => setTitle(event.target.value)}
-                placeholder="İsteğe bağlı bir başlık ekle..."
-                value={title}
-              />
-            </div>
+            {!isDailySummary ? (
+              <div>
+                <label
+                  className="app-muted mb-2 block text-xs font-medium"
+                  htmlFor="ai-title"
+                >
+                  Başlık (opsiyonel)
+                </label>
+                <input
+                  className="app-input h-11 w-full rounded-xl border px-3 text-sm outline-none"
+                  id="ai-title"
+                  onChange={(event) => setTitle(event.target.value)}
+                  placeholder="İsteğe bağlı bir başlık ekle..."
+                  value={title}
+                />
+              </div>
+            ) : null}
 
             <div>
               <label
-                className="mb-2 block text-xs font-medium text-zinc-400"
+                className="app-muted mb-2 block text-xs font-medium"
                 htmlFor="ai-input"
               >
-                Metin
+                {isDailySummary ? "Bugün neler yaptın?" : "Metin"}
               </label>
               <textarea
-                className="min-h-72 w-full resize-y rounded-2xl border border-white/[0.08] bg-white/[0.035] px-4 py-3 text-sm leading-7 text-zinc-100 outline-none transition placeholder:text-zinc-700 focus:border-violet-400/45 focus:bg-white/[0.05] focus:ring-2 focus:ring-violet-500/10"
+                className="app-input min-h-72 w-full max-w-full resize-y rounded-2xl border px-4 py-3 text-sm leading-7 outline-none [overflow-wrap:anywhere]"
                 id="ai-input"
                 onChange={(event) => setInput(event.target.value)}
-                placeholder="İşlemek istediğin metni buraya yapıştır..."
+                placeholder={
+                  isDailySummary
+                    ? "Örnek: Sabah ofise gittim, öğlen toplantı yaptım, akşam şu işi tamamladım, sonra eve geçtim..."
+                    : "İşlemek istediğin metni buraya yapıştır..."
+                }
                 value={input}
               />
               <div className="mt-2 flex items-center justify-between text-[10px]">
-                <span className="text-zinc-700">
+                <span className="app-muted">
                   Maksimum {AI_MAX_INPUT_CHARS} karakter
                 </span>
                 <span
                   className={
-                    remainingCharacters < 0 ? "text-rose-300" : "text-zinc-500"
+                    remainingCharacters < 0 ? "text-rose-400" : "app-muted"
                   }
                 >
                   {remainingCharacters}
@@ -315,14 +392,15 @@ export function AiWorkspace({
             </div>
 
             <div>
-              <p className="mb-3 text-xs font-medium text-zinc-400">
+              <p className="app-muted mb-3 text-xs font-medium">
                 Aksiyon seçimi
               </p>
               <AiActionButtons
                 activeAction={null}
                 disabled={outputState.isLoading}
+                includeDailySummary
                 mode="select"
-                onAction={setSelectedAction}
+                onAction={handleSelectAction}
                 selectedAction={selectedAction}
               />
             </div>
@@ -346,7 +424,13 @@ export function AiWorkspace({
               ) : (
                 <Sparkles className="size-4" />
               )}
-              AI ile işle
+              {outputState.isLoading
+                ? isDailySummary
+                  ? "Özet hazırlanıyor..."
+                  : "AI ile işleniyor..."
+                : isDailySummary
+                  ? "Özet Oluştur"
+                  : "AI ile işle"}
             </Button>
           </div>
         </Card>
@@ -359,24 +443,40 @@ export function AiWorkspace({
             isLoading={outputState.isLoading}
             isSavingAsNote={isSavingAsNote}
             isVisible
+            loadingDescription={
+              isDailySummary
+                ? "Günlük notun düzenli ve özenli bir kayda dönüştürülüyor."
+                : undefined
+            }
+            loadingTitle={
+              isDailySummary ? "Özet hazırlanıyor..." : undefined
+            }
+            onClear={
+              isDailySummary ? handleClearDailySummary : undefined
+            }
             onClose={resetOutputPanel}
             onCopy={handleCopyOutput}
+            onRegenerate={
+              isDailySummary ? () => void handleRunAction() : undefined
+            }
             onSaveAsNote={handleSaveAsNote}
             output={outputState.output}
             provider={outputState.provider}
+            saveLabel={isDailySummary ? "Nota Kaydet" : undefined}
             sourceTitle={outputState.sourceTitle}
           />
         ) : (
           <Card className="flex min-h-[32rem] flex-col items-center justify-center p-6 text-center">
-            <span className="flex size-14 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-300">
+            <span className="app-primary-bg flex size-14 items-center justify-center rounded-2xl">
               <Bot className="size-6" />
             </span>
-            <h2 className="mt-5 text-lg font-semibold text-zinc-100">
+            <h2 className="app-text mt-5 text-lg font-semibold">
               AI çıktısı burada görünecek
             </h2>
-            <p className="mt-2 max-w-sm text-sm leading-6 text-zinc-500">
-              Soldan bir aksiyon seçip metnini işlediğinde özet, premium metin
-              veya rapor sonucunu bu panelde göreceksin.
+            <p className="app-muted mt-2 max-w-sm text-sm leading-6">
+              {isDailySummary
+                ? "Gün içinde yaşadıklarını yazıp özet oluşturduğunda düzenli günlük kaydın burada görünecek."
+                : "Soldan bir aksiyon seçip metnini işlediğinde özet, premium metin veya rapor sonucunu bu panelde göreceksin."}
             </p>
           </Card>
         )}

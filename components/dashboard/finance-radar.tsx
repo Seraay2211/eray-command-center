@@ -10,6 +10,7 @@ import {
 import { buttonClassName } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { formatTRY } from "@/lib/utils/currency";
+import { formatFinanceDate } from "@/lib/finance/installments";
 import type { FinanceDashboardSummary } from "@/types";
 
 interface FinanceRadarProps {
@@ -103,6 +104,61 @@ export function FinanceRadar({ summary }: FinanceRadarProps) {
               </p>
             )}
           </div>
+          {summary.installmentsAvailable &&
+          summary.upcomingInstallments.length > 0 ? (
+            <div className="mt-3">
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <p className="app-text text-xs font-semibold">
+                  Yaklaşan Taksitler
+                </p>
+                <span className="app-muted text-[10px]">
+                  {summary.dueTodayInstallmentCount} bugün ·{" "}
+                  {summary.overdueInstallmentCount} geciken
+                </span>
+              </div>
+              <div className="space-y-2">
+                {summary.upcomingInstallments.map((installment) => (
+                  <div
+                    className="app-surface-2 rounded-xl border p-3"
+                    key={installment.id}
+                  >
+                    <div className="flex min-w-0 items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="app-text truncate text-xs font-semibold">
+                          {installment.debtTitle}
+                        </p>
+                        <p className="app-muted mt-1 text-[10px]">
+                          {installment.installmentNo}. taksit ·{" "}
+                          {formatFinanceDate(installment.dueDate)}
+                        </p>
+                      </div>
+                      <p className="app-text shrink-0 text-xs font-semibold">
+                        {formatTRY(
+                          Math.max(
+                            installment.expectedAmount -
+                              installment.paidAmount,
+                            0,
+                          ),
+                        )}
+                      </p>
+                    </div>
+                    <Link
+                      className={buttonClassName({
+                        className: "mt-2 w-full",
+                        size: "sm",
+                        variant: "secondary",
+                      })}
+                      href={`/finance?debt=${encodeURIComponent(
+                        installment.debtId,
+                      )}&installment=${encodeURIComponent(installment.id)}`}
+                    >
+                      Taksit Ödendi
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </>
       ) : (
         <div className="app-surface-2 mt-4 rounded-xl border border-dashed p-5 text-center">

@@ -14,6 +14,7 @@ import type {
   DashboardStats,
   DashboardTask,
   DebtPriority,
+  DebtInstallmentStatus,
   DebtStatus,
   FinanceDashboardSummary,
   PlannerEventWithLinks,
@@ -111,6 +112,16 @@ interface RawDashboardDebt {
   status: DebtStatus;
   priority: DebtPriority;
   due_date: string | null;
+}
+
+interface RawDashboardInstallment {
+  id: string;
+  debt_id: string;
+  installment_no: number;
+  due_date: string;
+  expected_amount: number | string;
+  paid_amount: number | string;
+  status: DebtInstallmentStatus;
 }
 
 interface DashboardIntelligence {
@@ -766,6 +777,20 @@ async function getDashboardIntelligence(
   const failedResult = results.find((result) => result.error);
   if (failedResult?.error) throw failedResult.error;
 
+  const installmentResult = await supabase
+    .from("debt_installments")
+    .select(
+      "id,debt_id,installment_no,due_date,expected_amount,paid_amount,status",
+    )
+    .eq("user_id", userId)
+    .neq("status", "paid")
+    .lte("due_date", weekEndKey)
+    .order("due_date", { ascending: true })
+    .limit(20);
+  const installments = installmentResult.error
+    ? []
+    : ((installmentResult.data ?? []) as RawDashboardInstallment[]);
+
   const tasks = (taskRowsResult.data ?? []) as RawDashboardTask[];
   const debts = (debtRowsResult.data ?? []) as RawDashboardDebt[];
   const overdueCriticalTasks = tasks.filter(
@@ -804,6 +829,19 @@ async function getDashboardIntelligence(
       !overdueCriticalTasks.some((item) => item.id === task.id) &&
       !todayTasks.some((item) => item.id === task.id),
   );
+  const debtById = new Map(debts.map((debt) => [debt.id, debt]));
+  const openInstallments = installments.filter(
+    (item) => Number(item.paid_amount) < Number(item.expected_amount),
+  );
+  const overdueInstallments = openInstallments.filter(
+    (item) => item.due_date < todayKey,
+  );
+  const todayInstallments = openInstallments.filter(
+    (item) => item.due_date === todayKey,
+  );
+  const upcomingInstallments = openInstallments.filter(
+    (item) => item.due_date > todayKey && item.due_date < weekEndKey,
+  );
 
   const priorityItems: DashboardPriorityItem[] = [
     ...overdueCriticalTasks.map((task) => ({
@@ -824,6 +862,46 @@ async function getDashboardIntelligence(
       priority: task.priority,
       dueDate: task.due_date,
     })),
+    ...overdueInstallments.map((installment) => {
+      const debt = debtById.get(installment.debt_id);
+      return {
+        id: `installment-overdue-${installment.id}`,
+        source: "finance" as const,
+        title: debt?.title ?? "Taksit ödemesi",
+        description: `${installment.installment_no}. taksit gecikti. Beklenen ${formatTRY(
+          Math.max(
+            Number(installment.expected_amount) -
+              Number(installment.paid_amount),
+            0,
+          ),
+        )}.`,
+        href: `/finance?debt=${encodeURIComponent(
+          installment.debt_id,
+        )}&installment=${encodeURIComponent(installment.id)}`,
+        priority: debt?.priority ?? ("high" as const),
+        dueDate: installment.due_date,
+      };
+    }),
+    ...todayInstallments.map((installment) => {
+      const debt = debtById.get(installment.debt_id);
+      return {
+        id: `installment-today-${installment.id}`,
+        source: "finance" as const,
+        title: debt?.title ?? "Taksit ödemesi",
+        description: `${installment.installment_no}. taksit bugün ödenecek. Beklenen ${formatTRY(
+          Math.max(
+            Number(installment.expected_amount) -
+              Number(installment.paid_amount),
+            0,
+          ),
+        )}.`,
+        href: `/finance?debt=${encodeURIComponent(
+          installment.debt_id,
+        )}&installment=${encodeURIComponent(installment.id)}`,
+        priority: debt?.priority ?? ("high" as const),
+        dueDate: installment.due_date,
+      };
+    }),
     ...overdueDebts.map((debt) => ({
       id: `debt-overdue-${debt.id}`,
       source: "finance" as const,
@@ -857,9 +935,31 @@ async function getDashboardIntelligence(
     (sum, debt) => sum + getDebtRemainingAmount(debt),
     0,
   );
-  const dueThisMonth = debts
-    .filter((debt) => debt.due_date?.startsWith(currentMonth))
-    .reduce((sum, debt) => sum + getDebtRemainingAmount(debt), 0);
+  const installmentDebtIds = new Set(
+    installments.map((installment) => installment.debt_id),
+  );
+  const dueThisMonth =
+    debts
+      .filter(
+        (debt) =>
+          !installmentDebtIds.has(debt.id) &&
+          debt.due_date?.startsWith(currentMonth),
+      )
+      .reduce((sum, debt) => sum + getDebtRemainingAmount(debt), 0) +
+    openInstallments
+      .filter((installment) =>
+        installment.due_date.startsWith(currentMonth),
+      )
+      .reduce(
+        (sum, installment) =>
+          sum +
+          Math.max(
+            Number(installment.expected_amount) -
+              Number(installment.paid_amount),
+            0,
+          ),
+        0,
+      );
   const latestPayment = latestPaymentResult.data;
 
   return {
@@ -880,6 +980,34 @@ async function getDashboardIntelligence(
       dueThisWeekCount: dueThisWeekDebtsResult.count ?? 0,
       criticalCount: criticalDebtsResult.count ?? 0,
       overdueCount: overdueDebtsResult.count ?? 0,
+      installmentsAvailable: !installmentResult.error,
+      dueTodayInstallmentCount: todayInstallments.length,
+      overdueInstallmentCount: overdueInstallments.length,
+      upcomingInstallments: [
+        ...overdueInstallments,
+        ...todayInstallments,
+        ...upcomingInstallments,
+      ]
+        .slice(0, 5)
+        .map((installment) => {
+          const debt = debtById.get(installment.debt_id);
+          return {
+            id: installment.id,
+            debtId: installment.debt_id,
+            debtTitle: debt?.title ?? "Borç kaydı",
+            creditor: "",
+            installmentNo: installment.installment_no,
+            dueDate: installment.due_date,
+            expectedAmount: Number(installment.expected_amount) || 0,
+            paidAmount: Number(installment.paid_amount) || 0,
+            status:
+              Number(installment.paid_amount) > 0
+                ? ("partial" as const)
+                : installment.due_date < todayKey
+                  ? ("overdue" as const)
+                  : ("pending" as const),
+          };
+        }),
       lastPayment: latestPayment
         ? {
             amount: Number(latestPayment.amount) || 0,
@@ -950,10 +1078,12 @@ export async function getDashboardData(): Promise<ActionResult<DashboardData>> {
             const getRank = (item: DashboardPriorityItem) => {
               if (item.id.startsWith("task-overdue-")) return 1;
               if (item.id.startsWith("task-today-")) return 2;
-              if (item.id.startsWith("debt-overdue-")) return 3;
-              if (item.id.startsWith("debt-week-")) return 4;
-              if (item.id.startsWith("calendar-")) return 5;
-              return 6;
+              if (item.id.startsWith("installment-overdue-")) return 3;
+              if (item.id.startsWith("installment-today-")) return 4;
+              if (item.id.startsWith("debt-overdue-")) return 5;
+              if (item.id.startsWith("debt-week-")) return 6;
+              if (item.id.startsWith("calendar-")) return 7;
+              return 8;
             };
 
             return getRank(left) - getRank(right);

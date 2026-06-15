@@ -3,10 +3,9 @@ import "server-only";
 import { AI_GENERIC_ERROR, GEMINI_MODEL } from "@/lib/ai/config";
 import {
   buildFinancePrompt,
+  type FinanceAiInput,
   FINANCE_SYSTEM_INSTRUCTION,
-  type FinanceAiMode,
 } from "@/lib/ai/finance-prompts";
-import type { Debt, DebtPayment } from "@/types";
 
 interface GeminiResponse {
   candidates?: Array<{
@@ -21,11 +20,9 @@ function getApiKey(): string {
   return apiKey;
 }
 
-export async function generateFinanceSummaryWithGemini(input: {
-  mode: FinanceAiMode;
-  debts: Debt[];
-  payments: DebtPayment[];
-}): Promise<string> {
+export async function generateFinanceSummaryWithGemini(
+  input: FinanceAiInput,
+): Promise<string> {
   const modelPath = GEMINI_MODEL.startsWith("models/")
     ? GEMINI_MODEL
     : `models/${GEMINI_MODEL}`;

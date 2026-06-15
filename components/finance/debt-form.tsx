@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { DarkSelect } from "@/components/ui/dark-select";
 import {
   formatNumberTR,
+  formatTRY,
   isValidMoneyInput,
   parseMoneyInput,
 } from "@/lib/utils/currency";
@@ -57,6 +58,23 @@ export function DebtForm({
   const [installments, setInstallments] = useState(
     debt?.installment_count ? String(debt.installment_count) : "",
   );
+  const [isInstallment, setIsInstallment] = useState(
+    debt?.is_installment ?? false,
+  );
+  const [installmentAmount, setInstallmentAmount] = useState(
+    debt?.installment_amount
+      ? formatNumberTR(debt.installment_amount)
+      : "",
+  );
+  const [installmentStartDate, setInstallmentStartDate] = useState(
+    debt?.installment_start_date ?? debt?.due_date ?? "",
+  );
+  const [installmentDay, setInstallmentDay] = useState(
+    debt?.installment_day ? String(debt.installment_day) : "",
+  );
+  const [installmentNote, setInstallmentNote] = useState(
+    debt?.installment_note ?? "",
+  );
   const [notes, setNotes] = useState(debt?.notes ?? "");
   const [inputError, setInputError] = useState("");
 
@@ -71,9 +89,15 @@ export function DebtForm({
 
   if (!isOpen) return null;
 
+  const totalAmount = parseMoneyInput(total);
+  const installmentCount = Number(installments);
+  const suggestedInstallmentAmount =
+    totalAmount > 0 && installmentCount > 0
+      ? totalAmount / installmentCount
+      : 0;
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const totalAmount = parseMoneyInput(total);
     if (totalAmount <= 0) {
       setInputError("Geçerli bir tutar gir.");
       return;
@@ -88,7 +112,20 @@ export function DebtForm({
       status,
       priority,
       due_date: dueDate || null,
-      installment_count: installments ? Number(installments) : null,
+      installment_count: isInstallment ? installmentCount : null,
+      is_installment: isInstallment,
+      installment_amount: isInstallment
+        ? parseMoneyInput(installmentAmount) || suggestedInstallmentAmount
+        : null,
+      installment_start_date: isInstallment
+        ? installmentStartDate || dueDate || null
+        : null,
+      installment_day: isInstallment
+        ? Number(installmentDay) ||
+          Number((installmentStartDate || dueDate).slice(8, 10)) ||
+          null
+        : null,
+      installment_note: isInstallment ? installmentNote : "",
       notes,
     });
   }
@@ -222,18 +259,120 @@ export function DebtForm({
                   value={dueDate}
                 />
               </label>
-              <label className="app-muted block text-xs font-medium">
-                Taksit sayısı
-                <input
-                  className={`${inputClass} mt-2`}
-                  disabled={isSaving}
-                  min="1"
-                  onChange={(event) => setInstallments(event.target.value)}
-                  type="number"
-                  value={installments}
-                />
-              </label>
             </div>
+
+            <section className="app-surface-2 space-y-4 rounded-xl border p-4">
+              <div className="flex min-w-0 items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="app-text text-sm font-semibold">Taksit Planı</p>
+                  <p className="app-muted mt-1 text-[11px] leading-5">
+                    Dönemlik tutarı ve ilk ödeme tarihini ayrı takip et.
+                  </p>
+                </div>
+                <label className="flex shrink-0 items-center gap-2 text-xs app-text">
+                  <input
+                    checked={isInstallment}
+                    className="size-4 accent-[var(--primary)]"
+                    disabled={isSaving}
+                    onChange={(event) => setIsInstallment(event.target.checked)}
+                    type="checkbox"
+                  />
+                  Taksitli
+                </label>
+              </div>
+
+              {isInstallment ? (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="app-muted block text-xs font-medium">
+                    Taksit sayısı
+                    <input
+                      className={`${inputClass} mt-2`}
+                      disabled={isSaving}
+                      min="1"
+                      onChange={(event) => setInstallments(event.target.value)}
+                      required
+                      type="number"
+                      value={installments}
+                    />
+                  </label>
+                  <label className="app-muted block text-xs font-medium">
+                    Aylık / dönemlik tutar
+                    <input
+                      className={`${inputClass} mt-2`}
+                      disabled={isSaving}
+                      inputMode="decimal"
+                      onBlur={() => {
+                        if (installmentAmount.trim()) {
+                          setInstallmentAmount(
+                            formatNumberTR(
+                              parseMoneyInput(installmentAmount),
+                            ),
+                          );
+                        }
+                      }}
+                      onChange={(event) =>
+                        setInstallmentAmount(event.target.value)
+                      }
+                      placeholder={
+                        suggestedInstallmentAmount
+                          ? formatNumberTR(suggestedInstallmentAmount)
+                          : "6.516,00"
+                      }
+                      type="text"
+                      value={installmentAmount}
+                    />
+                    {!installmentAmount && suggestedInstallmentAmount > 0 ? (
+                      <span className="mt-1.5 block text-[10px] app-muted">
+                        Önerilen tutar:{" "}
+                        {formatTRY(suggestedInstallmentAmount)}
+                      </span>
+                    ) : null}
+                  </label>
+                  <label className="app-muted block text-xs font-medium">
+                    İlk taksit tarihi
+                    <input
+                      className={`${inputClass} mt-2`}
+                      disabled={isSaving}
+                      onChange={(event) =>
+                        setInstallmentStartDate(event.target.value)
+                      }
+                      required
+                      type="date"
+                      value={installmentStartDate}
+                    />
+                  </label>
+                  <label className="app-muted block text-xs font-medium">
+                    Ödeme günü
+                    <input
+                      className={`${inputClass} mt-2`}
+                      disabled={isSaving}
+                      max="31"
+                      min="1"
+                      onChange={(event) => setInstallmentDay(event.target.value)}
+                      placeholder={
+                        installmentStartDate
+                          ? String(Number(installmentStartDate.slice(8, 10)))
+                          : "16"
+                      }
+                      type="number"
+                      value={installmentDay}
+                    />
+                  </label>
+                  <label className="app-muted block text-xs font-medium sm:col-span-2">
+                    Taksit notu
+                    <textarea
+                      className="app-input mt-2 min-h-20 w-full resize-y rounded-xl border p-3 text-sm leading-6 outline-none"
+                      disabled={isSaving}
+                      onChange={(event) =>
+                        setInstallmentNote(event.target.value)
+                      }
+                      placeholder="Planla ilgili kısa takip notu..."
+                      value={installmentNote}
+                    />
+                  </label>
+                </div>
+              ) : null}
+            </section>
             <label className="app-muted block text-xs font-medium">
               Not
               <textarea
@@ -269,7 +408,11 @@ export function DebtForm({
               disabled={
                 isSaving ||
                 !title.trim() ||
-                !isValidMoneyInput(total)
+                !isValidMoneyInput(total) ||
+                (isInstallment &&
+                  (!installments ||
+                    Number(installments) < 1 ||
+                    !installmentStartDate))
               }
               type="submit"
             >

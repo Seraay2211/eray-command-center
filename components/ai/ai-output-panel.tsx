@@ -1,4 +1,12 @@
-import { AlertCircle, ClipboardCopy, LoaderCircle, Plus, X } from "lucide-react";
+import {
+  AlertCircle,
+  ClipboardCopy,
+  Eraser,
+  LoaderCircle,
+  Plus,
+  RefreshCw,
+  X,
+} from "lucide-react";
 import { getAiActionDefinition } from "@/lib/ai/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,12 +23,17 @@ interface AiOutputPanelProps {
   isLoading: boolean;
   isSavingAsNote?: boolean;
   isVisible: boolean;
+  loadingDescription?: string;
+  loadingTitle?: string;
   onAppend?: () => void;
+  onClear?: () => void;
   onClose: () => void;
   onCopy: () => void;
+  onRegenerate?: () => void;
   onSaveAsNote: () => void;
   output: string;
   provider?: AiProvider | null;
+  saveLabel?: string;
   sourceTitle?: string;
 }
 
@@ -31,12 +44,17 @@ function PanelBody({
   isAppending = false,
   isLoading,
   isSavingAsNote = false,
+  loadingDescription = "Çıktı hazır olduğunda burada görünecek.",
+  loadingTitle = "AI metni işliyor",
   onAppend,
+  onClear,
   onClose,
   onCopy,
+  onRegenerate,
   onSaveAsNote,
   output,
   provider,
+  saveLabel = "Yeni not olarak kaydet",
   sourceTitle,
 }: Omit<AiOutputPanelProps, "inline" | "isVisible">) {
   const actionLabel = action ? getAiActionDefinition(action).label : "AI Aksiyonu";
@@ -47,7 +65,7 @@ function PanelBody({
     <>
       <div className="app-border flex items-start justify-between gap-4 border-b px-5 py-4 sm:px-6">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-400">
+          <p className="app-primary text-[10px] font-semibold uppercase tracking-[0.18em]">
             AI Çıktısı
           </p>
           <h2 className="app-text mt-1 text-lg font-semibold">
@@ -76,13 +94,13 @@ function PanelBody({
 
       <div className="min-h-0 flex-1 overflow-y-auto px-5 py-6 sm:px-6">
         {isLoading ? (
-          <div className="flex min-h-56 flex-col items-center justify-center rounded-2xl border border-dashed border-violet-400/15 bg-violet-500/[0.04] text-center">
-            <LoaderCircle className="size-6 animate-spin text-violet-300" />
-            <p className="mt-4 text-sm font-medium text-zinc-100">
-              AI metni işliyor
+          <div className="app-surface-2 flex min-h-56 flex-col items-center justify-center rounded-2xl border border-dashed text-center">
+            <LoaderCircle className="app-primary size-6 animate-spin" />
+            <p className="app-text mt-4 text-sm font-medium">
+              {loadingTitle}
             </p>
-            <p className="mt-2 max-w-sm text-xs leading-6 text-zinc-500">
-              Çıktı hazır olduğunda burada görünecek.
+            <p className="app-muted mt-2 max-w-sm text-xs leading-6">
+              {loadingDescription}
             </p>
           </div>
         ) : error ? (
@@ -94,7 +112,7 @@ function PanelBody({
             {error}
           </div>
         ) : (
-          <div className="app-surface-2 app-border app-text min-h-56 whitespace-pre-wrap break-words rounded-2xl border p-4 text-sm leading-7">
+          <div className="app-surface-2 app-border app-text min-h-56 min-w-0 max-w-full whitespace-pre-wrap break-words rounded-2xl border p-4 text-sm leading-7 [overflow-wrap:anywhere]">
             {cleanOutput}
           </div>
         )}
@@ -126,8 +144,30 @@ function PanelBody({
           ) : (
             <Plus className="size-3.5" />
           )}
-          Yeni not olarak kaydet
+          {saveLabel}
         </Button>
+        {onRegenerate ? (
+          <Button
+            disabled={!canUseOutput}
+            onClick={onRegenerate}
+            size="sm"
+            variant="secondary"
+          >
+            <RefreshCw className="size-3.5" />
+            Yeniden Oluştur
+          </Button>
+        ) : null}
+        {onClear ? (
+          <Button
+            disabled={isLoading}
+            onClick={onClear}
+            size="sm"
+            variant="ghost"
+          >
+            <Eraser className="size-3.5" />
+            Temizle
+          </Button>
+        ) : null}
       </div>
     </>
   );

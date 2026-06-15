@@ -8,13 +8,14 @@ type FinanceAiMode =
   | "payment_plan"
   | "risk_analysis"
   | "monthly_summary"
+  | "thirty_day_plan"
   | "manager_summary";
 
 const actions: Array<{ id: string; mode: FinanceAiMode; label: string; description: string }> = [
   { id: "payment-plan", mode: "payment_plan", label: "Ödeme planı çıkar", description: "Vadeler ve önceliklere göre kişisel takip planı oluşturur." },
   { id: "risk", mode: "risk_analysis", label: "Riskli borçları listele", description: "Gecikmiş ve kritik kayıtları öne çıkarır." },
   { id: "month", mode: "monthly_summary", label: "Bu ay ne ödemeliyim?", description: "Bu ayın ödeme görünümünü özetler." },
-  { id: "30-days", mode: "payment_plan", label: "30 günlük finans planı yap", description: "Yaklaşan vadeler için takip sırası oluşturur." },
+  { id: "30-days", mode: "thirty_day_plan", label: "30 günlük finans planı yap", description: "Ödemeleri dört haftalık kontrol planına dönüştürür." },
   { id: "manager", mode: "manager_summary", label: "Yönetici finans özeti oluştur", description: "Kısa, karar odaklı bir finans görünümü üretir." },
 ];
 
