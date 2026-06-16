@@ -38,7 +38,7 @@ export function EmptyNotes({
           ) : null}
           <Button onClick={onCreate}>
             <FilePlus2 className="size-4" />
-            Yeni Not
+            Not Oluştur
           </Button>
         </div>
       </div>

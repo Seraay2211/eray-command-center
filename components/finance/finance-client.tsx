@@ -672,9 +672,9 @@ export function FinanceClient({
                 ) : (
                   <Card className="flex min-h-64 flex-col items-center justify-center p-8 text-center">
                     <Banknote className="app-primary size-7" />
-                    <h2 className="app-text mt-4 text-base font-semibold">Henüz borç kaydı yok</h2>
-                    <p className="app-muted mt-2 text-sm">İlk kaydını ekleyerek ödeme takibini başlat.</p>
-                    <Button className="mt-5" onClick={openNew}><Plus className="size-4" /> İlk Borcu Ekle</Button>
+                    <h2 className="app-text mt-4 text-base font-semibold">Henüz finans kaydı yok</h2>
+                    <p className="app-muted mt-2 max-w-md text-sm leading-6">Borç, taksit veya ödeme kaydı ekleyerek finans merkezini kullanmaya başlayabilirsin.</p>
+                    <Button className="mt-5" onClick={openNew}><Plus className="size-4" /> Borç Ekle</Button>
                   </Card>
                 )}
               </section>

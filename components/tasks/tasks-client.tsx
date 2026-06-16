@@ -686,14 +686,14 @@ export function TasksClient({
                 <p className="app-muted mt-2 max-w-md text-sm leading-6">
                   {isFiltered
                     ? "Filtreleri temizleyebilir veya başka bir görev görünümüne geçebilirsin."
-                    : "Günlük işleri ve operasyon adımlarını takip etmek için ilk görevini oluştur."}
+                    : "Bugün odaklanmak istediğin ilk işi görev olarak ekle."}
                 </p>
                 <Button
                   className="mt-6"
                   onClick={isFiltered ? resetFilters : openNewTask}
                   variant="secondary"
                 >
-                  {isFiltered ? "Filtreleri Temizle" : "İlk Görevi Oluştur"}
+                  {isFiltered ? "Filtreleri Temizle" : "Görev Ekle"}
                 </Button>
               </div>
             </Card>

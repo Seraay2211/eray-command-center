@@ -1,19 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import {
   Check,
   CheckCircle2,
   Circle,
   LayoutDashboard,
-  LoaderCircle,
   Palette,
   Sparkles,
   WalletCards,
   X,
 } from "lucide-react";
-import { useSettings } from "@/components/providers/settings-provider";
 import { Button, buttonClassName } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
@@ -33,7 +31,7 @@ const checklistItems = [
   {
     href: "/finance?new=1",
     key: "hasFinance",
-    label: "İlk borcunu ekle",
+    label: "İlk borç kaydını ekle",
   },
   {
     href: "/tasks?new=1",
@@ -46,51 +44,68 @@ const checklistItems = [
     label: "İlk notunu yaz",
   },
   {
-    href: "/settings",
+    href: "/settings?tab=appearance",
     key: "hasDashboardPreferences",
     label: "Dashboard kartlarını düzenle",
   },
   {
-    href: "/settings",
+    href: "/settings?tab=appearance",
     key: "hasThemeChoice",
     label: "Görünüm temasını seç",
   },
   {
-    href: "/today",
-    key: "dailySummary",
-    label: "Günün Özeti oluştur",
+    href: "/settings?tab=data",
+    key: "dataBackup",
+    label: "Veri yedekleme alanını kontrol et",
   },
 ] as const;
 
-export function OnboardingCard({ checklist }: OnboardingCardProps) {
-  const { settings, updateSettings } = useSettings();
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState("");
+const launchReadinessStorageKey = "ecc-launch-readiness-hidden-v23-1";
+const launchReadinessStorageEvent = "ecc-launch-readiness-storage";
 
-  if (settings.onboarding_completed) {
+function subscribeToLaunchReadiness(callback: () => void) {
+  window.addEventListener("storage", callback);
+  window.addEventListener(launchReadinessStorageEvent, callback);
+
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener(launchReadinessStorageEvent, callback);
+  };
+}
+
+function getLaunchReadinessSnapshot() {
+  return localStorage.getItem(launchReadinessStorageKey) === "1";
+}
+
+function getLaunchReadinessServerSnapshot() {
+  return false;
+}
+
+export function OnboardingCard({ checklist }: OnboardingCardProps) {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const isHidden = useSyncExternalStore(
+    subscribeToLaunchReadiness,
+    getLaunchReadinessSnapshot,
+    getLaunchReadinessServerSnapshot,
+  );
+
+  if (isHidden) {
     return null;
   }
 
   const completedCount = checklistItems.filter((item) =>
-    item.key === "dailySummary"
+    item.key === "dataBackup"
       ? false
       : Boolean(checklist[item.key]),
   ).length;
 
-  async function hideOnboarding() {
-    setIsPending(true);
-    setError("");
-    const nextError = await updateSettings({ onboarding_completed: true });
-    setIsPending(false);
-
-    if (nextError) {
-      setError("Başlangıç kartı gizlenemedi. Birazdan tekrar dene.");
-    }
+  function hideOnboarding() {
+    localStorage.setItem(launchReadinessStorageKey, "1");
+    window.dispatchEvent(new Event(launchReadinessStorageEvent));
   }
 
   return (
-    <Card className="relative overflow-hidden p-4 sm:p-6">
+    <Card className="relative overflow-hidden border-[color-mix(in_srgb,var(--primary)_35%,var(--border))] p-4 shadow-xl shadow-[color-mix(in_srgb,var(--primary)_8%,transparent)] sm:p-6">
       <div className="pointer-events-none absolute -right-16 -top-20 size-56 rounded-full bg-[color-mix(in_srgb,var(--primary)_16%,transparent)] blur-3xl" />
       <div className="relative space-y-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -100,36 +115,30 @@ export function OnboardingCard({ checklist }: OnboardingCardProps) {
             </span>
             <div className="min-w-0">
               <span className="app-primary text-[10px] font-semibold uppercase tracking-[0.16em]">
-                Hızlı Başlangıç
+                Lansman Hazırlığı
               </span>
               <h2 className="app-text mt-2 text-lg font-semibold">
-                Hoş geldin, Eray Command Center hazır.
+                Başlangıç Kontrol Listesi
               </h2>
               <p className="app-muted mt-2 max-w-2xl text-sm leading-6">
-                Finans, görev, not ve günlük akışını tek yerden yönetmeye
-                başlayabilirsin.
+                Eray Command Center’ı günlük kullanım için hazırla. Eksik
+                adımları tamamladıkça bu kart sana yol gösterecek.
               </p>
             </div>
           </div>
 
           <div className="flex shrink-0 flex-wrap gap-2">
             <Button
-              disabled={isPending}
               onClick={() => setIsCollapsed((current) => !current)}
               variant="secondary"
             >
               {isCollapsed ? "Kontrol listesini aç" : "Küçült"}
             </Button>
             <Button
-              disabled={isPending}
-              onClick={() => void hideOnboarding()}
+              onClick={hideOnboarding}
               variant="ghost"
             >
-              {isPending ? (
-                <LoaderCircle className="size-4 animate-spin" />
-              ) : (
-                <X className="size-4" />
-              )}
+              <X className="size-4" />
               Gizle
             </Button>
           </div>
@@ -159,7 +168,7 @@ export function OnboardingCard({ checklist }: OnboardingCardProps) {
               <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                 {checklistItems.map((item) => {
                   const isDone =
-                    item.key === "dailySummary"
+                    item.key === "dataBackup"
                       ? false
                       : Boolean(checklist[item.key]);
                   return (
@@ -189,6 +198,9 @@ export function OnboardingCard({ checklist }: OnboardingCardProps) {
                           {isDone ? "Tamamlandı" : "Başlamak için aç"}
                         </span>
                       </span>
+                      <span className="app-primary ml-auto shrink-0 rounded-full bg-[color-mix(in_srgb,var(--primary)_10%,transparent)] px-2 py-1 text-[10px] font-semibold">
+                        Aç
+                      </span>
                     </Link>
                   );
                 })}
@@ -211,17 +223,17 @@ export function OnboardingCard({ checklist }: OnboardingCardProps) {
                   className: "justify-start",
                   variant: "secondary",
                 })}
-                href="/settings"
+                href="/settings?tab=appearance"
               >
                 <Palette className="size-4" />
                 Temayı Düzenle
               </Link>
               <Link
                 className={buttonClassName({ className: "justify-start" })}
-                href="/today"
+                href="/settings?tab=data"
               >
                 <LayoutDashboard className="size-4" />
-                Günün Özeti
+                Veri ve Yedekleme
               </Link>
             </div>
           </>
@@ -233,18 +245,12 @@ export function OnboardingCard({ checklist }: OnboardingCardProps) {
             </span>
             <Link
               className={buttonClassName({ size: "sm", variant: "secondary" })}
-              href="/settings"
+              href="/settings?tab=data"
             >
-              Ayarlara Git
+              Yedekleme Alanına Git
             </Link>
           </div>
         )}
-
-        {error ? (
-          <p className="text-xs text-[var(--danger)]" role="alert">
-            {error}
-          </p>
-        ) : null}
       </div>
     </Card>
   );

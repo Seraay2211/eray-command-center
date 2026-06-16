@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Bell,
   Bot,
@@ -59,12 +60,12 @@ interface SettingsClientProps {
 
 const tabs: SettingsTab[] = [
   { id: "appearance", label: "Görünüm", icon: Eye },
+  { id: "data", label: "Veri ve Yedekleme", icon: Database },
   { id: "start", label: "Başlangıç Ekranı", icon: Home },
   { id: "notifications", label: "Bildirim Tercihleri", icon: Bell },
   { id: "finance", label: "Finans Tercihleri", icon: CircleDollarSign },
   { id: "ai", label: "AI Tercihleri", icon: Bot },
   { id: "workspace", label: "Çalışma Alanı", icon: SlidersHorizontal },
-  { id: "data", label: "Veri ve Yedekleme", icon: Database },
 ];
 
 const landingPageOptions = [
@@ -108,7 +109,14 @@ export function SettingsClient({
   userEmail,
 }: SettingsClientProps) {
   const { replaceSettings, settings, updateSettings } = useSettings();
-  const [activeTab, setActiveTab] = useState("appearance");
+  const searchParams = useSearchParams();
+  const tabFromUrl = searchParams.get("tab") as SettingsTab["id"] | null;
+  const initialTab = tabs.some((tab) => tab.id === tabFromUrl)
+    ? tabFromUrl!
+    : "appearance";
+  const [manualActiveTab, setManualActiveTab] =
+    useState<SettingsTab["id"] | null>(null);
+  const activeTab = manualActiveTab ?? initialTab;
   const [displayName, setDisplayName] = useState(settings.display_name ?? "");
   const [criticalThreshold, setCriticalThreshold] = useState(
     String(settings.critical_debt_threshold),
@@ -185,7 +193,7 @@ export function SettingsClient({
 
     const date = result.data.exported_at.slice(0, 10);
     if (type === "all") {
-      downloadJson(`eray-command-center-tum-veriler-${date}.json`, result.data);
+      downloadJson(`eray-command-center-yedek-${date}.json`, result.data);
     } else if (type === "notes-json") {
       downloadJson(`eray-command-center-notlar-${date}.json`, {
         exported_at: result.data.exported_at,
@@ -286,7 +294,7 @@ export function SettingsClient({
       <div className="grid min-w-0 items-start gap-4 lg:grid-cols-[200px_minmax(0,1fr)]">
         <SettingsSidebar
           activeTab={activeTab}
-          onChange={setActiveTab}
+          onChange={setManualActiveTab}
           tabs={tabs}
         />
 
@@ -627,14 +635,11 @@ export function SettingsClient({
                 activeTheme={activeTheme}
                 createdAt={userCreatedAt}
                 email={userEmail}
-                isOnboardingPending={pendingKey === "onboarding"}
-                onShowOnboarding={() =>
-                  void savePatch(
-                    "onboarding",
-                    { onboarding_completed: false },
-                    "Onboarding Dashboard’da tekrar gösterilecek.",
-                  )
-                }
+                isOnboardingPending={false}
+                onShowOnboarding={() => {
+                  localStorage.removeItem("ecc-launch-readiness-hidden-v23-1");
+                  showNotice("Başlangıç kartı Dashboard’da tekrar gösterilecek.");
+                }}
               />
               <ToggleRow
                 checked={settings.confirm_before_delete}
@@ -659,37 +664,31 @@ export function SettingsClient({
                 {[
                   {
                     description:
-                      "Not başlığı, içerik, kategori, etiket ve durum bilgileri.",
-                    key: "notes-text" as const,
-                    label: "Notları TXT indir",
-                  },
-                  {
-                    description:
-                      "Notlarının tam yedeği. Uzun metinler korunur.",
+                      "Başlık, içerik, kategori, etiket ve not durumları JSON olarak indirilir.",
                     key: "notes-json" as const,
-                    label: "Notları JSON indir",
+                    label: "Notları Dışa Aktar",
                   },
                   {
                     description:
-                      "Borçlar, taksit bilgisi, kalan tutar ve ödeme geçmişi.",
+                      "Borçlar, taksit bilgisi, kalan tutar ve ödeme geçmişi CSV olarak indirilir.",
                     key: "finance-csv" as const,
-                    label: "Finans CSV indir",
+                    label: "Finans Kayıtlarını Dışa Aktar",
                   },
                   {
                     description:
-                      "Aktif, tamamlanan ve arşivlenen görev kayıtları.",
+                      "Aktif, tamamlanan ve arşivlenen görev kayıtları CSV olarak indirilir.",
                     key: "tasks-csv" as const,
-                    label: "Görevleri CSV indir",
+                    label: "Görevleri Dışa Aktar",
                   },
                   {
                     description:
-                      "Not, görev, finans, takvim, rapor, şablon ve ayar yedeği.",
+                      "Not, görev, finans, takvim, rapor, şablon ve güvenli ayar yedeği JSON olarak indirilir.",
                     key: "all" as const,
-                    label: "Tüm veriler JSON indir",
+                    label: "Tüm Verilerimi Dışa Aktar",
                   },
                 ].map((item) => (
                   <button
-                    className="app-surface-2 app-border flex min-h-28 min-w-0 flex-col items-start justify-between rounded-2xl border p-4 text-left transition hover:border-[color-mix(in_srgb,var(--primary)_45%,var(--border))] disabled:cursor-not-allowed disabled:opacity-60"
+                    className="app-surface-2 app-border flex min-h-36 min-w-0 flex-col items-start justify-between rounded-2xl border p-4 text-left transition hover:border-[color-mix(in_srgb,var(--primary)_45%,var(--border))] disabled:cursor-not-allowed disabled:opacity-60"
                     disabled={pendingKey.startsWith("export-")}
                     key={item.key}
                     onClick={() => void handleExport(item.key)}
@@ -712,8 +711,45 @@ export function SettingsClient({
                         </span>
                       </span>
                     </span>
+                    <span className="mt-4 inline-flex min-h-9 items-center gap-2 rounded-xl bg-[var(--primary)] px-3 py-2 text-xs font-semibold text-[var(--primary-contrast)]">
+                      {pendingKey === `export-${item.key}` ? (
+                        <>
+                          <LoaderCircle className="size-3.5 animate-spin" />
+                          Dışa aktarılıyor...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="size-3.5" />
+                          Dışa Aktar
+                        </>
+                      )}
+                    </span>
                   </button>
                 ))}
+              </div>
+              <div className="app-surface-2 app-border rounded-xl border p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="app-text text-sm font-semibold">
+                      Notları temiz metin olarak da arşivle
+                    </p>
+                    <p className="app-muted mt-1 text-[11px] leading-5">
+                      Uzun notları hızlı okumak için ek TXT çıktısı alabilirsin.
+                    </p>
+                  </div>
+                  <Button
+                    disabled={pendingKey.startsWith("export-")}
+                    onClick={() => void handleExport("notes-text")}
+                    variant="secondary"
+                  >
+                    {pendingKey === "export-notes-text" ? (
+                      <LoaderCircle className="size-4 animate-spin" />
+                    ) : (
+                      <Download className="size-4" />
+                    )}
+                    TXT İndir
+                  </Button>
+                </div>
               </div>
               <div className="app-surface-2 app-border rounded-xl border p-4">
                 <div className="flex items-start gap-3">

@@ -490,14 +490,14 @@ export function ReportsClient({
                         size="sm"
                         variant="secondary"
                       >
-                        Daha fazla goster
+                        Daha fazla göster
                       </Button>
                     </div>
                   ) : null}
                   {filteredReports.length === visibleReports.length && hasMore ? (
                     <div className="mt-4 flex justify-center">
                       <Button disabled={isLoadingMore} onClick={() => void handleLoadMore()} size="sm" variant="secondary">
-                        {isLoadingMore ? "Yukleniyor..." : "50 rapor daha yukle"}
+                        {isLoadingMore ? "Yükleniyor..." : "50 rapor daha yükle"}
                       </Button>
                     </div>
                   ) : null}
@@ -506,8 +506,8 @@ export function ReportsClient({
                 <Card className="flex min-h-80 flex-col items-center justify-center p-8 text-center">
                   <span className="app-primary-bg flex size-14 items-center justify-center rounded-2xl"><BarChart3 className="size-6" /></span>
                   <h2 className="app-text mt-5 text-lg font-semibold">Henüz rapor yok</h2>
-                  <p className="app-muted mt-2 max-w-md text-sm leading-6">Manuel bir rapor oluştur veya not ve görevlerinden AI destekli rapor üret.</p>
-                  <Button className="mt-6" onClick={() => openAiReport("daily")}><Sparkles className="size-4" /> İlk Raporu Oluştur</Button>
+                  <p className="app-muted mt-2 max-w-md text-sm leading-6">Notlarından, görevlerinden veya günlük akışından düzenli raporlar oluşturabilirsin.</p>
+                  <Button className="mt-6" onClick={() => openAiReport("daily")}><Sparkles className="size-4" /> Rapor Oluştur</Button>
                 </Card>
               )}
             </div>
