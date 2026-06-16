@@ -312,7 +312,8 @@ export function AiWorkspace({
           role="status"
         >
           <Bot className="app-primary mt-0.5 size-4 shrink-0" />
-          Gemini API anahtarı tanımlı değil. Demo çıktı gösteriliyor.
+          Akıllı asistan şu anda demo modunda çalışıyor. Temel örnek çıktılar
+          gösterilecek.
         </div>
       ) : null}
       {showSensitiveWarning ? (

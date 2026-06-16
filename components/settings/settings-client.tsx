@@ -38,6 +38,7 @@ import { formatTRY } from "@/lib/utils/currency";
 import {
   exportFinanceData,
   exportNotesData,
+  exportTasksData,
   exportUserData,
   resetUserSettings,
 } from "@/services/settings-service";
@@ -82,8 +83,12 @@ const aiActionOptions = [
 ];
 
 function downloadJson(fileName: string, value: unknown) {
-  const blob = new Blob([JSON.stringify(value, null, 2)], {
-    type: "application/json",
+  downloadFile(fileName, JSON.stringify(value, null, 2), "application/json");
+}
+
+function downloadFile(fileName: string, value: string, type: string) {
+  const blob = new Blob([value], {
+    type: `${type};charset=utf-8`,
   });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
@@ -156,27 +161,55 @@ export function SettingsClient({
   }
 
   async function handleExport(
-    type: "all" | "notes" | "finance",
+    type: "all" | "notes-json" | "notes-text" | "finance-csv" | "tasks-csv",
   ) {
     setPendingKey(`export-${type}`);
     setError("");
     const result =
       type === "all"
         ? await exportUserData()
-        : type === "notes"
+        : type === "notes-json" || type === "notes-text"
           ? await exportNotesData()
-          : await exportFinanceData();
+          : type === "tasks-csv"
+            ? await exportTasksData()
+            : await exportFinanceData();
     setPendingKey("");
 
     if (result.error || !result.data) {
-      setError(result.error ?? "Veriler dışa aktarılamadı.");
+      setError(
+        result.error ??
+          "Dışa aktarma tamamlanamadı. Birazdan tekrar deneyebilirsin.",
+      );
       return;
     }
 
     const date = result.data.exported_at.slice(0, 10);
-    const label =
-      type === "all" ? "tum-veriler" : type === "notes" ? "notlar" : "finans";
-    downloadJson(`eray-command-center-${label}-${date}.json`, result.data);
+    if (type === "all") {
+      downloadJson(`eray-command-center-tum-veriler-${date}.json`, result.data);
+    } else if (type === "notes-json") {
+      downloadJson(`eray-command-center-notlar-${date}.json`, {
+        exported_at: result.data.exported_at,
+        notes: "notes" in result.data ? result.data.notes : [],
+      });
+    } else if (type === "notes-text") {
+      downloadFile(
+        `eray-command-center-notlar-${date}.txt`,
+        "text" in result.data ? result.data.text : "",
+        "text/plain",
+      );
+    } else if (type === "tasks-csv") {
+      downloadFile(
+        `eray-command-center-gorevler-${date}.csv`,
+        "csv" in result.data ? result.data.csv : "",
+        "text/csv",
+      );
+    } else {
+      downloadFile(
+        `eray-command-center-finans-${date}.csv`,
+        "csv" in result.data ? result.data.csv : "",
+        "text/csv",
+      );
+    }
     showNotice("Dışa aktarma tamamlandı.");
   }
 
@@ -618,58 +651,80 @@ export function SettingsClient({
 
           {activeTab === "data" ? (
             <SettingsSection
-              description="Kişisel verilerini güvenli JSON dosyaları olarak dışa aktar."
+              description="Kayıtlarını dışa aktar ve kişisel arşivini güvence altında tut."
               icon={Database}
               title="Veri ve Yedekleme"
             >
-              <div className="grid gap-3 sm:grid-cols-3">
-                <Button
-                  disabled={pendingKey.startsWith("export-")}
-                  onClick={() => void handleExport("all")}
-                  variant="secondary"
-                >
-                  {pendingKey === "export-all" ? (
-                    <LoaderCircle className="size-4 animate-spin" />
-                  ) : (
-                    <Download className="size-4" />
-                  )}
-                  Verileri Dışa Aktar
-                </Button>
-                <Button
-                  disabled={pendingKey.startsWith("export-")}
-                  onClick={() => void handleExport("notes")}
-                  variant="secondary"
-                >
-                  {pendingKey === "export-notes" ? (
-                    <LoaderCircle className="size-4 animate-spin" />
-                  ) : (
-                    <Download className="size-4" />
-                  )}
-                  Notları Dışa Aktar
-                </Button>
-                <Button
-                  disabled={pendingKey.startsWith("export-")}
-                  onClick={() => void handleExport("finance")}
-                  variant="secondary"
-                >
-                  {pendingKey === "export-finance" ? (
-                    <LoaderCircle className="size-4 animate-spin" />
-                  ) : (
-                    <Download className="size-4" />
-                  )}
-                  Finans Verilerini Dışa Aktar
-                </Button>
+              <div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {[
+                  {
+                    description:
+                      "Not başlığı, içerik, kategori, etiket ve durum bilgileri.",
+                    key: "notes-text" as const,
+                    label: "Notları TXT indir",
+                  },
+                  {
+                    description:
+                      "Notlarının tam yedeği. Uzun metinler korunur.",
+                    key: "notes-json" as const,
+                    label: "Notları JSON indir",
+                  },
+                  {
+                    description:
+                      "Borçlar, taksit bilgisi, kalan tutar ve ödeme geçmişi.",
+                    key: "finance-csv" as const,
+                    label: "Finans CSV indir",
+                  },
+                  {
+                    description:
+                      "Aktif, tamamlanan ve arşivlenen görev kayıtları.",
+                    key: "tasks-csv" as const,
+                    label: "Görevleri CSV indir",
+                  },
+                  {
+                    description:
+                      "Not, görev, finans, takvim, rapor, şablon ve ayar yedeği.",
+                    key: "all" as const,
+                    label: "Tüm veriler JSON indir",
+                  },
+                ].map((item) => (
+                  <button
+                    className="app-surface-2 app-border flex min-h-28 min-w-0 flex-col items-start justify-between rounded-2xl border p-4 text-left transition hover:border-[color-mix(in_srgb,var(--primary)_45%,var(--border))] disabled:cursor-not-allowed disabled:opacity-60"
+                    disabled={pendingKey.startsWith("export-")}
+                    key={item.key}
+                    onClick={() => void handleExport(item.key)}
+                    type="button"
+                  >
+                    <span className="flex w-full min-w-0 items-start gap-3">
+                      <span className="app-primary-bg flex size-9 shrink-0 items-center justify-center rounded-xl">
+                        {pendingKey === `export-${item.key}` ? (
+                          <LoaderCircle className="size-4 animate-spin" />
+                        ) : (
+                          <Download className="size-4" />
+                        )}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="app-text block text-sm font-semibold">
+                          {item.label}
+                        </span>
+                        <span className="app-muted mt-1 block text-[11px] leading-5">
+                          {item.description}
+                        </span>
+                      </span>
+                    </span>
+                  </button>
+                ))}
               </div>
               <div className="app-surface-2 app-border rounded-xl border p-4">
                 <div className="flex items-start gap-3">
                   <ShieldCheck className="mt-0.5 size-4 text-[var(--success)]" />
                   <div>
                     <p className="app-text text-sm font-medium">
-                      Veriler hesabına bağlıdır
+                      Yedekler sadece sana ait kayıtları içerir
                     </p>
                     <p className="app-muted mt-1 text-[11px] leading-5">
-                      Dışa aktarma işlemleri yalnızca aktif oturum kullanıcısının
-                      kayıtlarını içerir.
+                      Oturum, anahtar veya gizli yapılandırma bilgileri dışa
+                      aktarılmaz. Türkçe karakterler dosyalarda korunur.
                     </p>
                   </div>
                 </div>

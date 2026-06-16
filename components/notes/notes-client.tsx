@@ -289,6 +289,7 @@ export function NotesClient({
   const schemaMissing =
     pageError.includes("gerekli güncelleme") ||
     pageError.includes("database/schema.sql");
+  const isDevelopment = process.env.NODE_ENV === "development";
   const selectedNote =
     notes.find((note) => note.id === selectedNoteId) ?? null;
   const fullscreenNote =
@@ -1427,30 +1428,39 @@ export function NotesClient({
             <span className="flex size-11 items-center justify-center rounded-xl border border-amber-400/15 bg-amber-500/[0.08] text-amber-300">
               <AlertCircle className="size-5" />
             </span>
-            <h2 className="mt-5 text-lg font-semibold text-zinc-100">
-              Not sistemi güncellemesi gerekiyor
+            <h2 className="app-text mt-5 text-lg font-semibold">
+              Not alanı hazırlanıyor
             </h2>
-            <p className="mt-2 text-sm leading-6 text-zinc-500">
-              Uygulama hazır, ancak notlar için gerekli son güncelleme henüz
-              uygulanmamış. Kurulum adımını tamamladıktan sonra tekrar kontrol
+            <p className="app-muted mt-2 text-sm leading-6">
+              Not kayıtları şu anda yüklenemiyor. Birazdan tekrar kontrol
               edebilirsin.
             </p>
+            {isDevelopment ? (
+              <p className="app-muted mt-3 text-xs leading-5">
+                Geliştirme notu:{" "}
+                <code className="app-surface-2 app-primary rounded px-1.5 py-0.5 font-mono text-xs">
+                  database/phase-22-ai-productivity-suite.sql
+                </code>
+              </p>
+            ) : null}
             <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-              <Button
-                onClick={() => {
-                  navigator.clipboard.writeText(
-                    "database/phase-22-ai-productivity-suite.sql",
-                  );
-                  showNotice("Kurulum adımı kopyalandı.");
-                }}
-                variant="secondary"
-              >
-                <ClipboardCopy className="size-4" />
-                Kurulum adımını kopyala
-              </Button>
+              {isDevelopment ? (
+                <Button
+                  onClick={() => {
+                    navigator.clipboard.writeText(
+                      "database/phase-22-ai-productivity-suite.sql",
+                    );
+                    showNotice("Kurulum notu kopyalandı.");
+                  }}
+                  variant="secondary"
+                >
+                  <ClipboardCopy className="size-4" />
+                  Kurulum notunu kopyala
+                </Button>
+              ) : null}
               <Button onClick={() => router.refresh()}>
                 <RefreshCw className="size-4" />
-                Güncellemeyi tekrar kontrol et
+                Tekrar dene
               </Button>
             </div>
           </div>

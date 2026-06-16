@@ -837,13 +837,23 @@ export type UpdateUserSettingsInput = Partial<
 
 export interface UserDataExport {
   exported_at: string;
+  app_name: string;
   version: string;
-  settings: UserSettings;
+  settings: Omit<UserSettings, "id" | "user_id">;
   notes: unknown[];
   tasks: unknown[];
+  finance: {
+    debts: unknown[];
+    payments: unknown[];
+    installments: unknown[];
+  };
+  calendar: unknown[];
   reports: unknown[];
-  debts: unknown[];
-  debt_payments: unknown[];
+  templates: unknown[];
+  taxonomy: {
+    categories: unknown[];
+    tags: unknown[];
+  };
 }
 
 export interface AiActionRequest {

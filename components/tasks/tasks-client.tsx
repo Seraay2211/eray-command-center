@@ -134,6 +134,7 @@ export function TasksClient({
   const schemaMissing =
     pageError.includes("phase-6-tasks.sql") ||
     pageError.includes("phase-19.1-task-archive.sql");
+  const isDevelopment = process.env.NODE_ENV === "development";
   const isTaskArchived = useCallback(
     (task: TaskWithCategory) =>
       Boolean(task.archived_at) || isTaskAutoArchived(task, todayKey),
@@ -505,36 +506,42 @@ export function TasksClient({
               <AlertCircle className="size-5" />
             </span>
             <h2 className="app-text mt-5 text-lg font-semibold">
-              Görev veritabanı kurulumu gerekiyor
+              Görev alanı hazırlanıyor
             </h2>
             <p className="app-muted mt-2 text-sm leading-6">
-              Supabase SQL Editor içinde{" "}
-              <code className="app-surface-2 app-primary rounded px-1.5 py-0.5 font-mono text-xs">
-                {pageError.includes("phase-19.1")
-                  ? "database/phase-19.1-task-archive.sql"
-                  : "database/phase-6-tasks.sql"}
-              </code>{" "}
-              dosyasının tamamını çalıştırın. Bu işlem mevcut notları veya
-              kullanıcıları silmez.
+              Görev kayıtları şu anda yüklenemiyor. Birazdan tekrar kontrol
+              edebilirsin.
             </p>
+            {isDevelopment ? (
+              <p className="app-muted mt-3 text-xs leading-5">
+                Geliştirme notu:{" "}
+                <code className="app-surface-2 app-primary rounded px-1.5 py-0.5 font-mono text-xs">
+                  {pageError.includes("phase-19.1")
+                    ? "database/phase-19.1-task-archive.sql"
+                    : "database/phase-6-tasks.sql"}
+                </code>
+              </p>
+            ) : null}
             <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-              <Button
-                onClick={() => {
-                  navigator.clipboard.writeText(
-                    pageError.includes("phase-19.1")
-                      ? "database/phase-19.1-task-archive.sql"
-                      : "database/phase-6-tasks.sql",
-                  );
-                  showNotice("SQL dosya yolu kopyalandı.");
-                }}
-                variant="secondary"
-              >
-                <ClipboardCopy className="size-4" />
-                Dosya yolunu kopyala
-              </Button>
+              {isDevelopment ? (
+                <Button
+                  onClick={() => {
+                    navigator.clipboard.writeText(
+                      pageError.includes("phase-19.1")
+                        ? "database/phase-19.1-task-archive.sql"
+                        : "database/phase-6-tasks.sql",
+                    );
+                    showNotice("Kurulum notu kopyalandı.");
+                  }}
+                  variant="secondary"
+                >
+                  <ClipboardCopy className="size-4" />
+                  Kurulum notunu kopyala
+                </Button>
+              ) : null}
               <Button onClick={() => router.refresh()}>
                 <RefreshCw className="size-4" />
-                Kurulumu tekrar kontrol et
+                Tekrar dene
               </Button>
             </div>
           </div>

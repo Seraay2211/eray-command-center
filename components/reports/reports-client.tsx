@@ -115,6 +115,7 @@ export function ReportsClient({
   const debouncedQuery = useDebounce(query, 250);
 
   const schemaMissing = pageError.includes("phase-7-reports.sql");
+  const isDevelopment = process.env.NODE_ENV === "development";
   const selectedReport =
     reports.find((report) => report.id === selectedReportId) ?? null;
 
@@ -440,13 +441,20 @@ export function ReportsClient({
           <div className="absolute -right-20 -top-20 size-64 rounded-full bg-violet-500/10 blur-3xl" />
           <div className="relative max-w-2xl">
             <span className="flex size-11 items-center justify-center rounded-xl border border-amber-400/15 bg-amber-500/[0.08] text-amber-300"><AlertCircle className="size-5" /></span>
-            <h2 className="mt-5 text-lg font-semibold text-zinc-100">Rapor veritabanı kurulumu gerekiyor</h2>
-            <p className="mt-2 text-sm leading-6 text-zinc-500">
-              Supabase SQL Editor içinde <code className="rounded bg-white/[0.05] px-1.5 py-0.5 font-mono text-xs text-violet-300">database/phase-7-reports.sql</code> dosyasının tamamını çalıştırın.
+            <h2 className="app-text mt-5 text-lg font-semibold">Rapor alanı hazırlanıyor</h2>
+            <p className="app-muted mt-2 text-sm leading-6">
+              Rapor kayıtları şu anda yüklenemiyor. Birazdan tekrar kontrol edebilirsin.
             </p>
-            <div className="mt-5 flex gap-2">
-              <Button onClick={() => { navigator.clipboard.writeText("database/phase-7-reports.sql"); showNotice("SQL dosya yolu kopyalandı."); }} variant="secondary"><ClipboardCopy className="size-4" /> Yolu Kopyala</Button>
-              <Button onClick={() => router.refresh()}><RefreshCw className="size-4" /> Tekrar Kontrol Et</Button>
+            {isDevelopment ? (
+              <p className="app-muted mt-3 text-xs leading-5">
+                Geliştirme notu: <code className="app-surface-2 app-primary rounded px-1.5 py-0.5 font-mono text-xs">database/phase-7-reports.sql</code>
+              </p>
+            ) : null}
+            <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+              {isDevelopment ? (
+                <Button onClick={() => { navigator.clipboard.writeText("database/phase-7-reports.sql"); showNotice("Kurulum notu kopyalandı."); }} variant="secondary"><ClipboardCopy className="size-4" /> Kurulum notunu kopyala</Button>
+              ) : null}
+              <Button onClick={() => router.refresh()}><RefreshCw className="size-4" /> Tekrar dene</Button>
             </div>
           </div>
         </Card>
@@ -496,9 +504,9 @@ export function ReportsClient({
                 </>
               ) : (
                 <Card className="flex min-h-80 flex-col items-center justify-center p-8 text-center">
-                  <span className="flex size-14 items-center justify-center rounded-2xl border border-violet-400/20 bg-violet-500/10 text-violet-300"><BarChart3 className="size-6" /></span>
-                  <h2 className="mt-5 text-lg font-semibold text-zinc-100">Henüz rapor yok</h2>
-                  <p className="mt-2 max-w-md text-sm leading-6 text-zinc-500">Manuel bir rapor oluştur veya not ve görevlerinden AI destekli rapor üret.</p>
+                  <span className="app-primary-bg flex size-14 items-center justify-center rounded-2xl"><BarChart3 className="size-6" /></span>
+                  <h2 className="app-text mt-5 text-lg font-semibold">Henüz rapor yok</h2>
+                  <p className="app-muted mt-2 max-w-md text-sm leading-6">Manuel bir rapor oluştur veya not ve görevlerinden AI destekli rapor üret.</p>
                   <Button className="mt-6" onClick={() => openAiReport("daily")}><Sparkles className="size-4" /> İlk Raporu Oluştur</Button>
                 </Card>
               )}

@@ -195,7 +195,25 @@ export default async function DashboardPage() {
         </div>
       </header>
 
-      <OnboardingCard />
+      <OnboardingCard
+        checklist={{
+          hasDashboardPreferences: Boolean(
+            settingsResult.data?.dashboard_preferences,
+          ),
+          hasFinance:
+            dashboard.financeSummary.remainingDebt > 0 ||
+            dashboard.financeSummary.lastPayment !== null ||
+            dashboard.financeSummary.upcomingDebts.length > 0,
+          hasNotes: dashboard.stats.totalNotes > 0,
+          hasTasks:
+            dashboard.stats.openTasks > 0 ||
+            dashboard.commandStats.todayTasks > 0 ||
+            dashboard.commandStats.overdueTasks > 0,
+          hasThemeChoice:
+            Boolean(settingsResult.data?.app_theme) &&
+            settingsResult.data?.app_theme !== "command_dark",
+        }}
+      />
       <InstallHintCard />
       <DashboardPersonalizedArea>
         <DashboardWidgetSection widgetId="command_summary">
