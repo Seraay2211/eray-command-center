@@ -1,10 +1,20 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { useSettings } from "@/components/providers/settings-provider";
 import { CommandPaletteProvider } from "@/components/search/command-palette";
+import {
+  getAppFontStack,
+  normalizeAppFontFamily,
+} from "@/lib/settings/fonts";
 import { cn } from "@/lib/utils";
 import type { AppNotification } from "@/types/notifications";
 
@@ -24,6 +34,14 @@ export function AppShell({
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { settings } = useSettings();
   const isCollapsed = settings.sidebar_mode === "collapsed";
+  const selectedFont = normalizeAppFontFamily(settings.font_family);
+  const shellStyle = useMemo(
+    () =>
+      ({
+        "--app-font-family": getAppFontStack(selectedFont),
+      }) as CSSProperties,
+    [selectedFont],
+  );
 
   useEffect(() => {
     if (!isSidebarOpen) return;
@@ -37,7 +55,11 @@ export function AppShell({
 
   return (
     <CommandPaletteProvider>
-      <div className="app-shell min-h-screen">
+      <div
+        className="app-shell min-h-screen"
+        data-font={selectedFont}
+        style={shellStyle}
+      >
         <Sidebar
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}

@@ -57,7 +57,6 @@ export default async function PanelLayout({ children }: PanelLayoutProps) {
   return (
     <SettingsProvider
       initialSettings={settingsResult.data!}
-      key={`${settingsResult.data!.user_id}:${settingsResult.data!.updated_at}`}
     >
       <AppShell
         initialNotifications={notificationsResult.data ?? []}

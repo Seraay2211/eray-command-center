@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { normalizeAppearancePreferences } from "@/lib/settings/appearance-preferences";
+import { normalizeDashboardPreferences } from "@/lib/settings/dashboard-preferences";
 import { createDefaultUserSettings } from "@/lib/settings/defaults";
 import {
   APP_THEME_IDS,
@@ -26,9 +28,17 @@ import type {
 } from "@/types";
 
 const languages: AppLanguage[] = ["tr", "en"];
-const densities: AppDensity[] = ["comfortable", "compact"];
+const densities: AppDensity[] = ["comfortable", "balanced", "compact"];
 const sidebarModes: SidebarMode[] = ["expanded", "collapsed"];
-const fontFamilies: AppFontFamily[] = ["inter", "geist", "system"];
+const fontFamilies: AppFontFamily[] = [
+  "system",
+  "inter",
+  "geist",
+  "manrope",
+  "jakarta",
+  "nunito",
+  "roboto",
+];
 const landingPages: DefaultLandingPage[] = [
   "dashboard",
   "today",
@@ -72,6 +82,15 @@ function getErrorMessage(error: unknown): string {
     message.includes("user_settings_app_theme_check")
   ) {
     return "Faz 9 ayar guncellemesi eksik. database/phase-9-calendar.sql dosyasini Supabase SQL Editor icinde calistirin.";
+  }
+
+  if (
+    message.includes("appearance_preferences") ||
+    message.includes("dashboard_preferences") ||
+    message.includes("user_settings_density_check") ||
+    message.includes("user_settings_font_family_check")
+  ) {
+    return "Görünüm Merkezi ayarları henüz hazır değil. database/phase-21-appearance-center.sql dosyasını Supabase SQL Editor içinde çalıştırın.";
   }
 
   if (
@@ -137,6 +156,16 @@ function sanitizeInput(
     fontFamilies.includes(input.font_family)
   ) {
     values.font_family = input.font_family;
+  }
+  if (input.appearance_preferences !== undefined) {
+    values.appearance_preferences = normalizeAppearancePreferences(
+      input.appearance_preferences,
+    );
+  }
+  if (input.dashboard_preferences !== undefined) {
+    values.dashboard_preferences = normalizeDashboardPreferences(
+      input.dashboard_preferences,
+    );
   }
   if (
     input.default_landing_page !== undefined &&
@@ -229,6 +258,16 @@ function normalizeSettings(
     ...defaults,
     ...value,
     user_id: value?.user_id ?? userId,
+    font_family:
+      value?.font_family === "geist"
+        ? "system"
+        : value?.font_family ?? defaults.font_family,
+    appearance_preferences: normalizeAppearancePreferences(
+      value?.appearance_preferences,
+    ),
+    dashboard_preferences: normalizeDashboardPreferences(
+      value?.dashboard_preferences,
+    ),
     critical_debt_threshold: Number.isFinite(threshold)
       ? threshold
       : defaults.critical_debt_threshold,

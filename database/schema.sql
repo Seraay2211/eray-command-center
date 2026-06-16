@@ -137,10 +137,13 @@ create table if not exists public.user_settings (
   app_theme text not null default 'command_dark'
     check (app_theme in ('command_dark', 'midnight_violet', 'obsidian_gold', 'slate_blue', 'executive_light')),
   language text not null default 'tr' check (language in ('tr', 'en')),
-  density text not null default 'compact' check (density in ('comfortable', 'compact')),
+  density text not null default 'balanced' check (density in ('comfortable', 'balanced', 'compact')),
   sidebar_mode text not null default 'expanded' check (sidebar_mode in ('expanded', 'collapsed')),
-  font_family text not null default 'geist' check (font_family in ('inter', 'geist', 'system')),
+  font_family text not null default 'system'
+    check (font_family in ('system', 'inter', 'geist', 'manrope', 'jakarta', 'nunito', 'roboto')),
   reduce_motion boolean not null default false,
+  appearance_preferences jsonb,
+  dashboard_preferences jsonb,
   default_landing_page text not null default 'dashboard'
     check (default_landing_page in ('dashboard', 'today', 'notes', 'finance', 'tasks')),
   notifications_enabled boolean not null default true,
@@ -951,10 +954,22 @@ alter table public.user_settings
   add column if not exists short_ai_response_mode boolean not null default false,
   add column if not exists onboarding_completed boolean not null default false;
 
+-- Phase 21: Appearance Center and dashboard personalization.
 alter table public.user_settings
+  add column if not exists appearance_preferences jsonb,
+  add column if not exists dashboard_preferences jsonb;
+
+alter table public.user_settings
+  alter column density set default 'balanced',
+  alter column font_family set default 'system',
+  drop constraint if exists user_settings_density_check,
+  add constraint user_settings_density_check
+    check (density in ('comfortable', 'balanced', 'compact')),
   drop constraint if exists user_settings_font_family_check,
   add constraint user_settings_font_family_check
-    check (font_family in ('inter', 'geist', 'system')),
+    check (font_family in ('system', 'inter', 'geist', 'manrope', 'jakarta', 'nunito', 'roboto'));
+
+alter table public.user_settings
   drop constraint if exists user_settings_default_landing_page_check,
   add constraint user_settings_default_landing_page_check
     check (default_landing_page in ('dashboard', 'today', 'notes', 'finance', 'tasks')),
@@ -991,7 +1006,32 @@ alter table public.user_settings
       'matrix_green',
       'rose_noir',
       'arctic_light',
-      'paper_pro'
+      'paper_pro',
+      'royal-amethyst',
+      'carbon-mint',
+      'deep-space',
+      'coffee-bronze',
+      'arctic-glass',
+      'night-sakura',
+      'military-olive',
+      'ice-lavender',
+      'graphite-cyan',
+      'sandstone-light',
+      'ruby-noir',
+      'azure-command',
+      'pearl-minimal',
+      'solar-amber',
+      'titanium-blue',
+      'velvet-plum',
+      'glacier-mint',
+      'neon-orchid',
+      'walnut-cream',
+      'storm-indigo',
+      'matrix-lime',
+      'cloud-silver',
+      'crimson-executive',
+      'oceanic-teal',
+      'desert-night'
     )
   );
 

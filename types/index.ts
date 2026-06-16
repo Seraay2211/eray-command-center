@@ -721,13 +721,58 @@ export type AppTheme =
 
 export type AppLanguage = "tr" | "en";
 
-export type AppDensity = "comfortable" | "compact";
+export type AppDensity = "comfortable" | "balanced" | "compact";
 
 export type SidebarMode = "expanded" | "collapsed";
 
 export type DashboardLayout = "default" | "focus" | "compact";
 
-export type AppFontFamily = "inter" | "geist" | "system";
+export type AppFontFamily =
+  | "system"
+  | "inter"
+  | "geist"
+  | "manrope"
+  | "jakarta"
+  | "nunito"
+  | "roboto";
+
+export type AppTextSize = "small" | "normal" | "large";
+
+export type AppLineHeight = "tight" | "normal" | "relaxed";
+
+export type AppCardStyle =
+  | "sharp"
+  | "modern"
+  | "rounded"
+  | "soft"
+  | "glass";
+
+export interface AppearancePreferences {
+  card_style: AppCardStyle;
+  line_height: AppLineHeight;
+  text_size: AppTextSize;
+}
+
+export type DashboardWidgetPriority = "top" | "normal" | "bottom";
+
+export type DashboardWidgetId =
+  | "command_summary"
+  | "overview_stats"
+  | "priority_finance"
+  | "daily_flow"
+  | "quick_actions"
+  | "activity"
+  | "focus_tools";
+
+export interface DashboardWidgetPreference {
+  priority: DashboardWidgetPriority;
+  visible: boolean;
+}
+
+export type DashboardPreferences = Record<
+  DashboardWidgetId,
+  DashboardWidgetPreference
+>;
 
 export type DefaultLandingPage =
   | "dashboard"
@@ -746,6 +791,8 @@ export interface UserSettings {
   sidebar_mode: SidebarMode;
   font_family: AppFontFamily;
   reduce_motion: boolean;
+  appearance_preferences: AppearancePreferences | null;
+  dashboard_preferences: DashboardPreferences | null;
   default_landing_page: DefaultLandingPage;
   notifications_enabled: boolean;
   finance_alerts_enabled: boolean;

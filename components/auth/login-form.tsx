@@ -47,7 +47,7 @@ function getAuthErrorMessage(message: string): string {
     normalizedMessage.includes("fetch") ||
     normalizedMessage.includes("network")
   ) {
-    return "Supabase bağlantısı kurulamadı. İnternet bağlantını ve env değerlerini kontrol et.";
+    return "Giriş bağlantısı kurulamadı. İnternet bağlantını kontrol edip tekrar dene.";
   }
 
   return message || "Beklenmeyen bir kimlik doğrulama hatası oluştu.";

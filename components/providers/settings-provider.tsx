@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -13,6 +14,8 @@ import {
   translate,
   type DictionaryKey,
 } from "@/lib/i18n/dictionaries";
+import { normalizeAppearancePreferences } from "@/lib/settings/appearance-preferences";
+import { normalizeDashboardPreferences } from "@/lib/settings/dashboard-preferences";
 import {
   isLightTheme,
   isNewThemeId,
@@ -29,6 +32,16 @@ const STORAGE_KEY = "eray-command-center-settings";
 const THEME_STORAGE_KEY = "ecc-theme";
 const LANGUAGE_STORAGE_KEY = "ecc-language";
 const APP_LANGUAGES: AppLanguage[] = ["tr", "en"];
+const APP_FONTS = [
+  "system",
+  "inter",
+  "geist",
+  "manrope",
+  "jakarta",
+  "nunito",
+  "roboto",
+] as const;
+const APP_DENSITIES = ["comfortable", "balanced", "compact"] as const;
 
 interface SettingsContextValue {
   settings: UserSettings;
@@ -41,6 +54,9 @@ const SettingsContext = createContext<SettingsContextValue | null>(null);
 
 function applyDocumentSettings(settings: UserSettings) {
   const root = document.documentElement;
+  const appearance = normalizeAppearancePreferences(
+    settings.appearance_preferences,
+  );
   root.dataset.theme = settings.app_theme;
   root.dataset.colorScheme = isLightTheme(settings.app_theme)
     ? "light"
@@ -48,19 +64,50 @@ function applyDocumentSettings(settings: UserSettings) {
   root.dataset.density = settings.density;
   root.dataset.sidebar = settings.sidebar_mode;
   root.dataset.font = settings.font_family;
+  root.dataset.textSize = appearance.text_size;
+  root.dataset.lineHeight = appearance.line_height;
+  root.dataset.cardStyle = appearance.card_style;
+  root.dataset.authenticatedApp = "true";
   root.dataset.reduceMotion = String(settings.reduce_motion);
   root.dataset.defaultLandingPage = settings.default_landing_page;
   root.dataset.dashboardLayout = settings.dashboard_layout;
-  root.dataset.showDashboardNotes = String(settings.show_dashboard_notes);
-  root.dataset.showDashboardTasks = String(settings.show_dashboard_tasks);
-  root.dataset.showDashboardReports = String(settings.show_dashboard_reports);
-  root.dataset.showDashboardAi = String(settings.show_dashboard_ai);
-  root.dataset.showDashboardCalendar = String(
-    settings.show_dashboard_calendar,
-  );
-  root.dataset.compactCards = String(settings.compact_cards);
   root.lang = settings.language;
   root.style.colorScheme = isLightTheme(settings.app_theme) ? "light" : "dark";
+}
+
+function resetDocumentSettings() {
+  const root = document.documentElement;
+  root.dataset.theme = "command_dark";
+  root.dataset.colorScheme = "dark";
+  root.dataset.density = "balanced";
+  root.dataset.sidebar = "expanded";
+  root.dataset.font = "geist";
+  root.dataset.textSize = "normal";
+  root.dataset.lineHeight = "normal";
+  root.dataset.cardStyle = "modern";
+  root.dataset.reduceMotion = "false";
+  delete root.dataset.authenticatedApp;
+  delete root.dataset.defaultLandingPage;
+  delete root.dataset.dashboardLayout;
+  delete root.dataset.showDashboardNotes;
+  delete root.dataset.showDashboardTasks;
+  delete root.dataset.showDashboardReports;
+  delete root.dataset.showDashboardAi;
+  delete root.dataset.showDashboardCalendar;
+  delete root.dataset.compactCards;
+  root.style.colorScheme = "dark";
+}
+
+function normalizeClientSettings(settings: UserSettings): UserSettings {
+  return {
+    ...settings,
+    appearance_preferences: normalizeAppearancePreferences(
+      settings.appearance_preferences,
+    ),
+    dashboard_preferences: normalizeDashboardPreferences(
+      settings.dashboard_preferences,
+    ),
+  };
 }
 
 function saveLocalFallback(settings: UserSettings) {
@@ -98,15 +145,14 @@ function readLocalFallback(): Partial<UserSettings> {
     }
 
     if (
-      legacySettings.font_family === "inter" ||
-      legacySettings.font_family === "geist" ||
-      legacySettings.font_family === "system"
+      legacySettings.font_family &&
+      APP_FONTS.includes(legacySettings.font_family)
     ) {
       nextSettings.font_family = legacySettings.font_family;
     }
     if (
-      legacySettings.density === "comfortable" ||
-      legacySettings.density === "compact"
+      legacySettings.density &&
+      APP_DENSITIES.includes(legacySettings.density)
     ) {
       nextSettings.density = legacySettings.density;
     }
@@ -118,6 +164,16 @@ function readLocalFallback(): Partial<UserSettings> {
     }
     if (typeof legacySettings.reduce_motion === "boolean") {
       nextSettings.reduce_motion = legacySettings.reduce_motion;
+    }
+    if (legacySettings.appearance_preferences) {
+      nextSettings.appearance_preferences = normalizeAppearancePreferences(
+        legacySettings.appearance_preferences,
+      );
+    }
+    if (legacySettings.dashboard_preferences) {
+      nextSettings.dashboard_preferences = normalizeDashboardPreferences(
+        legacySettings.dashboard_preferences,
+      );
     }
   } catch {
     return {};
@@ -133,15 +189,26 @@ function mergePersistedSettings(settings: UserSettings): UserSettings {
     settings.id === "local-default" || !settings.updated_at;
 
   if (shouldUseLocalFallback) {
-    return {
+    return normalizeClientSettings({
       ...settings,
       ...localFallback,
-    };
+    });
   }
 
-  return localTheme && isNewThemeId(localTheme)
-    ? { ...settings, app_theme: localTheme }
-    : settings;
+  return normalizeClientSettings({
+    ...settings,
+    ...(localTheme && isNewThemeId(localTheme)
+      ? { app_theme: localTheme }
+      : {}),
+    ...(!settings.appearance_preferences &&
+    localFallback.appearance_preferences
+      ? { appearance_preferences: localFallback.appearance_preferences }
+      : {}),
+    ...(!settings.dashboard_preferences &&
+    localFallback.dashboard_preferences
+      ? { dashboard_preferences: localFallback.dashboard_preferences }
+      : {}),
+  });
 }
 
 interface SettingsProviderProps {
@@ -153,6 +220,8 @@ export function SettingsProvider({
   children,
   initialSettings,
 }: SettingsProviderProps) {
+  const updateRequestId = useRef(0);
+  const updateQueue = useRef<Promise<void>>(Promise.resolve());
   const [settings, setSettings] = useState(() =>
     mergePersistedSettings(initialSettings),
   );
@@ -162,21 +231,29 @@ export function SettingsProvider({
     saveLocalFallback(settings);
   }, [settings]);
 
+  useEffect(() => () => resetDocumentSettings(), []);
+
   const replaceSettings = useCallback((nextSettings: UserSettings) => {
-    setSettings(nextSettings);
-    applyDocumentSettings(nextSettings);
-    saveLocalFallback(nextSettings);
+    const normalized = normalizeClientSettings(nextSettings);
+    setSettings(normalized);
+    applyDocumentSettings(normalized);
+    saveLocalFallback(normalized);
   }, []);
 
   const updateSettings = useCallback(
     async (input: UpdateUserSettingsInput): Promise<string | null> => {
+      const requestId = ++updateRequestId.current;
       const previous = settings;
-      const optimistic = { ...previous, ...input };
+      const optimistic = normalizeClientSettings({ ...previous, ...input });
       setSettings(optimistic);
       applyDocumentSettings(optimistic);
       saveLocalFallback(optimistic);
 
-      const result = await updateUserSettings(input);
+      const request = updateQueue.current.then(() => updateUserSettings(input));
+      updateQueue.current = request.then(() => undefined);
+      const result = await request;
+      if (requestId !== updateRequestId.current) return null;
+
       if (result.error || !result.data) {
         setSettings(previous);
         applyDocumentSettings(previous);
@@ -184,9 +261,9 @@ export function SettingsProvider({
         return result.error ?? "Ayarlar kaydedilemedi.";
       }
 
-      const resolvedSettings = isNewThemeId(optimistic.app_theme)
+      const resolvedSettings = normalizeClientSettings(isNewThemeId(optimistic.app_theme)
         ? { ...result.data, app_theme: optimistic.app_theme }
-        : result.data;
+        : result.data);
       setSettings(resolvedSettings);
       applyDocumentSettings(resolvedSettings);
       saveLocalFallback(resolvedSettings);

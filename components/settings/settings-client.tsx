@@ -19,12 +19,12 @@ import {
 } from "lucide-react";
 import { useSettings } from "@/components/providers/settings-provider";
 import { AccountCard } from "@/components/settings/account-card";
+import { AppearanceCenter } from "@/components/settings/appearance-center";
 import { SettingsSection } from "@/components/settings/settings-section";
 import {
   SettingsSidebar,
   type SettingsTab,
 } from "@/components/settings/settings-sidebar";
-import { ThemeLibrary } from "@/components/settings/theme-library";
 import { ToggleRow } from "@/components/settings/toggle-row";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -43,11 +43,8 @@ import {
 } from "@/services/settings-service";
 import type {
   AiActionKey,
-  AppDensity,
-  AppFontFamily,
   Category,
   DefaultLandingPage,
-  SidebarMode,
   UpdateUserSettingsInput,
 } from "@/types";
 
@@ -67,21 +64,6 @@ const tabs: SettingsTab[] = [
   { id: "ai", label: "AI Tercihleri", icon: Bot },
   { id: "workspace", label: "Çalışma Alanı", icon: SlidersHorizontal },
   { id: "data", label: "Veri ve Yedekleme", icon: Database },
-];
-
-const fontOptions = [
-  { label: "Geist", value: "geist" },
-  { label: "Sistem Yazı Tipi", value: "system" },
-];
-
-const densityOptions = [
-  { label: "Rahat", value: "comfortable" },
-  { label: "Kompakt", value: "compact" },
-];
-
-const sidebarOptions = [
-  { label: "Geniş", value: "expanded" },
-  { label: "Dar", value: "collapsed" },
 ];
 
 const landingPageOptions = [
@@ -162,7 +144,11 @@ export function SettingsClient({
     setPendingKey("");
 
     if (nextError) {
-      setError(nextError);
+      setError(
+        key === "font"
+          ? "Yazı tipi kaydedilemedi. Birazdan tekrar deneyebilirsin."
+          : nextError,
+      );
       return;
     }
 
@@ -219,7 +205,9 @@ export function SettingsClient({
       value: category.id,
     })),
   ];
-  const visibleError = error.includes("phase-18-settings-center.sql")
+  const visibleError =
+    error.includes("phase-18-settings-center.sql") ||
+    error.includes("phase-21-appearance-center.sql")
     ? "Ayarlar şu anda kaydedilemiyor. Lütfen daha sonra tekrar dene."
     : error;
 
@@ -271,77 +259,7 @@ export function SettingsClient({
 
         <div className="min-w-0 max-w-5xl">
           {activeTab === "appearance" ? (
-            <SettingsSection
-              description="Tema, yazı tipi, yoğunluk ve hareket tercihlerini düzenle."
-              icon={Eye}
-              title="Görünüm"
-            >
-              <div className="grid gap-3 md:grid-cols-3">
-                <div>
-                  <p className="app-muted mb-2 text-xs font-medium">Yazı Tipi</p>
-                  <DarkSelect
-                    ariaLabel="Yazı tipi"
-                    onChange={(value) =>
-                      void savePatch("font", {
-                        font_family: value as AppFontFamily,
-                      })
-                    }
-                    options={fontOptions}
-                    value={settings.font_family}
-                  />
-                </div>
-                <div>
-                  <p className="app-muted mb-2 text-xs font-medium">
-                    Arayüz Yoğunluğu
-                  </p>
-                  <DarkSelect
-                    ariaLabel="Arayüz yoğunluğu"
-                    onChange={(value) =>
-                      void savePatch("density", {
-                        density: value as AppDensity,
-                      })
-                    }
-                    options={densityOptions}
-                    value={settings.density}
-                  />
-                </div>
-                <div>
-                  <p className="app-muted mb-2 text-xs font-medium">
-                    Kenar Çubuğu
-                  </p>
-                  <DarkSelect
-                    ariaLabel="Kenar çubuğu görünümü"
-                    onChange={(value) =>
-                      void savePatch("sidebar", {
-                        sidebar_mode: value as SidebarMode,
-                      })
-                    }
-                    options={sidebarOptions}
-                    value={settings.sidebar_mode}
-                  />
-                </div>
-              </div>
-
-              <ToggleRow
-                checked={settings.reduce_motion}
-                description="Animasyon ve geçişleri en aza indirir."
-                label="Animasyonları Azalt"
-                onChange={(checked) =>
-                  void savePatch("motion", { reduce_motion: checked })
-                }
-              />
-
-              <ThemeLibrary
-                activeThemeId={settings.app_theme}
-                onSelect={(themeId) =>
-                  void savePatch(
-                    `theme-${themeId}`,
-                    { app_theme: themeId },
-                    "Tema uygulandı.",
-                  )
-                }
-              />
-            </SettingsSection>
+            <AppearanceCenter onSave={savePatch} settings={settings} />
           ) : null}
 
           {activeTab === "start" ? (
@@ -631,7 +549,7 @@ export function SettingsClient({
 
           {activeTab === "workspace" ? (
             <SettingsSection
-              description="Hesap bilgilerini ve dashboard üzerinde görünen bölümleri yönet."
+              description="Hesap bilgilerini ve temel çalışma alanı davranışlarını yönet."
               icon={LayoutDashboard}
               title="Çalışma Alanı"
             >
@@ -683,46 +601,6 @@ export function SettingsClient({
                     { onboarding_completed: false },
                     "Onboarding Dashboard’da tekrar gösterilecek.",
                   )
-                }
-              />
-              <ToggleRow
-                checked={settings.show_dashboard_notes}
-                description="Son notlar bölümünü dashboard üzerinde gösterir."
-                label="Notlar Kartını Göster"
-                onChange={(checked) =>
-                  void savePatch("dashboard-notes", {
-                    show_dashboard_notes: checked,
-                  })
-                }
-              />
-              <ToggleRow
-                checked={settings.show_dashboard_tasks}
-                description="Açık görevler bölümünü dashboard üzerinde gösterir."
-                label="Görevler Kartını Göster"
-                onChange={(checked) =>
-                  void savePatch("dashboard-tasks", {
-                    show_dashboard_tasks: checked,
-                  })
-                }
-              />
-              <ToggleRow
-                checked={settings.show_dashboard_reports}
-                description="Son raporlar bölümünü dashboard üzerinde gösterir."
-                label="Raporlar Kartını Göster"
-                onChange={(checked) =>
-                  void savePatch("dashboard-reports", {
-                    show_dashboard_reports: checked,
-                  })
-                }
-              />
-              <ToggleRow
-                checked={settings.show_dashboard_calendar}
-                description="Bugünün planı bölümünü dashboard üzerinde gösterir."
-                label="Takvim Kartını Göster"
-                onChange={(checked) =>
-                  void savePatch("dashboard-calendar", {
-                    show_dashboard_calendar: checked,
-                  })
                 }
               />
               <ToggleRow

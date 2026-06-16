@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { PwaRegistration } from "@/components/pwa/pwa-registration";
 import { getAppUrl } from "@/lib/app-url";
-import { LIGHT_THEME_IDS } from "@/lib/settings/themes";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -42,7 +41,7 @@ export const viewport: Viewport = {
   width: "device-width",
 };
 
-const themeBootstrapScript = `try{const root=document.documentElement;const lightThemes=${JSON.stringify(LIGHT_THEME_IDS)};const saved=JSON.parse(localStorage.getItem("eray-command-center-settings")||"{}");const theme=localStorage.getItem("ecc-theme")||saved.app_theme;const language=localStorage.getItem("ecc-language")||saved.language;if(theme){const mode=lightThemes.includes(theme)?"light":"dark";root.dataset.theme=theme;root.dataset.colorScheme=mode;root.style.colorScheme=mode;}root.dataset.font=saved.font_family||"geist";root.dataset.density=saved.density||"compact";root.dataset.sidebar=saved.sidebar_mode||"expanded";root.dataset.reduceMotion=String(saved.reduce_motion===true);if(language){root.lang=language;}}catch{}`;
+const languageBootstrapScript = `try{const root=document.documentElement;const language=localStorage.getItem("ecc-language");if(language){root.lang=language;}}catch{}`;
 
 export default function RootLayout({
   children,
@@ -51,10 +50,13 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      data-density="compact"
+      data-card-style="modern"
+      data-density="balanced"
       data-font="geist"
+      data-line-height="normal"
       data-color-scheme="dark"
       data-reduce-motion="false"
+      data-text-size="normal"
       data-theme="command_dark"
       lang="tr"
       suppressHydrationWarning
@@ -62,7 +64,7 @@ export default function RootLayout({
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: themeBootstrapScript,
+            __html: languageBootstrapScript,
           }}
         />
       </head>

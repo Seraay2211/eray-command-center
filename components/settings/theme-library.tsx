@@ -1,8 +1,14 @@
 "use client";
 
-import { Search } from "lucide-react";
-import { useDeferredValue, useMemo, useState } from "react";
+import { Palette, Search, X } from "lucide-react";
+import {
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { ThemeCard } from "@/components/settings/theme-card";
+import { Button } from "@/components/ui/button";
 import {
   APP_THEMES,
   getThemeById,
@@ -17,7 +23,7 @@ interface ThemeLibraryProps {
   onSelect: (themeId: AppTheme) => void;
 }
 
-const INITIAL_THEME_LIMIT = 12;
+const FEATURED_THEME_LIMIT = 6;
 
 const THEME_FILTERS: Array<{ label: string; value: ThemeFilter }> = [
   { label: "Tümü", value: "all" },
@@ -36,15 +42,35 @@ export function ThemeLibrary({
   activeThemeId,
   onSelect,
 }: ThemeLibraryProps) {
+  const [isOpen, setIsOpen] = useState(false);
   const [themeFilter, setThemeFilter] = useState<ThemeFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [showAllThemes, setShowAllThemes] = useState(false);
   const deferredSearchQuery = useDeferredValue(searchQuery);
+  const activeTheme = getThemeById(activeThemeId);
 
-  const activeTheme = useMemo(
-    () => getThemeById(activeThemeId),
-    [activeThemeId],
-  );
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsOpen(false);
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", closeOnEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [isOpen]);
+
+  const featuredThemes = useMemo(() => {
+    const themes = activeTheme
+      ? [activeTheme, ...APP_THEMES.filter((theme) => theme.id !== activeTheme.id)]
+      : APP_THEMES;
+    return themes.slice(0, FEATURED_THEME_LIMIT);
+  }, [activeTheme]);
 
   const filteredThemes = useMemo(() => {
     const normalizedQuery = normalizeSearch(deferredSearchQuery);
@@ -62,85 +88,45 @@ export function ThemeLibrary({
     });
   }, [deferredSearchQuery, themeFilter]);
 
-  const visibleThemes = useMemo(() => {
-    if (showAllThemes || normalizeSearch(deferredSearchQuery)) {
-      return filteredThemes;
-    }
-
-    if (
-      activeTheme &&
-      filteredThemes.includes(activeTheme) &&
-      filteredThemes.indexOf(activeTheme) >= INITIAL_THEME_LIMIT
-    ) {
-      return [
-        activeTheme,
-        ...filteredThemes.filter((theme) => theme.id !== activeTheme.id),
-      ].slice(0, INITIAL_THEME_LIMIT);
-    }
-
-    return filteredThemes.slice(0, INITIAL_THEME_LIMIT);
-  }, [activeTheme, deferredSearchQuery, filteredThemes, showAllThemes]);
-
   return (
-    <div className="app-surface-2 app-border min-w-0 rounded-2xl border p-3 sm:p-4">
-      <div className="mb-4 flex min-w-0 flex-col gap-3">
-        <div className="min-w-0">
-          <p className="app-text text-sm font-semibold">Tema Kütüphanesi</p>
-          <p className="app-muted mt-1 text-xs leading-5">
-            Çalışma alanının görünümünü seç. Aktif tema:{" "}
-            <span className="app-text font-medium">
-              {activeTheme?.name ?? activeThemeId}
-            </span>
-          </p>
-        </div>
-
-        <div className="grid min-w-0 gap-2 lg:grid-cols-[minmax(0,1fr)_auto]">
-          <label className="relative block min-w-0">
-            <span className="sr-only">Tema ara</span>
-            <Search className="app-muted pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2" />
-            <input
-              className="app-input h-10 w-full min-w-0 rounded-xl border pl-9 pr-3 text-xs outline-none"
-              onChange={(event) => {
-                setSearchQuery(event.target.value);
-                setShowAllThemes(false);
-              }}
-              placeholder="Tema ara..."
-              type="search"
-              value={searchQuery}
-            />
-          </label>
-
-          <div
-            aria-label="Tema filtresi"
-            className="app-surface app-border grid min-w-0 grid-cols-3 rounded-xl border p-1 sm:grid-cols-6"
-            role="group"
-          >
-            {THEME_FILTERS.map((filter) => (
-              <button
-                aria-pressed={themeFilter === filter.value}
-                className={cn(
-                  "min-h-8 min-w-0 rounded-lg px-2 py-1.5 text-[10px] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]",
-                  themeFilter === filter.value
-                    ? "app-primary-bg shadow-sm"
-                    : "app-muted hover:app-text",
-                )}
-                key={filter.value}
-                onClick={() => {
-                  setThemeFilter(filter.value);
-                  setShowAllThemes(false);
-                }}
-                type="button"
-              >
-                {filter.label}
-              </button>
-            ))}
+    <>
+      <div className="app-surface-2 app-border min-w-0 rounded-2xl border p-3 sm:p-4">
+        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <Palette className="app-primary size-4" />
+              <h3 className="app-text text-sm font-semibold">
+                Tema Kütüphanesi
+              </h3>
+            </div>
+            <p className="app-muted mt-1 text-xs leading-5">
+              Öne çıkan temalardan birini seç veya tüm koleksiyonu aç.
+            </p>
           </div>
+          <Button
+            className="w-full shrink-0 sm:w-auto"
+            onClick={() => setIsOpen(true)}
+            size="sm"
+            variant="secondary"
+          >
+            <Palette className="size-3.5" />
+            Tüm Temaları Aç
+          </Button>
         </div>
-      </div>
 
-      {visibleThemes.length ? (
-        <div className="grid min-w-0 auto-rows-fr gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
-          {visibleThemes.map((theme) => (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {THEME_FILTERS.slice(1).map((filter) => (
+            <span
+              className="app-surface app-border rounded-full border px-2 py-1 text-[9px] font-medium app-muted"
+              key={filter.value}
+            >
+              {filter.label}
+            </span>
+          ))}
+        </div>
+
+        <div className="mt-4 grid min-w-0 auto-rows-fr gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
+          {featuredThemes.map((theme) => (
             <ThemeCard
               isActive={activeThemeId === theme.id}
               key={theme.id}
@@ -149,29 +135,104 @@ export function ThemeLibrary({
             />
           ))}
         </div>
-      ) : (
-        <div className="app-surface app-border rounded-xl border px-4 py-8 text-center">
-          <p className="app-text text-sm font-medium">Tema bulunamadı.</p>
-          <p className="app-muted mt-1 text-xs">
-            Arama metnini veya kategori filtresini değiştir.
-          </p>
-        </div>
-      )}
+      </div>
 
-      {!normalizeSearch(deferredSearchQuery) &&
-      filteredThemes.length > INITIAL_THEME_LIMIT ? (
-        <div className="mt-4 flex justify-center">
+      {isOpen ? (
+        <div className="fixed inset-0 z-[160]">
           <button
-            className="app-button-secondary app-border min-h-10 rounded-lg border px-4 py-2 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
-            onClick={() => setShowAllThemes((current) => !current)}
+            aria-label="Tema Kütüphanesini kapat"
+            className="absolute inset-0 bg-black/65"
+            onClick={() => setIsOpen(false)}
             type="button"
+          />
+          <aside
+            aria-modal="true"
+            className="app-bg app-border absolute inset-0 flex min-w-0 flex-col border-l shadow-2xl sm:left-auto sm:w-[min(760px,92vw)]"
+            role="dialog"
           >
-            {showAllThemes
-              ? "Daha az tema göster"
-              : `${filteredThemes.length - INITIAL_THEME_LIMIT} tema daha göster`}
-          </button>
+            <div className="app-border flex min-w-0 items-start justify-between gap-3 border-b px-4 py-4 sm:px-5">
+              <div className="min-w-0">
+                <h2 className="app-text text-base font-semibold">
+                  Tema Kütüphanesi
+                </h2>
+                <p className="app-muted mt-1 text-xs leading-5">
+                  Tüm temaları kategoriye göre incele ve çalışma alanına uygula.
+                </p>
+              </div>
+              <button
+                aria-label="Kapat"
+                className="app-button-secondary app-border flex size-9 shrink-0 items-center justify-center rounded-xl border"
+                onClick={() => setIsOpen(false)}
+                type="button"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <div className="app-border space-y-3 border-b p-4 sm:p-5">
+              <label className="relative block min-w-0">
+                <span className="sr-only">Tema ara</span>
+                <Search className="app-muted pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2" />
+                <input
+                  autoFocus
+                  className="app-input h-11 w-full min-w-0 rounded-xl border pl-9 pr-3 text-sm outline-none"
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Tema ara..."
+                  type="search"
+                  value={searchQuery}
+                />
+              </label>
+
+              <div
+                aria-label="Tema filtresi"
+                className="app-surface app-border grid min-w-0 grid-cols-3 gap-1 rounded-xl border p-1 sm:grid-cols-6"
+                role="group"
+              >
+                {THEME_FILTERS.map((filter) => (
+                  <button
+                    aria-pressed={themeFilter === filter.value}
+                    className={cn(
+                      "min-h-9 min-w-0 rounded-lg px-2 py-1.5 text-[10px] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]",
+                      themeFilter === filter.value
+                        ? "app-primary-bg shadow-sm"
+                        : "app-muted hover:bg-[var(--surface-2)] hover:text-[var(--text)]",
+                    )}
+                    key={filter.value}
+                    onClick={() => setThemeFilter(filter.value)}
+                    type="button"
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-5">
+              {filteredThemes.length ? (
+                <div className="grid min-w-0 auto-rows-fr gap-2.5 sm:grid-cols-2">
+                  {filteredThemes.map((theme) => (
+                    <ThemeCard
+                      isActive={activeThemeId === theme.id}
+                      key={theme.id}
+                      onSelect={onSelect}
+                      theme={theme}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="app-surface app-border rounded-xl border px-4 py-10 text-center">
+                  <p className="app-text text-sm font-medium">
+                    Tema bulunamadı.
+                  </p>
+                  <p className="app-muted mt-1 text-xs">
+                    Arama metnini veya kategori filtresini değiştir.
+                  </p>
+                </div>
+              )}
+            </div>
+          </aside>
         </div>
       ) : null}
-    </div>
+    </>
   );
 }

@@ -1,4 +1,6 @@
 import type { UserSettings } from "@/types";
+import { DEFAULT_APPEARANCE_PREFERENCES } from "@/lib/settings/appearance-preferences";
+import { DEFAULT_DASHBOARD_PREFERENCES } from "@/lib/settings/dashboard-preferences";
 
 export const DEFAULT_USER_SETTINGS: UserSettings = {
   id: "local-default",
@@ -6,10 +8,12 @@ export const DEFAULT_USER_SETTINGS: UserSettings = {
   display_name: null,
   app_theme: "command_dark",
   language: "tr",
-  density: "compact",
+  density: "balanced",
   sidebar_mode: "expanded",
-  font_family: "geist",
+  font_family: "system",
   reduce_motion: false,
+  appearance_preferences: DEFAULT_APPEARANCE_PREFERENCES,
+  dashboard_preferences: DEFAULT_DASHBOARD_PREFERENCES,
   default_landing_page: "dashboard",
   notifications_enabled: true,
   finance_alerts_enabled: true,

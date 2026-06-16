@@ -1,11 +1,7 @@
 import { Command, LockKeyhole, ShieldCheck, Sparkles } from "lucide-react";
 import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/auth/login-form";
-import {
-  hasSupabaseEnv,
-  SUPABASE_ENV_ERROR,
-  SUPABASE_ENV_INVALID_ERROR,
-} from "@/lib/supabase/env";
+import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -24,9 +20,9 @@ interface LoginPageProps {
 const initialErrors: Record<string, string> = {
   auth: "Oturum doğrulanamadı. Lütfen tekrar giriş yap.",
   callback: "E-posta doğrulama bağlantısı tamamlanamadı.",
-  config: SUPABASE_ENV_INVALID_ERROR,
+  config: "Giriş sistemi şu anda kullanıma hazır değil.",
   connection:
-    "Supabase bağlantısı kurulamadı. Proje URL’sini, anahtarı ve internet bağlantısını kontrol et.",
+    "Giriş bağlantısı kurulamadı. İnternet bağlantını kontrol edip tekrar dene.",
 };
 
 const initialMessages: Record<string, string> = {
@@ -54,10 +50,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
   const configurationError = isConfigured
     ? undefined
-    : process.env.NEXT_PUBLIC_SUPABASE_URL ||
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-      ? SUPABASE_ENV_INVALID_ERROR
-      : SUPABASE_ENV_ERROR;
+    : "Giriş sistemi şu anda kullanıma hazır değil. Lütfen daha sonra tekrar dene.";
   const initialError = query.error ? initialErrors[query.error] : undefined;
   const initialMessage = query.message
     ? initialMessages[query.message]
@@ -111,7 +104,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                 Güvenli oturum
               </p>
               <p className="mt-1 text-[10px] leading-4 text-zinc-700">
-                Supabase Auth ile cookie tabanlı SSR oturumu.
+                Oturum bilgileri güvenli biçimde korunur.
               </p>
             </div>
             <div className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4">

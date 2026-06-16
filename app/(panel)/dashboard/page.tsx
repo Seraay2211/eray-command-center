@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { CommandSummaryCard } from "@/components/dashboard/command-summary-card";
 import { DashboardErrorState } from "@/components/dashboard/dashboard-error-state";
+import { DashboardPersonalizedArea } from "@/components/dashboard/dashboard-personalized-area";
+import { DashboardWidgetSection } from "@/components/dashboard/dashboard-widget-section";
 import { FinanceRadar } from "@/components/dashboard/finance-radar";
 import { PriorityList } from "@/components/dashboard/priority-list";
 import { QuickActionCard } from "@/components/dashboard/quick-action-card";
@@ -131,6 +133,7 @@ export default async function DashboardPage() {
   );
   const isSupabaseConfigured = hasSupabaseEnv();
   const databaseStatus = isSupabaseConfigured ? "Bağlı" : "Bağlantı bekleniyor";
+  const showTechnicalStatus = process.env.NODE_ENV === "development";
 
   return (
     <div className="space-y-6 sm:space-y-8" data-dashboard-root>
@@ -184,25 +187,35 @@ export default async function DashboardPage() {
 
       <OnboardingCard />
       <InstallHintCard />
-      <CommandSummaryCard stats={dashboard.commandStats} />
+      <DashboardPersonalizedArea>
+        <DashboardWidgetSection widgetId="command_summary">
+          <CommandSummaryCard stats={dashboard.commandStats} />
+        </DashboardWidgetSection>
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {stats.map((item) => (
-          <div
-            data-dashboard-section={item.title === "AI Modu" ? "ai" : undefined}
-            key={item.title}
-          >
-            <StatCard item={item} />
-          </div>
-        ))}
-      </section>
+        <DashboardWidgetSection widgetId="overview_stats">
+          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {stats.map((item) => (
+              <div
+                data-dashboard-section={
+                  item.title === "AI Modu" ? "ai" : undefined
+                }
+                key={item.title}
+              >
+                <StatCard item={item} />
+              </div>
+            ))}
+          </section>
+        </DashboardWidgetSection>
 
-      <section className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
-        <PriorityList items={dashboard.priorities} />
-        <FinanceRadar summary={dashboard.financeSummary} />
-      </section>
+        <DashboardWidgetSection widgetId="priority_finance">
+          <section className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
+            <PriorityList items={dashboard.priorities} />
+            <FinanceRadar summary={dashboard.financeSummary} />
+          </section>
+        </DashboardWidgetSection>
 
-      <section className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
+        <DashboardWidgetSection widgetId="daily_flow">
+          <section className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
         <Card className="p-4 sm:p-5" data-dashboard-section="calendar">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
@@ -292,10 +305,12 @@ export default async function DashboardPage() {
           </div>
         </Card>
 
-        <QuickCaptureCard />
-      </section>
+            <QuickCaptureCard />
+          </section>
+        </DashboardWidgetSection>
 
-      <section>
+        <DashboardWidgetSection widgetId="quick_actions">
+          <section>
         <div className="mb-3 flex items-end justify-between gap-4">
           <div>
             <p className="app-primary text-[10px] font-semibold uppercase tracking-[0.16em]">
@@ -311,9 +326,11 @@ export default async function DashboardPage() {
             <QuickActionCard action={action} key={action.title} />
           ))}
         </div>
-      </section>
+          </section>
+        </DashboardWidgetSection>
 
-      <section className="grid gap-6 xl:grid-cols-3">
+        <DashboardWidgetSection widgetId="activity">
+          <section className="grid gap-6 xl:grid-cols-3">
         <Card className="p-4 sm:p-5" data-dashboard-section="notes">
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -454,91 +471,108 @@ export default async function DashboardPage() {
             </div>
           )}
         </Card>
-      </section>
+          </section>
+        </DashboardWidgetSection>
 
-      <section className="grid gap-4 md:grid-cols-3">
-        <Card className="p-5">
-          <div className="flex items-center justify-between">
-            <Pin className="app-primary size-4" />
-            <span className="app-muted font-mono text-[10px]">
-              {dashboard.pinnedSummary.count} sabitli
-            </span>
-          </div>
-          <h2 className="app-text mt-4 text-sm font-semibold">
-            {dashboard.pinnedSummary.latestNote?.title ??
-              "Henüz sabitlenen not yok"}
-          </h2>
-          <p className="app-muted mt-2 line-clamp-3 text-xs leading-5">
-            {dashboard.pinnedSummary.latestNote?.preview ??
-              "Önemli bir notu sabitleyerek odak kartını kullanabilirsin."}
-          </p>
-          <Link className="app-primary mt-4 inline-flex text-xs font-medium" href="/notes">
-            Notlara Git
-          </Link>
-        </Card>
-
-        <Card className="p-5" data-dashboard-section="ai">
-          <div className="flex items-center gap-2">
-            <Bot className="app-primary size-4" />
-            <h2 className="app-text text-sm font-semibold">
-              Hızlı AI Komutları
-            </h2>
-          </div>
-          <div className="mt-3 space-y-1">
-            {aiCommands.slice(0, 4).map((command) => {
-              const Icon = command.icon;
-              return (
-                <Link
-                  className="app-button-ghost flex items-center gap-3 rounded-lg px-2 py-2.5 text-xs"
-                  href={command.href}
-                  key={command.label}
-                >
-                  <Icon className="size-3.5" />
-                  {command.label}
-                  <ChevronRight className="ml-auto size-3.5" />
-                </Link>
-              );
-            })}
-          </div>
-        </Card>
-
-        <Card className="p-5">
-          <div className="flex items-center justify-between">
-            <h2 className="app-text text-sm font-semibold">Sistem Durumu</h2>
-            <span className="flex items-center gap-1.5 text-[10px] font-medium text-[var(--success)]">
-              <span className="size-1.5 rounded-full bg-[var(--success)]" />
-              Stabil
-            </span>
-          </div>
-          <div className="mt-4 space-y-3 text-xs">
-            <div className="flex items-center justify-between">
-              <span className="app-muted flex items-center gap-2">
-                <CheckCircle2 className="size-3.5 text-[var(--success)]" />
-                Veritabanı
-              </span>
-              <span className="app-text">{databaseStatus}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="app-muted flex items-center gap-2">
-                <Sparkles className="size-3.5" />
-                AI Servisi
-              </span>
-              <span className="app-text">{aiProviderLabel}</span>
-            </div>
-          </div>
-          <Link
-            className={buttonClassName({
-              className: "mt-5 w-full",
-              size: "sm",
-              variant: "secondary",
-            })}
-            href="/today"
+        <DashboardWidgetSection widgetId="focus_tools">
+          <section
+            className={
+              showTechnicalStatus
+                ? "grid gap-4 md:grid-cols-3"
+                : "grid gap-4 md:grid-cols-2"
+            }
           >
-            Bugün Merkezine Git
-            <ArrowRight className="size-3.5" />
-          </Link>
-        </Card>
-      </section>
+            <Card className="p-5">
+              <div className="flex items-center justify-between">
+                <Pin className="app-primary size-4" />
+                <span className="app-muted font-mono text-[10px]">
+                  {dashboard.pinnedSummary.count} sabitli
+                </span>
+              </div>
+              <h2 className="app-text mt-4 text-sm font-semibold">
+                {dashboard.pinnedSummary.latestNote?.title ??
+                  "Henüz sabitlenen not yok"}
+              </h2>
+              <p className="app-muted mt-2 line-clamp-3 text-xs leading-5">
+                {dashboard.pinnedSummary.latestNote?.preview ??
+                  "Önemli bir notu sabitleyerek odak kartını kullanabilirsin."}
+              </p>
+              <Link
+                className="app-primary mt-4 inline-flex text-xs font-medium"
+                href="/notes"
+              >
+                Notlara Git
+              </Link>
+            </Card>
+
+            <Card className="p-5" data-dashboard-section="ai">
+              <div className="flex items-center gap-2">
+                <Bot className="app-primary size-4" />
+                <h2 className="app-text text-sm font-semibold">
+                  Hızlı AI Komutları
+                </h2>
+              </div>
+              <div className="mt-3 space-y-1">
+                {aiCommands.slice(0, 4).map((command) => {
+                  const Icon = command.icon;
+                  return (
+                    <Link
+                      className="app-button-ghost flex items-center gap-3 rounded-lg px-2 py-2.5 text-xs"
+                      href={command.href}
+                      key={command.label}
+                    >
+                      <Icon className="size-3.5" />
+                      {command.label}
+                      <ChevronRight className="ml-auto size-3.5" />
+                    </Link>
+                  );
+                })}
+              </div>
+            </Card>
+
+            {showTechnicalStatus ? (
+              <Card className="p-5">
+                <div className="flex items-center justify-between">
+                  <h2 className="app-text text-sm font-semibold">
+                    Sistem Durumu
+                  </h2>
+                  <span className="flex items-center gap-1.5 text-[10px] font-medium text-[var(--success)]">
+                    <span className="size-1.5 rounded-full bg-[var(--success)]" />
+                    Stabil
+                  </span>
+                </div>
+                <div className="mt-4 space-y-3 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="app-muted flex items-center gap-2">
+                      <CheckCircle2 className="size-3.5 text-[var(--success)]" />
+                      Veritabanı
+                    </span>
+                    <span className="app-text">{databaseStatus}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="app-muted flex items-center gap-2">
+                      <Sparkles className="size-3.5" />
+                      AI Servisi
+                    </span>
+                    <span className="app-text">{aiProviderLabel}</span>
+                  </div>
+                </div>
+                <Link
+                  className={buttonClassName({
+                    className: "mt-5 w-full",
+                    size: "sm",
+                    variant: "secondary",
+                  })}
+                  href="/today"
+                >
+                  Bugün Merkezine Git
+                  <ArrowRight className="size-3.5" />
+                </Link>
+              </Card>
+            ) : null}
+          </section>
+        </DashboardWidgetSection>
+      </DashboardPersonalizedArea>
     </div>
   );
 }
