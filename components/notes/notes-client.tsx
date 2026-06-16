@@ -22,6 +22,7 @@ import { QuickCaptureModal } from "@/components/notes/quick-capture-modal";
 import {
   NotesToolbar,
   type NotesSort,
+  type NotesViewFilter,
 } from "@/components/notes/notes-toolbar";
 import { TemplatePicker } from "@/components/templates/template-picker";
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,9 @@ import {
   createQuickCaptureNote,
   deleteNote,
   getNotes,
+  archiveNote,
+  restoreArchivedNote,
+  toggleFavoriteNote,
   togglePinNote,
   updateNote,
 } from "@/features/notes/actions";
@@ -227,6 +231,7 @@ export function NotesClient({
   const [query, setQuery] = useState(initialQuery);
   const [categoryId, setCategoryId] = useState("all");
   const [sort, setSort] = useState<NotesSort>("newest");
+  const [viewFilter, setViewFilter] = useState<NotesViewFilter>("all");
   const [isFormOpen, setIsFormOpen] = useState(initialOpen);
   const [editingNote, setEditingNote] = useState<NoteWithRelations | null>(
     null,
@@ -281,7 +286,9 @@ export function NotesClient({
   const [hasMore, setHasMore] = useState(initialNotes.length >= 50);
   const debouncedQuery = useDebounce(query, 250);
 
-  const schemaMissing = pageError.includes("database/schema.sql");
+  const schemaMissing =
+    pageError.includes("gerekli güncelleme") ||
+    pageError.includes("database/schema.sql");
   const selectedNote =
     notes.find((note) => note.id === selectedNoteId) ?? null;
   const fullscreenNote =
@@ -294,16 +301,28 @@ export function NotesClient({
 
     return notes
       .filter((note) => {
+        const categoryName = getCategoryDisplayName(note.category);
+        const tagText = note.tags.map((tag) => tag.name).join(" ");
         const matchesQuery =
           !normalizedQuery ||
           note.title.toLocaleLowerCase("tr-TR").includes(normalizedQuery) ||
-          note.content.toLocaleLowerCase("tr-TR").includes(normalizedQuery);
+          note.content.toLocaleLowerCase("tr-TR").includes(normalizedQuery) ||
+          categoryName.toLocaleLowerCase("tr-TR").includes(normalizedQuery) ||
+          tagText.toLocaleLowerCase("tr-TR").includes(normalizedQuery);
         const matchesCategory =
           categoryId === "all" ||
           (categoryId === "uncategorized" && !note.category_id) ||
           note.category_id === categoryId;
+        const matchesView =
+          viewFilter === "archive"
+            ? Boolean(note.archived_at)
+            : !note.archived_at &&
+              (viewFilter === "all" ||
+                viewFilter === "recent" ||
+                (viewFilter === "pinned" && note.is_pinned) ||
+                (viewFilter === "favorites" && note.is_favorite));
 
-        return matchesQuery && matchesCategory;
+        return matchesQuery && matchesCategory && matchesView;
       })
       .sort((first, second) => {
         if (sort === "oldest") {
@@ -318,18 +337,22 @@ export function NotesClient({
         }
 
         const firstDate =
-          sort === "pinned" ? first.updated_at : first.created_at;
+          sort === "pinned" || viewFilter === "recent"
+            ? first.updated_at
+            : first.created_at;
         const secondDate =
-          sort === "pinned" ? second.updated_at : second.created_at;
+          sort === "pinned" || viewFilter === "recent"
+            ? second.updated_at
+            : second.created_at;
 
         return (
           new Date(secondDate).getTime() - new Date(firstDate).getTime()
         );
       });
-  }, [categoryId, debouncedQuery, notes, sort]);
+  }, [categoryId, debouncedQuery, notes, sort, viewFilter]);
   const filterKey = useMemo(
-    () => [categoryId, debouncedQuery, sort].join("|"),
-    [categoryId, debouncedQuery, sort],
+    () => [categoryId, debouncedQuery, sort, viewFilter].join("|"),
+    [categoryId, debouncedQuery, sort, viewFilter],
   );
   const visibleCount =
     visibleState.key === filterKey ? visibleState.count : 50;
@@ -635,7 +658,7 @@ export function NotesClient({
     setIsLoadingMore(false);
 
     if (result.error || !result.data) {
-      setPageError(result.error ?? "Daha fazla not yuklenemedi.");
+      setPageError(result.error ?? "Daha fazla not yüklenemedi.");
       return;
     }
 
@@ -768,6 +791,7 @@ export function NotesClient({
       categoryId: sourceNote.category_id,
       tags: sourceNote.tags.map((tag) => tag.name),
       isPinned: sourceNote.is_pinned,
+      isFavorite: sourceNote.is_favorite,
     });
 
     setIsAppendingAi(false);
@@ -947,7 +971,7 @@ export function NotesClient({
           }
         }
 
-        setFullscreenError(uploadResult.error ?? "Gorsel yuklenemedi.");
+        setFullscreenError(uploadResult.error ?? "Görsel yüklenemedi.");
         return false;
       }
 
@@ -1004,7 +1028,7 @@ export function NotesClient({
     setIsQuickCaptureSaving(false);
 
     if (result.error || !result.data) {
-      setQuickCaptureError(result.error ?? "Hızlı kayıt oluşturulamadi.");
+      setQuickCaptureError(result.error ?? "Hızlı kayıt oluşturulamadı.");
       return false;
     }
 
@@ -1038,6 +1062,7 @@ export function NotesClient({
             categoryId: template.category_id ?? note.category_id,
             content,
             id: note.id,
+            isFavorite: note.is_favorite,
             isPinned: note.is_pinned,
             tags: note.tags.map((tag) => tag.name),
             title: note.title || template.name,
@@ -1051,7 +1076,7 @@ export function NotesClient({
           });
 
     if (result.error || !result.data) {
-      setPageError(result.error ?? "Hızlı kayıt şablona uygulanamadi.");
+      setPageError(result.error ?? "Hızlı kayıt şablona uygulanamadı.");
       return;
     }
 
@@ -1075,6 +1100,7 @@ export function NotesClient({
       categoryId: nextCategoryId,
       content: note.content,
       id: note.id,
+      isFavorite: note.is_favorite,
       isPinned: note.is_pinned,
       tags: note.tags.map((tag) => tag.name),
       title: note.title,
@@ -1105,7 +1131,7 @@ export function NotesClient({
       return;
     }
 
-    showNotice("Hızlı kayıt göreve cevrildi.");
+    showNotice("Not göreve çevrildi.");
   }
 
   async function handleConvertInboxToReport(note: NoteWithRelations) {
@@ -1126,7 +1152,7 @@ export function NotesClient({
       return;
     }
 
-    showNotice("Hızlı kayıt rapora cevrildi.");
+    showNotice("Not rapora çevrildi.");
   }
 
   async function handleDeleteImage(image: NoteImage): Promise<boolean> {
@@ -1190,6 +1216,68 @@ export function NotesClient({
         item.id === note.id ? (result.data as NoteWithRelations) : item,
       ),
     );
+  }
+
+  async function handleToggleFavorite(note: NoteWithRelations) {
+    setBusyNoteId(note.id);
+    setPageError("");
+
+    const result = await toggleFavoriteNote(note.id);
+    setBusyNoteId("");
+
+    if (result.error || !result.data) {
+      setPageError(result.error ?? "Favori durumu değiştirilemedi.");
+      return;
+    }
+
+    setNotes((current) =>
+      current.map((item) =>
+        item.id === note.id ? (result.data as NoteWithRelations) : item,
+      ),
+    );
+  }
+
+  async function handleArchiveNote(note: NoteWithRelations) {
+    setBusyNoteId(note.id);
+    setPageError("");
+
+    const result = await archiveNote(note.id);
+    setBusyNoteId("");
+
+    if (result.error || !result.data) {
+      setPageError(result.error ?? "Not arşivlenemedi.");
+      return;
+    }
+
+    setNotes((current) =>
+      current.map((item) =>
+        item.id === note.id ? (result.data as NoteWithRelations) : item,
+      ),
+    );
+    if (selectedNoteId === note.id && viewFilter !== "archive") {
+      closeNoteTab(note.id);
+    }
+    showNotice("Not arşivlendi.");
+  }
+
+  async function handleRestoreNote(note: NoteWithRelations) {
+    setBusyNoteId(note.id);
+    setPageError("");
+
+    const result = await restoreArchivedNote(note.id);
+    setBusyNoteId("");
+
+    if (result.error || !result.data) {
+      setPageError(result.error ?? "Not arşivden çıkarılamadı.");
+      return;
+    }
+
+    setNotes((current) =>
+      current.map((item) =>
+        item.id === note.id ? (result.data as NoteWithRelations) : item,
+      ),
+    );
+    showNotice("Not arşivden çıkarıldı.");
   }
 
   async function performDelete(noteToDelete: NoteWithRelations) {
@@ -1261,6 +1349,7 @@ export function NotesClient({
     setQuery("");
     setCategoryId("all");
     setSort("newest");
+    setViewFilter("all");
   }
 
   useEffect(() => {
@@ -1309,7 +1398,7 @@ export function NotesClient({
             Hızlı Kayıt
           </Button>
           <Button disabled={schemaMissing} onClick={openTemplateStarter} variant="secondary">
-            Şablondan Basla
+            Şablondan Başla
           </Button>
           <Button disabled={schemaMissing} onClick={() => openFullscreenEditor("new")} variant="secondary">
             Tam Ekran
@@ -1339,30 +1428,29 @@ export function NotesClient({
               <AlertCircle className="size-5" />
             </span>
             <h2 className="mt-5 text-lg font-semibold text-zinc-100">
-              Not veritabanı kurulumu gerekiyor
+              Not sistemi güncellemesi gerekiyor
             </h2>
             <p className="mt-2 text-sm leading-6 text-zinc-500">
-              Uygulama hazır, ancak Supabase projenizde Notes tabloları henüz
-              oluşturulmamış. Projedeki{" "}
-              <code className="rounded bg-white/[0.05] px-1.5 py-0.5 font-mono text-xs text-violet-300">
-                database/schema.sql
-              </code>{" "}
-              dosyasının tamamını Supabase SQL Editor içinde çalıştırın.
+              Uygulama hazır, ancak notlar için gerekli son güncelleme henüz
+              uygulanmamış. Kurulum adımını tamamladıktan sonra tekrar kontrol
+              edebilirsin.
             </p>
             <div className="mt-5 flex flex-col gap-2 sm:flex-row">
               <Button
                 onClick={() => {
-                  navigator.clipboard.writeText("database/schema.sql");
-                  showNotice("SQL dosya yolu kopyalandı.");
+                  navigator.clipboard.writeText(
+                    "database/phase-22-ai-productivity-suite.sql",
+                  );
+                  showNotice("Kurulum adımı kopyalandı.");
                 }}
                 variant="secondary"
               >
                 <ClipboardCopy className="size-4" />
-                Dosya yolunu kopyala
+                Kurulum adımını kopyala
               </Button>
               <Button onClick={() => router.refresh()}>
                 <RefreshCw className="size-4" />
-                Kurulumu tekrar kontrol et
+                Güncellemeyi tekrar kontrol et
               </Button>
             </div>
           </div>
@@ -1416,9 +1504,11 @@ export function NotesClient({
             onCategoryChange={setCategoryId}
             onQueryChange={setQuery}
             onSortChange={setSort}
+            onViewFilterChange={setViewFilter}
             query={query}
             resultCount={filteredNotes.length}
             sort={sort}
+            viewFilter={viewFilter}
           />
 
           <OpenNoteTabs
@@ -1438,9 +1528,12 @@ export function NotesClient({
                       isSelected={selectedNoteId === note.id}
                       key={note.id}
                       note={note}
+                      onArchive={handleArchiveNote}
                       onDelete={requestDelete}
                       onEdit={openEditNote}
+                      onRestore={handleRestoreNote}
                       onSelect={selectNote}
+                      onToggleFavorite={handleToggleFavorite}
                       onTogglePin={handleTogglePin}
                     />
                   ))}
@@ -1476,7 +1569,7 @@ export function NotesClient({
                     size="sm"
                     variant="secondary"
                   >
-                    {isLoadingMore ? "Yukleniyor..." : "50 kayıt daha yukle"}
+                    {isLoadingMore ? "Yükleniyor..." : "50 kayıt daha yükle"}
                   </Button>
                 </div>
               ) : null}
@@ -1501,11 +1594,14 @@ export function NotesClient({
               onConvertInboxToReport={handleConvertInboxToReport}
               onConvertInboxToTask={handleConvertInboxToTask}
               onCreate={openNewNote}
+              onArchive={handleArchiveNote}
               onDelete={requestDelete}
               onDeleteImage={handleDeleteImage}
               onEdit={openEditNote}
               onMoveInboxCategory={handleMoveInboxCategory}
               onOpenFullscreenEdit={(note) => openFullscreenEditor(note.id)}
+              onRestore={handleRestoreNote}
+              onToggleFavorite={handleToggleFavorite}
               onTogglePin={handleTogglePin}
               templates={templates}
             />

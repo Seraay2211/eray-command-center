@@ -394,6 +394,7 @@ export async function getTodayNotesCount(
     .select("id", { count: "exact", head: true })
     .eq("user_id", userId)
     .eq("status", "active")
+    .is("archived_at", null)
     .gte("created_at", startIso)
     .lte("created_at", endIso);
 
@@ -417,7 +418,8 @@ export async function getDashboardStats(
       .from("notes")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
-      .eq("status", "active"),
+      .eq("status", "active")
+      .is("archived_at", null),
     getTodayNotesCount(userId, supabase),
     supabase
       .from("tasks")
@@ -554,6 +556,7 @@ export async function getRecentNotes(
     .select(recentNoteSelect)
     .eq("user_id", userId)
     .eq("status", "active")
+    .is("archived_at", null)
     .order("updated_at", { ascending: false })
     .limit(4);
 
@@ -572,12 +575,14 @@ async function getPinnedNotesSummary(
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
       .eq("status", "active")
+      .is("archived_at", null)
       .eq("is_pinned", true),
     supabase
       .from("notes")
       .select(recentNoteSelect)
       .eq("user_id", userId)
       .eq("status", "active")
+      .is("archived_at", null)
       .eq("is_pinned", true)
       .order("updated_at", { ascending: false })
       .limit(1)

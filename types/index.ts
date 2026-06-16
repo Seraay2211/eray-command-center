@@ -542,6 +542,8 @@ export interface Note {
   content: string;
   status: "active";
   is_pinned: boolean;
+  is_favorite: boolean;
+  archived_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -664,8 +666,10 @@ export interface RecentItem {
 }
 
 export type AiActionKey =
+  | "command_summary"
   | "summarize"
   | "daily_summary"
+  | "note_polish"
   | "shorten"
   | "premium"
   | "manager_report";
@@ -760,6 +764,8 @@ export type DashboardWidgetId =
   | "overview_stats"
   | "priority_finance"
   | "daily_flow"
+  | "daily_journal"
+  | "notifications"
   | "quick_actions"
   | "activity"
   | "focus_tools";
@@ -877,6 +883,7 @@ export interface CreateNoteInput {
   categoryId: string | null;
   tags: string[];
   isPinned: boolean;
+  isFavorite?: boolean;
 }
 
 export interface UpdateNoteInput extends CreateNoteInput {

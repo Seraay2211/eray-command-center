@@ -1,9 +1,12 @@
 import { memo } from "react";
 import {
+  Archive,
+  ArchiveRestore,
   CalendarDays,
   Edit3,
   ImageIcon,
   Pin,
+  Star,
   Tag as TagIcon,
   Trash2,
 } from "lucide-react";
@@ -18,7 +21,10 @@ interface NoteCardProps {
   note: NoteWithRelations;
   onDelete: (note: NoteWithRelations) => void;
   onEdit: (note: NoteWithRelations) => void;
+  onArchive: (note: NoteWithRelations) => void;
+  onRestore: (note: NoteWithRelations) => void;
   onSelect: (note: NoteWithRelations) => void;
+  onToggleFavorite: (note: NoteWithRelations) => void;
   onTogglePin: (note: NoteWithRelations) => void;
 }
 
@@ -34,7 +40,7 @@ function buildPreview(content: string): string {
   const normalized = content.replace(/\s+/g, " ").trim();
 
   if (!normalized) {
-    return "Bu notta henuz içerik bulunmuyor.";
+    return "Bu notta henüz içerik bulunmuyor.";
   }
 
   if (normalized.length <= 180) {
@@ -50,7 +56,10 @@ function NoteCardComponent({
   note,
   onDelete,
   onEdit,
+  onArchive,
+  onRestore,
   onSelect,
+  onToggleFavorite,
   onTogglePin,
 }: NoteCardProps) {
   const displayDate =
@@ -125,6 +134,30 @@ function NoteCardComponent({
             fill={note.is_pinned ? "currentColor" : "none"}
           />
         </button>
+        <button
+          aria-label={
+            note.is_favorite
+              ? `${note.title} favoriden çıkar`
+              : `${note.title} notunu favoriye ekle`
+          }
+          className={cn(
+            "pointer-events-auto relative z-10 flex size-8 shrink-0 items-center justify-center rounded-lg border transition",
+            note.is_favorite
+              ? "border-amber-400/20 bg-amber-500/10 text-amber-300"
+              : "border-white/[0.07] bg-[#111114] text-zinc-600 hover:border-amber-400/20 hover:text-amber-300",
+          )}
+          disabled={isBusy}
+          onClick={(event) => {
+            event.stopPropagation();
+            onToggleFavorite(note);
+          }}
+          type="button"
+        >
+          <Star
+            className="size-3.5"
+            fill={note.is_favorite ? "currentColor" : "none"}
+          />
+        </button>
       </div>
 
       <p className="pointer-events-none relative z-[1] mt-3 line-clamp-3 whitespace-pre-wrap text-xs leading-5 text-zinc-600">
@@ -194,6 +227,30 @@ function NoteCardComponent({
             type="button"
           >
             <Edit3 className="size-3.5" />
+          </button>
+          <button
+            aria-label={
+              note.archived_at
+                ? `${note.title} notunu arşivden çıkar`
+                : `${note.title} notunu arşivle`
+            }
+            className="flex size-8 items-center justify-center rounded-lg text-zinc-600 transition hover:bg-white/[0.05] hover:text-zinc-200"
+            disabled={isBusy}
+            onClick={(event) => {
+              event.stopPropagation();
+              if (note.archived_at) {
+                onRestore(note);
+              } else {
+                onArchive(note);
+              }
+            }}
+            type="button"
+          >
+            {note.archived_at ? (
+              <ArchiveRestore className="size-3.5" />
+            ) : (
+              <Archive className="size-3.5" />
+            )}
           </button>
           <button
             aria-label={`${note.title} notunu sil`}

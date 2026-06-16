@@ -12,6 +12,7 @@ import type { AiActionKey } from "@/types";
 
 interface AiActionButtonsProps {
   activeAction: AiActionKey | null;
+  includeCommandSummary?: boolean;
   disabled?: boolean;
   includeDailySummary?: boolean;
   mode?: "run" | "select";
@@ -30,6 +31,7 @@ const iconMap = {
 export function AiActionButtons({
   activeAction,
   disabled = false,
+  includeCommandSummary = false,
   includeDailySummary = false,
   onAction,
   selectedAction,
@@ -37,7 +39,9 @@ export function AiActionButtons({
   return (
     <div className="grid gap-2 sm:grid-cols-2">
       {AI_ACTIONS.filter(
-        (action) => includeDailySummary || action.key !== "daily_summary",
+        (action) =>
+          (includeDailySummary || action.key !== "daily_summary") &&
+          (includeCommandSummary || action.key !== "command_summary"),
       ).map((action) => {
         const Icon = action.iconName ? iconMap[action.iconName as keyof typeof iconMap] : Bot;
         const isActive = activeAction === action.key;

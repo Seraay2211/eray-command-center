@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getIstanbulDateKey, getIstanbulDayRange } from "@/lib/dates/istanbul";
 import { createClient } from "@/lib/supabase/server";
+import { formatTRY } from "@/lib/utils/currency";
 import type { ActionResult } from "@/types";
 import type {
   AppNotification,
@@ -32,6 +34,10 @@ const priorities: NotificationPriority[] = [
   "high",
   "critical",
 ];
+
+function addDays(value: Date, days: number): Date {
+  return new Date(value.getTime() + days * 24 * 60 * 60 * 1000);
+}
 
 function getNotificationErrorMessage(error: unknown): string {
   const message =
@@ -91,6 +97,156 @@ function mapNotification(raw: Record<string, unknown>): AppNotification {
   };
 }
 
+function buildDynamicNotification(input: {
+  actionUrl: string;
+  createdAt?: string;
+  id: string;
+  message: string;
+  priority: NotificationPriority;
+  source: string;
+  sourceId: string;
+  title: string;
+  type: NotificationType;
+  userId: string;
+}): AppNotification {
+  return {
+    id: input.id,
+    user_id: input.userId,
+    type: input.type,
+    title: input.title,
+    message: input.message,
+    source: input.source,
+    source_id: input.sourceId,
+    priority: input.priority,
+    action_url: input.actionUrl,
+    is_read: false,
+    read_at: null,
+    metadata: { dynamic: true },
+    created_at: input.createdAt ?? new Date().toISOString(),
+  };
+}
+
+async function buildDynamicNotifications(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+): Promise<AppNotification[]> {
+  try {
+    const todayKey = getIstanbulDateKey();
+    const { startIso, endIso } = getIstanbulDayRange();
+    const weekEndKey = getIstanbulDateKey(addDays(new Date(startIso), 7));
+    const [tasksResult, calendarResult, installmentsResult] = await Promise.all([
+      supabase
+        .from("tasks")
+        .select("id,title,priority,due_date")
+        .eq("user_id", userId)
+        .is("archived_at", null)
+        .neq("status", "done")
+        .not("due_date", "is", null)
+        .lt("due_date", endIso)
+        .order("due_date", { ascending: true })
+        .limit(12),
+      supabase
+        .from("planner_events")
+        .select("id,title,start_at,priority,status")
+        .eq("user_id", userId)
+        .neq("status", "cancelled")
+        .gte("start_at", startIso)
+        .lt("start_at", endIso)
+        .order("start_at", { ascending: true })
+        .limit(8),
+      supabase
+        .from("debt_installments")
+        .select("id,debt_id,installment_no,due_date,expected_amount,paid_amount,status,debt:debts(id,title)")
+        .eq("user_id", userId)
+        .neq("status", "paid")
+        .lt("due_date", weekEndKey)
+        .order("due_date", { ascending: true })
+        .limit(12),
+    ]);
+
+    const taskNotifications = (tasksResult.data ?? []).map((task) => {
+      const dueDate = String(task.due_date ?? "");
+      const isOverdue = dueDate < startIso;
+      return buildDynamicNotification({
+        actionUrl: `/tasks?task=${encodeURIComponent(String(task.id))}`,
+        createdAt: dueDate || undefined,
+        id: `dynamic-task-${String(task.id)}`,
+        message: isOverdue
+          ? "Görevin son tarihi geçti."
+          : "Görevin son tarihi bugün.",
+        priority: isOverdue ? "high" : "medium",
+        source: "task",
+        sourceId: String(task.id),
+        title: String(task.title || "Görev takibi"),
+        type: "task_due",
+        userId,
+      });
+    });
+    const calendarNotifications = (calendarResult.data ?? []).map((event) =>
+      buildDynamicNotification({
+        actionUrl: `/calendar?event=${encodeURIComponent(String(event.id))}`,
+        createdAt: String(event.start_at ?? new Date().toISOString()),
+        id: `dynamic-calendar-${String(event.id)}`,
+        message: "Bugün takvimde planlanmış kayıt var.",
+        priority: "medium",
+        source: "calendar",
+        sourceId: String(event.id),
+        title: String(event.title || "Bugünkü plan"),
+        type: "calendar_today",
+        userId,
+      }),
+    );
+    const installmentNotifications = (installmentsResult.data ?? []).map(
+      (installment) => {
+        const debt = Array.isArray(installment.debt)
+          ? installment.debt[0]
+          : installment.debt;
+        const debtTitle =
+          debt && typeof debt === "object" && "title" in debt
+            ? String(debt.title ?? "Taksit")
+            : "Taksit";
+        const remaining = Math.max(
+          Number(installment.expected_amount) -
+            Number(installment.paid_amount),
+          0,
+        );
+        const dueDate = String(installment.due_date);
+        const isOverdue = dueDate < todayKey;
+        const isToday = dueDate === todayKey;
+
+        return buildDynamicNotification({
+          actionUrl: `/finance?debt=${encodeURIComponent(
+            String(installment.debt_id),
+          )}&installment=${encodeURIComponent(String(installment.id))}`,
+          createdAt: new Date(`${dueDate}T09:00:00+03:00`).toISOString(),
+          id: `dynamic-installment-${String(installment.id)}`,
+          message: `${installment.installment_no}. taksit için kalan tutar ${formatTRY(
+            remaining,
+          )}.`,
+          priority: isOverdue ? "critical" : isToday ? "high" : "medium",
+          source: "finance",
+          sourceId: String(installment.id),
+          title: isOverdue
+            ? `${debtTitle} taksiti gecikti`
+            : isToday
+              ? `${debtTitle} taksiti bugün`
+              : `${debtTitle} taksiti yaklaşıyor`,
+          type: isOverdue ? "finance_overdue" : "finance_due_today",
+          userId,
+        });
+      },
+    );
+
+    return [
+      ...installmentNotifications,
+      ...taskNotifications,
+      ...calendarNotifications,
+    ];
+  } catch {
+    return [];
+  }
+}
+
 async function getContext() {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getUser();
@@ -113,19 +269,30 @@ export async function getNotifications(
   try {
     const limit = Math.min(Math.max(limitValue, 1), 50);
     const { supabase, userId } = await getContext();
-    const { data, error } = await supabase
+    const [dynamicNotifications, storedResult] = await Promise.all([
+      buildDynamicNotifications(supabase, userId),
+      supabase
       .from("notifications")
       .select(notificationSelect)
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
-      .limit(limit);
+        .limit(limit),
+    ]);
 
-    if (error) throw error;
+    const storedNotifications = storedResult.error
+      ? []
+      : (storedResult.data ?? []).map((item) =>
+          mapNotification(item as Record<string, unknown>),
+        );
 
     return {
-      data: (data ?? []).map((item) =>
-        mapNotification(item as Record<string, unknown>),
-      ),
+      data: [...dynamicNotifications, ...storedNotifications]
+        .sort(
+          (left, right) =>
+            new Date(right.created_at).getTime() -
+            new Date(left.created_at).getTime(),
+        )
+        .slice(0, limit),
       error: null,
     };
   } catch (error) {
@@ -138,14 +305,21 @@ export async function getUnreadNotificationCount(): Promise<
 > {
   try {
     const { supabase, userId } = await getContext();
-    const { count, error } = await supabase
-      .from("notifications")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", userId)
-      .eq("is_read", false);
+    const [dynamicNotifications, storedResult] = await Promise.all([
+      buildDynamicNotifications(supabase, userId),
+      supabase
+        .from("notifications")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .eq("is_read", false),
+    ]);
 
-    if (error) throw error;
-    return { data: count ?? 0, error: null };
+    return {
+      data:
+        dynamicNotifications.length +
+        (storedResult.error ? 0 : (storedResult.count ?? 0)),
+      error: null,
+    };
   } catch (error) {
     return { data: null, error: getNotificationErrorMessage(error) };
   }

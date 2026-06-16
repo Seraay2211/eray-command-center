@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { buildProductivityContext } from "@/lib/ai/build-productivity-context";
 import { hasGeminiApiKey } from "@/lib/ai/config";
 import {
   buildDemoDailyCommandSummary,
@@ -6,10 +7,6 @@ import {
 } from "@/lib/ai/daily-command-summary";
 import { generateDailyCommandSummaryWithGemini } from "@/lib/ai/providers/daily-command-gemini";
 import { formatAiOutputForDisplay } from "@/lib/ai/format-ai-output";
-import {
-  getIstanbulDateKey,
-  getIstanbulDayRange,
-} from "@/lib/dates/istanbul";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -26,90 +23,56 @@ export async function POST() {
       );
     }
 
-    const userId = authData.user.id;
-    const { startIso, endIso } = getIstanbulDayRange();
-    const [notesResult, tasksResult, calendarResult, debtsResult, paymentsResult] =
-      await Promise.all([
-        supabase
-          .from("notes")
-          .select("title,content")
-          .eq("user_id", userId)
-          .eq("status", "active")
-          .order("updated_at", { ascending: false })
-          .limit(5),
-        supabase
-          .from("tasks")
-          .select("title,description,priority,due_date")
-          .eq("user_id", userId)
-          .is("archived_at", null)
-          .neq("status", "done")
-          .order("due_date", { ascending: true, nullsFirst: false })
-          .limit(10),
-        supabase
-          .from("planner_events")
-          .select("title,description,start_at")
-          .eq("user_id", userId)
-          .neq("status", "cancelled")
-          .gte("start_at", startIso)
-          .lt("start_at", endIso)
-          .order("start_at", { ascending: true })
-          .limit(8),
-        supabase
-          .from("debts")
-          .select("title,total_amount,paid_amount,priority,due_date,status")
-          .eq("user_id", userId)
-          .neq("status", "paid")
-          .neq("status", "cancelled")
-          .order("due_date", { ascending: true, nullsFirst: false })
-          .limit(10),
-        supabase
-          .from("debt_payments")
-          .select("amount,payment_date,method")
-          .eq("user_id", userId)
-          .order("payment_date", { ascending: false })
-          .limit(5),
-      ]);
-
-    const failedResult = [
-      notesResult,
-      tasksResult,
-      calendarResult,
-      debtsResult,
-      paymentsResult,
-    ].find((result) => result.error);
-    if (failedResult?.error) throw failedResult.error;
-
+    const context = await buildProductivityContext();
     const input: DailyCommandAiInput = {
-      date: getIstanbulDateKey(),
-      notes: (notesResult.data ?? []).map((note) => ({
+      context,
+      date: context.today.dateKey,
+      notes: context.notes.recent.map((note) => ({
         title: note.title,
-        content: note.content.slice(0, 600),
+        content: note.preview,
       })),
-      tasks: (tasksResult.data ?? []).map((task) => ({
+      tasks: [
+        ...context.tasks.overdue,
+        ...context.tasks.today,
+        ...context.tasks.upcoming,
+      ].map((task) => ({
         title: task.title,
-        description: task.description.slice(0, 300),
+        description: task.description,
         priority: task.priority,
-        dueDate: task.due_date,
+        dueDate: task.dueDate,
       })),
-      calendar: (calendarResult.data ?? []).map((event) => ({
+      calendar: context.calendar.today.map((event) => ({
         title: event.title,
-        description: event.description.slice(0, 300),
-        startAt: event.start_at,
+        description: event.description,
+        startAt: event.startAt,
       })),
-      debts: (debtsResult.data ?? []).map((debt) => ({
+      debts: context.finance.activeDebts.map((debt) => ({
         title: debt.title,
-        remainingAmount: Math.max(
-          (Number(debt.total_amount) || 0) - (Number(debt.paid_amount) || 0),
-          0,
-        ),
+        remainingAmount: debt.remainingAmount,
         priority: debt.priority,
-        dueDate: debt.due_date,
-        status: debt.status,
+        dueDate: debt.dueDate,
+        status:
+          context.finance.overdueDebts.some((item) => item.id === debt.id)
+            ? "overdue"
+            : "active",
       })),
-      payments: (paymentsResult.data ?? []).map((payment) => ({
-        amount: Number(payment.amount) || 0,
-        date: payment.payment_date,
+      payments: context.finance.recentPayments.map((payment) => ({
+        amount: payment.amount,
+        date: payment.date,
         method: payment.method,
+      })),
+      installments: [
+        ...context.installments.overdue,
+        ...context.installments.dueToday,
+        ...context.installments.upcoming,
+      ].map((installment) => ({
+        title: `${installment.debtTitle} ${installment.installmentNo}. taksit`,
+        remainingAmount: installment.remainingAmount,
+        dueDate: installment.dueDate,
+      })),
+      reports: context.reports.recent.map((report) => ({
+        title: report.title,
+        summary: report.summary,
       })),
     };
     const demoOutput = buildDemoDailyCommandSummary(input);

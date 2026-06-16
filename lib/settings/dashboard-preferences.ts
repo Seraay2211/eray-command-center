@@ -37,22 +37,34 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDefinition[] = [
     order: 3,
   },
   {
+    id: "daily_journal",
+    label: "Günün Özeti",
+    description: "Günün özetini AI ile hızlıca hazırlama kısayolunu gösterir.",
+    order: 4,
+  },
+  {
+    id: "notifications",
+    label: "Bildirimler",
+    description: "Önemli görev, takvim ve finans uyarılarını gösterir.",
+    order: 5,
+  },
+  {
     id: "quick_actions",
     label: "Hızlı İşlemler",
     description: "Sık kullanılan oluşturma ve geçiş kısayollarını gösterir.",
-    order: 4,
+    order: 6,
   },
   {
     id: "activity",
     label: "Notlar, Görevler ve Raporlar",
     description: "Son kayıtları ve açık işleri özetler.",
-    order: 5,
+    order: 7,
   },
   {
     id: "focus_tools",
     label: "Odak ve AI Araçları",
     description: "Sabitlenen notu ve hızlı AI komutlarını gösterir.",
-    order: 6,
+    order: 8,
   },
 ];
 

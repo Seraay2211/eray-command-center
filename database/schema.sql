@@ -21,9 +21,15 @@ create table if not exists public.notes (
   content text not null default '',
   status text not null default 'active' check (status in ('active')),
   is_pinned boolean not null default false,
+  is_favorite boolean not null default false,
+  archived_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.notes
+  add column if not exists is_favorite boolean not null default false,
+  add column if not exists archived_at timestamptz;
 
 create table if not exists public.tags (
   id uuid primary key default gen_random_uuid(),
@@ -191,6 +197,12 @@ create index if not exists notes_user_category_idx
 
 create index if not exists notes_user_pinned_idx
   on public.notes(user_id, is_pinned desc);
+
+create index if not exists notes_user_favorite_idx
+  on public.notes(user_id, is_favorite desc);
+
+create index if not exists notes_user_archived_at_idx
+  on public.notes(user_id, archived_at);
 
 create index if not exists tags_user_id_idx
   on public.tags(user_id);

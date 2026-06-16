@@ -5,11 +5,16 @@ import {
   AlertCircle,
   Bot,
   CheckCircle2,
+  ClipboardCopy,
   LoaderCircle,
+  Plus,
+  RefreshCw,
   Sparkles,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { createNote } from "@/features/notes/actions";
+import { formatAiOutputForNote } from "@/lib/ai/format-ai-output";
 
 interface DailyCommandResponse {
   error?: string;
@@ -22,7 +27,18 @@ export function AiDailyPlan() {
   const [output, setOutput] = useState("");
   const [provider, setProvider] = useState<"demo" | "gemini" | null>(null);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [isPending, setIsPending] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  function getTodayLabel() {
+    return new Intl.DateTimeFormat("tr-TR", {
+      day: "2-digit",
+      month: "2-digit",
+      timeZone: "Europe/Istanbul",
+      year: "numeric",
+    }).format(new Date());
+  }
 
   async function generatePlan() {
     setIsPending(true);
@@ -41,11 +57,45 @@ export function AiDailyPlan() {
 
       setOutput(payload.output);
       setProvider(payload.provider ?? "demo");
+      setNotice("");
     } catch {
       setError("AI günlük planı oluşturulamadı. Lütfen tekrar dene.");
     } finally {
       setIsPending(false);
     }
+  }
+
+  async function copyOutput() {
+    if (!output) return;
+
+    try {
+      await navigator.clipboard.writeText(output);
+      setNotice("Komuta özeti panoya kopyalandı.");
+    } catch {
+      setError("Komuta özeti kopyalanamadı. Lütfen tekrar dene.");
+    }
+  }
+
+  async function saveOutputAsNote() {
+    if (!output) return;
+
+    setIsSaving(true);
+    setError("");
+    const result = await createNote({
+      categoryId: null,
+      content: formatAiOutputForNote(output),
+      isPinned: false,
+      tags: ["ai", "komuta-ozeti"],
+      title: `AI Komuta Özeti — ${getTodayLabel()}`,
+    });
+    setIsSaving(false);
+
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
+
+    setNotice("AI komuta özeti Notlar'a kaydedildi.");
   }
 
   return (
@@ -60,7 +110,7 @@ export function AiDailyPlan() {
         ) : (
           <Sparkles className="size-4" />
         )}
-        {isPending ? "Günlük plan hazırlanıyor..." : "AI Günlük Plan Oluştur"}
+        {isPending ? "Komuta özeti hazırlanıyor..." : "Komuta Özeti Oluştur"}
       </Button>
 
       {error ? (
@@ -85,7 +135,7 @@ export function AiDailyPlan() {
           </button>
           <div className="flex flex-wrap items-center gap-2 pr-8">
             <Bot className="app-primary size-4" />
-            <p className="app-text text-xs font-semibold">AI Günlük Plan</p>
+            <p className="app-text text-xs font-semibold">AI Komuta Özeti</p>
             <span className="app-surface-2 app-muted rounded-full border px-2 py-0.5 text-[9px]">
               {provider === "gemini" ? "Gemini" : "Demo"}
             </span>
@@ -93,10 +143,45 @@ export function AiDailyPlan() {
           <p className="app-text mt-4 whitespace-pre-wrap text-xs leading-6 sm:text-sm">
             {output}
           </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button onClick={() => void copyOutput()} size="sm" variant="secondary">
+              <ClipboardCopy className="size-3.5" />
+              Kopyala
+            </Button>
+            <Button
+              disabled={isSaving}
+              onClick={() => void saveOutputAsNote()}
+              size="sm"
+            >
+              {isSaving ? (
+                <LoaderCircle className="size-3.5 animate-spin" />
+              ) : (
+                <Plus className="size-3.5" />
+              )}
+              Nota Kaydet
+            </Button>
+            <Button
+              disabled={isPending}
+              onClick={() => void generatePlan()}
+              size="sm"
+              variant="secondary"
+            >
+          <RefreshCw
+            className={`size-3.5 ${isPending ? "animate-spin" : ""}`}
+          />
+              Yeniden Oluştur
+            </Button>
+          </div>
           <p className="app-muted mt-4 flex items-center gap-2 text-[10px]">
             <CheckCircle2 className="size-3.5 text-[var(--success)]" />
             AI çıktıları kişisel planlama amaçlıdır.
           </p>
+          {notice ? (
+            <p className="mt-3 flex items-center gap-2 text-xs text-[var(--success)]">
+              <CheckCircle2 className="size-3.5" />
+              {notice}
+            </p>
+          ) : null}
         </div>
       ) : null}
     </div>

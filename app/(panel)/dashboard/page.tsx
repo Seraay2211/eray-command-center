@@ -19,7 +19,9 @@ import { CommandSummaryCard } from "@/components/dashboard/command-summary-card"
 import { DashboardErrorState } from "@/components/dashboard/dashboard-error-state";
 import { DashboardPersonalizedArea } from "@/components/dashboard/dashboard-personalized-area";
 import { DashboardWidgetSection } from "@/components/dashboard/dashboard-widget-section";
+import { DailyJournalShortcut } from "@/components/dashboard/daily-journal-shortcut";
 import { FinanceRadar } from "@/components/dashboard/finance-radar";
+import { NotificationsPreviewCard } from "@/components/dashboard/notifications-preview-card";
 import { PriorityList } from "@/components/dashboard/priority-list";
 import { QuickActionCard } from "@/components/dashboard/quick-action-card";
 import { QuickCaptureCard } from "@/components/dashboard/quick-capture-card";
@@ -40,6 +42,7 @@ import { REPORT_TYPE_LABELS } from "@/lib/reports";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { generateFinanceAlerts } from "@/lib/notifications/finance-alerts";
 import { getDashboardData } from "@/services/dashboard-service";
+import { getNotifications } from "@/services/notifications-service";
 import { getUserSettings } from "@/services/settings-service";
 import type { DashboardStats, StatItem } from "@/types";
 
@@ -108,11 +111,18 @@ function buildStatItems(
 }
 
 export default async function DashboardPage() {
-  const [dashboardResult, settingsResult] = await Promise.all([
+  const [
+    dashboardResult,
+    settingsResult,
+    financeAlertsResult,
+    notificationsResult,
+  ] = await Promise.all([
     getDashboardData(),
     getUserSettings(),
     generateFinanceAlerts(),
+    getNotifications(6),
   ]);
+  void financeAlertsResult;
   const dashboard = dashboardResult.data;
 
   if (!dashboard) {
@@ -307,6 +317,16 @@ export default async function DashboardPage() {
 
             <QuickCaptureCard />
           </section>
+        </DashboardWidgetSection>
+
+        <DashboardWidgetSection widgetId="daily_journal">
+          <DailyJournalShortcut />
+        </DashboardWidgetSection>
+
+        <DashboardWidgetSection widgetId="notifications">
+          <NotificationsPreviewCard
+            notifications={notificationsResult.data ?? []}
+          />
         </DashboardWidgetSection>
 
         <DashboardWidgetSection widgetId="quick_actions">

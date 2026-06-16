@@ -384,6 +384,9 @@ export function NotificationCenter({
                   </p>
                 ) : null}
                 {notifications.map((notification) => (
+                  (() => {
+                    const isDynamic = notification.metadata?.dynamic === true;
+                    return (
                   <article
                     className={`rounded-xl border p-3 transition ${
                       notification.is_read
@@ -442,6 +445,7 @@ export function NotificationCenter({
                             </Button>
                           ) : null}
                           {!notification.is_read ? (
+                            isDynamic ? null : (
                             <Button
                               disabled={actionId === notification.id}
                               onClick={() => void markAsRead(notification)}
@@ -451,20 +455,27 @@ export function NotificationCenter({
                               <Check className="size-3.5" />
                               Okundu Yap
                             </Button>
+                            )
                           ) : null}
-                          <Button
-                            disabled={actionId === notification.id}
-                            onClick={() => void removeNotification(notification)}
-                            size="sm"
-                            variant="ghost"
-                          >
-                            <Trash2 className="size-3.5" />
-                            Sil
-                          </Button>
+                          {!isDynamic ? (
+                            <Button
+                              disabled={actionId === notification.id}
+                              onClick={() =>
+                                void removeNotification(notification)
+                              }
+                              size="sm"
+                              variant="ghost"
+                            >
+                              <Trash2 className="size-3.5" />
+                              Sil
+                            </Button>
+                          ) : null}
                         </div>
                       </div>
                     </div>
                   </article>
+                    );
+                  })()
                 ))}
               </div>
             )}

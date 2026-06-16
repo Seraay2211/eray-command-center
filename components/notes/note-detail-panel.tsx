@@ -2,13 +2,19 @@
 
 import { useState } from "react";
 import {
+  Archive,
+  ArchiveRestore,
   AlertCircle,
+  BarChart3,
   CalendarDays,
+  CheckSquare2,
   Edit3,
   Expand,
   FileText,
   Pin,
   Plus,
+  Sparkles,
+  Star,
   Tag as TagIcon,
   Trash2,
   X,
@@ -57,6 +63,9 @@ interface NoteDetailPanelProps {
     categoryId: string,
   ) => Promise<void>;
   onOpenFullscreenEdit: (note: NoteWithRelations) => void;
+  onArchive: (note: NoteWithRelations) => void;
+  onRestore: (note: NoteWithRelations) => void;
+  onToggleFavorite: (note: NoteWithRelations) => void;
   onTogglePin: (note: NoteWithRelations) => void;
   templates: Template[];
 }
@@ -87,6 +96,9 @@ export function NoteDetailPanel({
   onEdit,
   onMoveInboxCategory,
   onOpenFullscreenEdit,
+  onArchive,
+  onRestore,
+  onToggleFavorite,
   onTogglePin,
   templates,
 }: NoteDetailPanelProps) {
@@ -172,6 +184,28 @@ export function NoteDetailPanel({
                   />
                 </button>
                 <button
+                  aria-label={
+                    note.is_favorite
+                      ? "Notu favoriden çıkar"
+                      : "Notu favoriye ekle"
+                  }
+                  className={cn(
+                    "flex size-9 items-center justify-center rounded-lg transition hover:bg-white/[0.05]",
+                    note.is_favorite
+                      ? "text-amber-300"
+                      : "text-zinc-600 hover:text-amber-300",
+                  )}
+                  disabled={isBusy}
+                  onClick={() => onToggleFavorite(note)}
+                  title={note.is_favorite ? "Favoriden çıkar" : "Favori"}
+                  type="button"
+                >
+                  <Star
+                    className="size-4"
+                    fill={note.is_favorite ? "currentColor" : "none"}
+                  />
+                </button>
+                <button
                   aria-label="Notu düzenle"
                   className="flex size-9 items-center justify-center rounded-lg text-zinc-600 transition hover:bg-white/[0.05] hover:text-zinc-200"
                   disabled={isBusy}
@@ -190,6 +224,24 @@ export function NoteDetailPanel({
                   type="button"
                 >
                   <Trash2 className="size-4" />
+                </button>
+                <button
+                  aria-label={
+                    note.archived_at ? "Notu arşivden çıkar" : "Notu arşivle"
+                  }
+                  className="flex size-9 items-center justify-center rounded-lg text-zinc-600 transition hover:bg-white/[0.05] hover:text-zinc-200"
+                  disabled={isBusy}
+                  onClick={() =>
+                    note.archived_at ? onRestore(note) : onArchive(note)
+                  }
+                  title={note.archived_at ? "Arşivden çıkar" : "Arşivle"}
+                  type="button"
+                >
+                  {note.archived_at ? (
+                    <ArchiveRestore className="size-4" />
+                  ) : (
+                    <Archive className="size-4" />
+                  )}
                 </button>
                 <button
                   aria-label="Notu tam ekranda düzenle"
@@ -256,6 +308,18 @@ export function NoteDetailPanel({
                     Sabitli
                   </span>
                 ) : null}
+                {note.is_favorite ? (
+                  <span className="inline-flex items-center gap-1 rounded-md border border-amber-400/20 bg-amber-500/10 px-2.5 py-1 text-[10px] font-semibold text-amber-300">
+                    <Star className="size-3" fill="currentColor" />
+                    Favori
+                  </span>
+                ) : null}
+                {note.archived_at ? (
+                  <span className="inline-flex items-center gap-1 rounded-md border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 text-[10px] font-semibold text-zinc-400">
+                    <Archive className="size-3" />
+                    Arşivde
+                  </span>
+                ) : null}
               </div>
 
               <div>
@@ -287,6 +351,44 @@ export function NoteDetailPanel({
               ) : null}
 
               <NoteImageGallery images={note.images} onOpen={setPreviewImage} />
+
+              <div className="rounded-xl border border-white/[0.06] bg-black/20 p-4">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-violet-300">
+                  Not Aksiyonları
+                </p>
+                <p className="mt-1 text-[10px] leading-5 text-zinc-600">
+                  Bu nottan görev veya rapor kaydı oluşturabilirsin.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button
+                    disabled={isBusy}
+                    onClick={() => onConvertInboxToTask(note)}
+                    size="sm"
+                    variant="secondary"
+                  >
+                    <CheckSquare2 className="size-3.5" />
+                    Göreve Çevir
+                  </Button>
+                  <Button
+                    disabled={isBusy}
+                    onClick={() => onConvertInboxToReport(note)}
+                    size="sm"
+                    variant="secondary"
+                  >
+                    <BarChart3 className="size-3.5" />
+                    Rapora Çevir
+                  </Button>
+                  <Button
+                    disabled={aiDisabled}
+                    onClick={() => onAiAction(note, "note_polish")}
+                    size="sm"
+                    variant="secondary"
+                  >
+                    <Sparkles className="size-3.5" />
+                    Notu Düzenle
+                  </Button>
+                </div>
+              </div>
 
               <div className="rounded-xl border border-white/[0.06] bg-black/20 p-4">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-violet-300">

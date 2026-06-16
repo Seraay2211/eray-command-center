@@ -8,9 +8,34 @@ interface GenerateWithDemoInput {
 }
 
 const demoOutputs: Record<AiActionKey, string> = {
+  command_summary: `KOMUTA ÖZETİ
+
+Genel Durum:
+Bugünün operasyon verileri demo modda değerlendirildi.
+
+Öncelikli Aksiyonlar:
+01 — Geciken ve bugün son tarihli işleri kontrol et.
+02 — Finans kayıtlarındaki yaklaşan ödemeleri gözden geçir.
+03 — Günün sonunda kısa bir değerlendirme notu oluştur.
+
+Finans Uyarıları:
+01 — Demo modda gerçek finans uyarısı gösterilmiyor.
+
+Görev ve Takvim:
+01 — Bugünkü görev ve planlarını komuta ekranından takip et.
+
+Notlardan Çıkanlar:
+01 — Son notlarını gün içinde tekrar gözden geçir.
+
+Bugün İçin Net Plan:
+01 — En önemli işi seç.
+02 — Finans kontrolünü tamamla.
+03 — Günlük özet notunu kaydet.`,
   summarize:
     "Bu notun kısa özeti: Ana konu tespit edildi, önemli noktalar sadeleştirildi ve takip edilmesi gereken aksiyonlar ayrıldı.",
   daily_summary: "",
+  note_polish:
+    "DÜZENLENMİŞ NOT\n\nAna fikir:\nNotun ana konusu daha okunabilir hale getirildi.\n\nDetaylar:\nVerilen bilgiler korunarak gereksiz dağınıklık toparlandı.\n\nAksiyonlar:\n01 — Notu gözden geçir.\n02 — Eksik tarih, tutar veya takip bilgisini tamamla.",
   shorten:
     "Mesaj netleştirildi. Ana fikir korunarak daha kısa ve vurucu hale getirildi.",
   premium:

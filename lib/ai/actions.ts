@@ -28,6 +28,42 @@ function getCurrentDateLabel(): string {
 }
 
 const definitions: Record<AiActionKey, AiActionDefinition> = {
+  command_summary: {
+    key: "command_summary",
+    label: "AI Komuta Özeti",
+    description:
+      "Görev, takvim, finans ve notlardan bugünün öncelikli aksiyonlarını çıkarır.",
+    iconName: "Bot",
+    systemInstruction:
+      "Sen kişisel operasyon komuta asistanısın. Verilen gerçek verilerden sade, uygulanabilir ve Türkçe komuta özeti üretirsin. Veri uydurmaz, finansal tavsiye vermezsin.",
+    buildPrompt: ({ text }) => `Aşağıdaki komuta bağlamını temiz bir günlük operasyon özetine dönüştür.
+
+Çıktı düzeni:
+
+KOMUTA ÖZETİ
+
+Genel Durum:
+
+Öncelikli Aksiyonlar:
+
+Finans Uyarıları:
+
+Görev ve Takvim:
+
+Notlardan Çıkanlar:
+
+Bugün İçin Net Plan:
+
+Kurallar:
+
+* Türkçe yaz.
+* Bilgi uydurma.
+* Markdown işareti, tablo, kod bloğu veya JSON kullanma.
+* Mümkünse gerçek kayıt adlarını, tutarları ve tarihleri kullan.
+
+Komuta bağlamı:
+${text}`,
+  },
   summarize: {
     key: "summarize",
     label: "Özetle",
@@ -91,6 +127,38 @@ Kurallar:
 * Markdown işaretleri, tablo, kod bloğu veya JSON kullanma.
 
 Dağınık günlük notu:
+${text}`,
+  },
+  note_polish: {
+    key: "note_polish",
+    label: "Notu Düzenle",
+    description: "Dağınık notu anlamı koruyarak daha düzenli hale getirir.",
+    iconName: "WandSparkles",
+    systemInstruction:
+      "Sen not düzenleme asistanısın. Kullanıcının dağınık notunu anlamı ve gerçek bilgileri koruyarak daha düzenli, okunabilir ve profesyonel Türkçeye çevirirsin. Bilgi uydurmazsın.",
+    buildPrompt: ({ text, title }) => `Aşağıdaki notu düzenle.
+
+İstenen çıktı:
+
+DÜZENLENMİŞ NOT
+
+Ana fikir:
+
+Detaylar:
+
+Aksiyonlar:
+
+Kurallar:
+
+* Türkçe yaz.
+* Anlamı değiştirme.
+* Kişi, tutar, tarih veya olay uydurma.
+* Markdown işareti, tablo, kod bloğu veya JSON kullanma.
+
+Başlık:
+${getPromptTitle(title)}
+
+Metin:
 ${text}`,
   },
   shorten: {

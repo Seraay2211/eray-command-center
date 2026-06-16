@@ -24,6 +24,8 @@ const noteSelect = `
   content,
   status,
   is_pinned,
+  is_favorite,
+  archived_at,
   created_at,
   updated_at,
   category:categories (
@@ -87,11 +89,12 @@ function getErrorMessage(error: unknown): string {
         : String(error);
 
   if (
+    message.includes("PGRST204") ||
     message.includes("PGRST205") ||
     message.includes("schema cache") ||
     message.includes("Could not find the table")
   ) {
-    return "Not veritabanı henüz hazır değil. database/schema.sql dosyasını Supabase SQL Editor içinde çalıştırın.";
+    return "Not sistemi için gerekli güncelleme henüz tamamlanmamış. Kurulum adımını tamamlayıp tekrar dene.";
   }
 
   if (message.toLowerCase().includes("jwt")) {
@@ -123,6 +126,8 @@ function mapNote(rawNote: RawNote): NoteWithRelations {
     content: rawNote.content,
     status: rawNote.status,
     is_pinned: rawNote.is_pinned,
+    is_favorite: rawNote.is_favorite,
+    archived_at: rawNote.archived_at,
     created_at: rawNote.created_at,
     updated_at: rawNote.updated_at,
     category,
@@ -201,6 +206,8 @@ function validateInput(input: CreateNoteInput): CreateNoteInput {
     categoryId: input.categoryId || null,
     tags: normalizeTags(input.tags),
     isPinned: Boolean(input.isPinned),
+    isFavorite:
+      input.isFavorite === undefined ? undefined : Boolean(input.isFavorite),
   };
 }
 
@@ -508,6 +515,7 @@ export async function createNote(
         title: values.title,
         content: values.content,
         is_pinned: values.isPinned,
+        is_favorite: values.isFavorite ?? false,
       })
       .select("id")
       .single();
@@ -557,6 +565,7 @@ export async function createQuickCaptureNote(input: {
       .insert({
         category_id: inbox.id,
         content,
+        is_favorite: false,
         is_pinned: false,
         title,
         user_id: user.id,
@@ -596,15 +605,21 @@ export async function updateNote(
   try {
     const values = validateInput(input);
     const { supabase, user } = await getAuthenticatedContext();
+    const updateValues: Record<string, unknown> = {
+      category_id: values.categoryId,
+      title: values.title,
+      content: values.content,
+      is_pinned: values.isPinned,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (values.isFavorite !== undefined) {
+      updateValues.is_favorite = values.isFavorite;
+    }
+
     const { data, error } = await supabase
       .from("notes")
-      .update({
-        category_id: values.categoryId,
-        title: values.title,
-        content: values.content,
-        is_pinned: values.isPinned,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateValues)
       .eq("id", input.id)
       .eq("user_id", user.id)
       .select("id")
@@ -677,6 +692,94 @@ export async function togglePinNote(
       .eq("user_id", user.id);
 
     if (error) throw error;
+
+    const note = await fetchNoteById(supabase, user.id, noteId);
+    revalidateNoteViews();
+    return { data: note, error: null };
+  } catch (error) {
+    return { data: null, error: getErrorMessage(error) };
+  }
+}
+
+export async function toggleFavoriteNote(
+  noteId: string,
+): Promise<ActionResult<NoteWithRelations>> {
+  try {
+    const { supabase, user } = await getAuthenticatedContext();
+    const { data: existingNote, error: readError } = await supabase
+      .from("notes")
+      .select("is_favorite")
+      .eq("id", noteId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (readError) throw readError;
+    if (!existingNote) throw new Error("Not bulunamadı.");
+
+    const { error } = await supabase
+      .from("notes")
+      .update({
+        is_favorite: !existingNote.is_favorite,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", noteId)
+      .eq("user_id", user.id);
+
+    if (error) throw error;
+
+    const note = await fetchNoteById(supabase, user.id, noteId);
+    revalidateNoteViews();
+    return { data: note, error: null };
+  } catch (error) {
+    return { data: null, error: getErrorMessage(error) };
+  }
+}
+
+export async function archiveNote(
+  noteId: string,
+): Promise<ActionResult<NoteWithRelations>> {
+  try {
+    const { supabase, user } = await getAuthenticatedContext();
+    const { data, error } = await supabase
+      .from("notes")
+      .update({
+        archived_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", noteId)
+      .eq("user_id", user.id)
+      .select("id")
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) throw new Error("Not bulunamadı.");
+
+    const note = await fetchNoteById(supabase, user.id, noteId);
+    revalidateNoteViews();
+    return { data: note, error: null };
+  } catch (error) {
+    return { data: null, error: getErrorMessage(error) };
+  }
+}
+
+export async function restoreArchivedNote(
+  noteId: string,
+): Promise<ActionResult<NoteWithRelations>> {
+  try {
+    const { supabase, user } = await getAuthenticatedContext();
+    const { data, error } = await supabase
+      .from("notes")
+      .update({
+        archived_at: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", noteId)
+      .eq("user_id", user.id)
+      .select("id")
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) throw new Error("Not bulunamadı.");
 
     const note = await fetchNoteById(supabase, user.id, noteId);
     revalidateNoteViews();

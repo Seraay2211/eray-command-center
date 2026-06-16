@@ -52,6 +52,10 @@ function buildNoteTitle(
   sourceTitle: string,
   action: AiActionKey | null,
 ): string {
+  if (action === "command_summary") {
+    return `AI Komuta Özeti — ${getTodayDateLabel()}`;
+  }
+
   if (action === "daily_summary") {
     return `Günün Özeti — ${getTodayDateLabel()}`;
   }
@@ -89,6 +93,7 @@ export function AiWorkspace({
   const [notice, setNotice] = useState("");
   const [isSavingAsNote, setIsSavingAsNote] = useState(false);
   const noticeTimerRef = useRef<number | null>(null);
+  const isCommandSummary = selectedAction === "command_summary";
   const isDailySummary = selectedAction === "daily_summary";
 
   const remainingCharacters = useMemo(
@@ -116,7 +121,7 @@ export function AiWorkspace({
   async function handleRunAction() {
     const text = input.trim();
 
-    if (!text) {
+    if (!isCommandSummary && !text) {
       setPageError(
         isDailySummary
           ? "Lütfen gün içinde yaşadıklarını kısaca yaz."
@@ -125,7 +130,7 @@ export function AiWorkspace({
       return;
     }
 
-    if (text.length > AI_MAX_INPUT_CHARS) {
+    if (!isCommandSummary && text.length > AI_MAX_INPUT_CHARS) {
       setPageError("Metin çok uzun, lütfen kısalt.");
       return;
     }
@@ -148,22 +153,34 @@ export function AiWorkspace({
     };
 
     try {
-      const response = await fetch("/api/ai/note-action", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+      const response = await fetch(
+        isCommandSummary
+          ? "/api/ai/daily-command-summary"
+          : isDailySummary
+            ? "/api/ai/daily-journal-summary"
+            : "/api/ai/note-action",
+        isCommandSummary
+          ? { method: "POST" }
+          : {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(payload),
+            },
+      );
 
       const result = (await response.json()) as AiActionResponse;
 
       if (!response.ok || !result.success) {
-        const error = isDailySummary
-          ? "Özet oluşturulamadı. Birazdan tekrar deneyebilirsin."
-          : result.success
-            ? "AI işlemi tamamlanamadı. Lütfen tekrar dene."
-            : result.error;
+        const error =
+          isCommandSummary || isDailySummary
+            ? isCommandSummary
+              ? "Komuta özeti oluşturulamadı. Birazdan tekrar deneyebilirsin."
+              : "Özet oluşturulamadı. Birazdan tekrar deneyebilirsin."
+            : result.success
+              ? "AI işlemi tamamlanamadı. Lütfen tekrar dene."
+              : result.error;
 
         setOutputState({
           action: selectedAction,
@@ -178,7 +195,7 @@ export function AiWorkspace({
       }
 
       setOutputState({
-        action: result.action,
+        action: result.action ?? selectedAction,
         error: null,
         isLoading: false,
         output: result.output,
@@ -189,9 +206,11 @@ export function AiWorkspace({
     } catch {
       setOutputState({
         action: selectedAction,
-        error: isDailySummary
-          ? "Özet oluşturulamadı. Birazdan tekrar deneyebilirsin."
-          : "AI işlemi tamamlanamadı. Lütfen tekrar dene.",
+        error: isCommandSummary
+          ? "Komuta özeti oluşturulamadı. Birazdan tekrar deneyebilirsin."
+          : isDailySummary
+            ? "Özet oluşturulamadı. Birazdan tekrar deneyebilirsin."
+            : "AI işlemi tamamlanamadı. Lütfen tekrar dene.",
         isLoading: false,
         output: "",
         provider: null,
@@ -235,7 +254,9 @@ export function AiWorkspace({
 
       if (result.error) {
         setPageError(
-          outputState.action === "daily_summary"
+          outputState.action === "command_summary"
+            ? "AI komuta özeti nota kaydedilemedi. Lütfen tekrar dene."
+            : outputState.action === "daily_summary"
             ? "Günün özeti nota kaydedilemedi. Lütfen tekrar dene."
             : result.error,
         );
@@ -243,13 +264,17 @@ export function AiWorkspace({
       }
 
       showNotice(
-        outputState.action === "daily_summary"
+        outputState.action === "command_summary"
+          ? "AI komuta özeti Notlar'a kaydedildi."
+          : outputState.action === "daily_summary"
           ? "Günün özeti Notlar'a kaydedildi."
           : "AI çıktısı yeni not olarak kaydedildi.",
       );
     } catch {
       setPageError(
-        outputState.action === "daily_summary"
+        outputState.action === "command_summary"
+          ? "AI komuta özeti nota kaydedilemedi. Lütfen tekrar dene."
+          : outputState.action === "daily_summary"
           ? "Günün özeti nota kaydedilemedi. Lütfen tekrar dene."
           : "AI çıktısı nota kaydedilemedi. Lütfen tekrar dene.",
       );
@@ -312,6 +337,47 @@ export function AiWorkspace({
         </p>
       </div>
 
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Button
+          className="h-auto justify-start px-4 py-3 text-left"
+          onClick={() => {
+            setSelectedAction("command_summary");
+            setPageError("");
+            resetOutputPanel();
+          }}
+          variant={isCommandSummary ? "primary" : "secondary"}
+        >
+          <Bot className="size-4 shrink-0" />
+          <span className="min-w-0">
+            <span className="block truncate text-xs font-semibold">
+              AI Komuta Özeti
+            </span>
+            <span className="app-muted mt-1 block whitespace-normal text-[10px] leading-4">
+              Görev, finans, takvim ve notlardan öncelikli aksiyon çıkarır.
+            </span>
+          </span>
+        </Button>
+        <Button
+          className="h-auto justify-start px-4 py-3 text-left"
+          onClick={() => {
+            setSelectedAction("daily_summary");
+            setPageError("");
+            resetOutputPanel();
+          }}
+          variant={isDailySummary ? "primary" : "secondary"}
+        >
+          <Sparkles className="size-4 shrink-0" />
+          <span className="min-w-0">
+            <span className="block truncate text-xs font-semibold">
+              Günün Özeti
+            </span>
+            <span className="app-muted mt-1 block whitespace-normal text-[10px] leading-4">
+              Dağınık günlük notlarını düzenli bir kayda çevirir.
+            </span>
+          </span>
+        </Button>
+      </div>
+
       {notice ? (
         <div
           className="app-surface fixed inset-x-3 top-20 z-[100] flex items-center gap-2 rounded-xl border border-emerald-400/20 px-4 py-3 text-xs font-medium text-emerald-400 shadow-2xl sm:left-auto sm:right-4"
@@ -330,18 +396,35 @@ export function AiWorkspace({
             </span>
             <div>
               <h2 className="app-text text-base font-semibold">
-                {isDailySummary ? "Günün Özeti" : "Metin işleme alanı"}
+                {isCommandSummary
+                  ? "AI Komuta Özeti"
+                  : isDailySummary
+                    ? "Günün Özeti"
+                    : "Metin işleme alanı"}
               </h2>
               <p className="app-muted text-xs leading-5">
-                {isDailySummary
-                  ? "Bugün neler yaptığını dağınık şekilde yaz. AI bunu düzenli ve özenli bir günlük nota çevirecek."
-                  : selectedDefinition.description}
+                {isCommandSummary
+                  ? "Bugünkü görev, finans, takvim ve notlarını analiz ederek öncelikli aksiyonları çıkarır."
+                  : isDailySummary
+                    ? "Bugün neler yaptığını dağınık şekilde yaz. AI bunu düzenli ve özenli bir günlük nota çevirecek."
+                    : selectedDefinition.description}
               </p>
             </div>
           </div>
 
           <div className="mt-6 space-y-5">
-            {!isDailySummary ? (
+            {isCommandSummary ? (
+              <div className="app-surface-2 app-border rounded-2xl border p-4">
+                <p className="app-text text-sm font-semibold">
+                  Hazır komuta bağlamı
+                </p>
+                <p className="app-muted mt-2 text-xs leading-6">
+                  Sistem bugünkü görevleri, takvim kayıtlarını, finans ve taksit
+                  risklerini, son notları ve raporları güvenli şekilde toparlar.
+                  Sen sadece özeti oluştur düğmesine bas.
+                </p>
+              </div>
+            ) : !isDailySummary ? (
               <div>
                 <label
                   className="app-muted mb-2 block text-xs font-medium"
@@ -359,6 +442,7 @@ export function AiWorkspace({
               </div>
             ) : null}
 
+            {!isCommandSummary ? (
             <div>
               <label
                 className="app-muted mb-2 block text-xs font-medium"
@@ -390,6 +474,7 @@ export function AiWorkspace({
                 </span>
               </div>
             </div>
+            ) : null}
 
             <div>
               <p className="app-muted mb-3 text-xs font-medium">
@@ -425,10 +510,14 @@ export function AiWorkspace({
                 <Sparkles className="size-4" />
               )}
               {outputState.isLoading
-                ? isDailySummary
+                ? isCommandSummary
+                  ? "Komuta özeti hazırlanıyor..."
+                  : isDailySummary
                   ? "Özet hazırlanıyor..."
                   : "AI ile işleniyor..."
-                : isDailySummary
+                : isCommandSummary
+                  ? "Komuta Özeti Oluştur"
+                  : isDailySummary
                   ? "Özet Oluştur"
                   : "AI ile işle"}
             </Button>
@@ -444,12 +533,18 @@ export function AiWorkspace({
             isSavingAsNote={isSavingAsNote}
             isVisible
             loadingDescription={
-              isDailySummary
+              isCommandSummary
+                ? "Günlük veriler komuta özeti için sadeleştiriliyor."
+                : isDailySummary
                 ? "Günlük notun düzenli ve özenli bir kayda dönüştürülüyor."
                 : undefined
             }
             loadingTitle={
-              isDailySummary ? "Özet hazırlanıyor..." : undefined
+              isCommandSummary
+                ? "Komuta özeti hazırlanıyor..."
+                : isDailySummary
+                  ? "Özet hazırlanıyor..."
+                  : undefined
             }
             onClear={
               isDailySummary ? handleClearDailySummary : undefined
@@ -457,12 +552,16 @@ export function AiWorkspace({
             onClose={resetOutputPanel}
             onCopy={handleCopyOutput}
             onRegenerate={
-              isDailySummary ? () => void handleRunAction() : undefined
+              isDailySummary || isCommandSummary
+                ? () => void handleRunAction()
+                : undefined
             }
             onSaveAsNote={handleSaveAsNote}
             output={outputState.output}
             provider={outputState.provider}
-            saveLabel={isDailySummary ? "Nota Kaydet" : undefined}
+            saveLabel={
+              isDailySummary || isCommandSummary ? "Nota Kaydet" : undefined
+            }
             sourceTitle={outputState.sourceTitle}
           />
         ) : (
@@ -474,9 +573,11 @@ export function AiWorkspace({
               AI çıktısı burada görünecek
             </h2>
             <p className="app-muted mt-2 max-w-sm text-sm leading-6">
-              {isDailySummary
-                ? "Gün içinde yaşadıklarını yazıp özet oluşturduğunda düzenli günlük kaydın burada görünecek."
-                : "Soldan bir aksiyon seçip metnini işlediğinde özet, premium metin veya rapor sonucunu bu panelde göreceksin."}
+              {isCommandSummary
+                ? "Komuta özeti oluşturduğunda günlük önceliklerin ve uyarıların burada görünecek."
+                : isDailySummary
+                  ? "Gün içinde yaşadıklarını yazıp özet oluşturduğunda düzenli günlük kaydın burada görünecek."
+                  : "Soldan bir aksiyon seçip metnini işlediğinde özet, premium metin veya rapor sonucunu bu panelde göreceksin."}
             </p>
           </Card>
         )}
