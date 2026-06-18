@@ -85,7 +85,7 @@ export const QUICK_ACTIONS: SearchResult[] = [
     id: "action-finance-summary",
     type: "action",
     title: "Finans Özeti Oluştur",
-    description: "Gemini veya demo moduyla kişisel finans özeti üretir.",
+    description: "AI veya demo moduyla kişisel finans özeti üretir.",
     href: "/finance?action=summary",
     meta: "AI aksiyonu",
   },

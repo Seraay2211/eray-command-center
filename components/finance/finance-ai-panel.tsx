@@ -78,7 +78,7 @@ export function FinanceAiPanel({ initialOpen, onClose }: FinanceAiPanelProps) {
       <aside className="app-surface safe-bottom absolute inset-y-0 right-0 flex w-full max-w-2xl flex-col border-l shadow-2xl" role="dialog" aria-modal="true">
         <div className="app-border flex items-center justify-between border-b p-5">
           <div>
-            <p className="app-primary text-[10px] font-semibold uppercase tracking-[0.18em]">Gemini finans analizi</p>
+            <p className="app-primary text-[10px] font-semibold uppercase tracking-[0.18em]">AI finans analizi</p>
             <h2 className="app-text mt-1 text-lg font-semibold">Finans Özeti</h2>
           </div>
           <button aria-label="Kapat" className="app-button-ghost flex size-9 items-center justify-center rounded-lg" onClick={close} type="button"><X className="size-5" /></button>

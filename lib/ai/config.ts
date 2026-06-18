@@ -26,11 +26,11 @@ export function resolveAiProvider(): AiProvider {
 }
 
 export function getAiProviderLabel(provider: AiProvider): string {
-  return provider === "gemini" ? "Gemini" : "Demo AI";
+  return provider === "gemini" ? "AI" : "Demo AI";
 }
 
 export function getAiProviderDescription(provider: AiProvider): string {
   return provider === "gemini"
-    ? "Gerçek Gemini çıktıları aktif."
+    ? "AI çıktıları aktif."
     : "Akıllı asistan demo modunda çalışıyor.";
 }

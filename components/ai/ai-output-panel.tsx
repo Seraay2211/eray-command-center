@@ -74,7 +74,7 @@ function PanelBody({
           <div className="mt-2 flex flex-wrap items-center gap-2">
             {provider ? (
               <Badge variant={provider === "gemini" ? "violet" : "amber"}>
-                {provider === "gemini" ? "Gemini" : "Demo AI"}
+                {provider === "gemini" ? "AI" : "Demo AI"}
               </Badge>
             ) : null}
             {sourceTitle ? (

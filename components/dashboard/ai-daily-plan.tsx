@@ -140,7 +140,7 @@ export function AiDailyPlan() {
             <Bot className="app-primary size-4" />
             <p className="app-text text-xs font-semibold">AI Komuta Özeti</p>
             <span className="app-surface-2 app-muted rounded-full border px-2 py-0.5 text-[9px]">
-              {provider === "gemini" ? "Gemini" : "Demo"}
+              {provider === "gemini" ? "AI" : "Demo"}
             </span>
           </div>
           <p className="app-text mt-4 whitespace-pre-wrap text-xs leading-6 sm:text-sm">

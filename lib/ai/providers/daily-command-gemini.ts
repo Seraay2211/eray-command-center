@@ -68,7 +68,7 @@ export async function generateDailyCommandSummaryWithGemini(
   );
 
   if (!response.ok) {
-    throw new Error("Gemini günlük planı oluşturamadı.");
+    throw new Error("AI çıktısı oluşturulamadı. Birazdan tekrar deneyebilirsin.");
   }
 
   const payload = (await response.json()) as GeminiResponse;
@@ -78,6 +78,8 @@ export async function generateDailyCommandSummaryWithGemini(
       .join("\n")
       .trim() ?? "";
 
-  if (!output) throw new Error("Gemini boş yanıt döndürdü.");
+  if (!output) {
+    throw new Error("AI çıktısı oluşturulamadı. Birazdan tekrar deneyebilirsin.");
+  }
   return output;
 }

@@ -58,11 +58,11 @@ function getFriendlyGeminiError(
   }
 
   if (status === 400 || status === 404) {
-    return "Gemini model ayarı geçerli görünmüyor. Model adını kontrol et.";
+    return "AI bağlantısı şu anda hazır değil. Birazdan tekrar deneyebilirsin.";
   }
 
   if (status >= 500) {
-    return "Gemini servisi şu anda yanıt vermiyor. Lütfen tekrar dene.";
+    return "AI servisi şu anda yanıt vermiyor. Lütfen tekrar dene.";
   }
 
   if (payload.error?.message) {

@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { createQuickCaptureNote } from "@/features/notes/actions";
+import { getUserFacingError } from "@/lib/user-facing-error";
 
 export function QuickCaptureCard() {
   const router = useRouter();
@@ -38,7 +39,7 @@ export function QuickCaptureCard() {
     setIsPending(false);
 
     if (result.error) {
-      setError(result.error);
+      setError(getUserFacingError(result.error, "Hızlı kayıt oluşturulamadı."));
       return;
     }
 

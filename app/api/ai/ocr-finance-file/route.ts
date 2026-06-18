@@ -85,7 +85,7 @@ export async function POST(request: Request) {
     if (!apiKey) {
       const demoText = [
         `Dosya: ${attachment.file_name}`,
-        "Demo OCR: Gemini bağlantısı yapılandırıldığında dekont metni burada gösterilecek.",
+        "Demo OCR: AI bağlantısı hazır olduğunda dekont metni burada gösterilecek.",
       ].join("\n");
       const updated = await updateAttachmentOcrText(
         attachment.id,
