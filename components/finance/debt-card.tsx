@@ -3,6 +3,7 @@
 import { CalendarClock, CreditCard, Pencil, Trash2 } from "lucide-react";
 import { DebtPriorityBadge, DebtStatusBadge } from "@/components/finance/debt-badges";
 import { InstallmentStatusBadge } from "@/components/finance/installment-status-badge";
+import { useSettings } from "@/components/providers/settings-provider";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -10,7 +11,7 @@ import {
   getInstallmentDisplayStatus,
   getNextOpenInstallment,
 } from "@/lib/finance/installments";
-import { formatTRY } from "@/lib/utils/currency";
+import { formatSensitiveTRY } from "@/lib/privacy";
 import type { Debt, DebtInstallment } from "@/types";
 
 interface DebtCardProps {
@@ -34,6 +35,7 @@ export function DebtCard({
   onInstallmentPayment,
   onSelect,
 }: DebtCardProps) {
+  const { settings } = useSettings();
   const remaining = Math.max(debt.total_amount - debt.paid_amount, 0);
   const progress =
     debt.total_amount > 0
@@ -84,15 +86,21 @@ export function DebtCard({
       <div className="mt-4 grid gap-2 text-xs min-[440px]:grid-cols-3">
         <div>
           <p className="app-muted text-[10px]">Toplam</p>
-          <p className="app-text mt-1 font-medium">{formatTRY(debt.total_amount)}</p>
+          <p className="app-text mt-1 font-medium">
+            {formatSensitiveTRY(debt.total_amount, settings)}
+          </p>
         </div>
         <div>
           <p className="app-muted text-[10px]">Ödenen</p>
-          <p className="mt-1 font-medium text-emerald-400">{formatTRY(debt.paid_amount)}</p>
+          <p className="mt-1 font-medium text-emerald-400">
+            {formatSensitiveTRY(debt.paid_amount, settings)}
+          </p>
         </div>
         <div>
           <p className="app-muted text-[10px]">Kalan</p>
-          <p className="app-text mt-1 font-semibold">{formatTRY(remaining)}</p>
+          <p className="app-text mt-1 font-semibold">
+            {formatSensitiveTRY(remaining, settings)}
+          </p>
         </div>
       </div>
 
@@ -122,10 +130,11 @@ export function DebtCard({
             <span>
               Dönemlik ödeme:{" "}
               <strong className="app-text font-medium">
-                {formatTRY(
+                {formatSensitiveTRY(
                   debt.installment_amount ??
                     nextInstallment?.expected_amount ??
                     0,
+                  settings,
                 )}
               </strong>
             </span>

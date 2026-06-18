@@ -2,12 +2,13 @@
 
 import { CreditCard } from "lucide-react";
 import { InstallmentStatusBadge } from "@/components/finance/installment-status-badge";
+import { useSettings } from "@/components/providers/settings-provider";
 import { Button } from "@/components/ui/button";
 import {
   formatFinanceDate,
   getInstallmentDisplayStatus,
 } from "@/lib/finance/installments";
-import { formatTRY } from "@/lib/utils/currency";
+import { formatSensitiveTRY } from "@/lib/privacy";
 import type { DebtInstallment } from "@/types";
 
 interface InstallmentScheduleProps {
@@ -19,6 +20,8 @@ export function InstallmentSchedule({
   installments,
   onPayment,
 }: InstallmentScheduleProps) {
+  const { settings } = useSettings();
+
   if (!installments.length) {
     return (
       <div className="app-surface-2 app-muted rounded-xl border border-dashed p-4 text-xs">
@@ -46,11 +49,11 @@ export function InstallmentSchedule({
               </div>
               <p className="app-muted mt-1 text-[11px]">
                 {formatFinanceDate(installment.due_date)} · Beklenen{" "}
-                {formatTRY(installment.expected_amount)}
+                {formatSensitiveTRY(installment.expected_amount, settings)}
               </p>
               {installment.paid_amount > 0 ? (
                 <p className="mt-1 text-[11px] text-emerald-400">
-                  Ödenen {formatTRY(installment.paid_amount)}
+                  Ödenen {formatSensitiveTRY(installment.paid_amount, settings)}
                 </p>
               ) : null}
             </div>

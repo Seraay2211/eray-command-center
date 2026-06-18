@@ -2,7 +2,8 @@
 
 import { Eye, FileCheck2, LoaderCircle, Trash2 } from "lucide-react";
 import { FinanceAttachments } from "@/components/finance/finance-attachments";
-import { formatTRY } from "@/lib/utils/currency";
+import { useSettings } from "@/components/providers/settings-provider";
+import { formatSensitiveTRY } from "@/lib/privacy";
 import type { DebtPayment } from "@/types";
 
 interface PaymentListProps {
@@ -28,6 +29,8 @@ export function PaymentList({
   payments,
   receiptActionId,
 }: PaymentListProps) {
+  const { settings } = useSettings();
+
   if (isLoading) {
     return (
       <div className="app-muted flex items-center gap-2 py-6 text-xs">
@@ -71,7 +74,7 @@ export function PaymentList({
         >
           <div className="min-w-0 flex-1">
             <p className="app-text text-sm font-semibold">
-              {formatTRY(payment.amount)}
+              {formatSensitiveTRY(payment.amount, settings)}
             </p>
             <p className="app-muted mt-1 text-[11px]">
               {new Intl.DateTimeFormat("tr-TR").format(

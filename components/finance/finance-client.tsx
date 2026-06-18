@@ -22,11 +22,12 @@ import { FinanceExportButton } from "@/components/finance/finance-export-button"
 import { FinanceStatCard } from "@/components/finance/finance-stat-card";
 import { InstallmentPaymentForm } from "@/components/finance/installment-payment-form";
 import { PaymentForm } from "@/components/finance/payment-form";
+import { useSettings } from "@/components/providers/settings-provider";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getIstanbulDateKey } from "@/lib/dates/istanbul";
+import { formatSensitiveTRY } from "@/lib/privacy";
 import { getUserFacingError } from "@/lib/user-facing-error";
-import { formatTRY } from "@/lib/utils/currency";
 import {
   createDebt,
   createDebtPayment,
@@ -90,6 +91,7 @@ export function FinanceClient({
   initialSelectedDebtId,
   initialStats,
 }: FinanceClientProps) {
+  const { settings } = useSettings();
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -617,10 +619,10 @@ export function FinanceClient({
         <div className="space-y-6">
           {pageError ? <div className="flex gap-2 rounded-xl border border-rose-400/20 bg-rose-500/10 p-4 text-xs text-rose-300"><AlertCircle className="size-4 shrink-0" />{pageError}</div> : null}
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-            <FinanceStatCard description="İptal olmayan kayıtlar" icon={CircleDollarSign} label="Toplam Borç" value={formatTRY(stats.totalDebt)} />
-            <FinanceStatCard description="Kaydedilen ödemeler" icon={CreditCard} label="Toplam Ödenen" value={formatTRY(stats.totalPaid)} />
-            <FinanceStatCard description="Aktif kalan tutar" icon={WalletCards} label="Kalan Borç" value={formatTRY(stats.remainingDebt)} />
-            <FinanceStatCard description="Bu ay vadeli" icon={CalendarClock} label="Bu Ay Ödenecek" value={formatTRY(stats.dueThisMonth)} />
+            <FinanceStatCard description="İptal olmayan kayıtlar" icon={CircleDollarSign} label="Toplam Borç" value={formatSensitiveTRY(stats.totalDebt, settings)} />
+            <FinanceStatCard description="Kaydedilen ödemeler" icon={CreditCard} label="Toplam Ödenen" value={formatSensitiveTRY(stats.totalPaid, settings)} />
+            <FinanceStatCard description="Aktif kalan tutar" icon={WalletCards} label="Kalan Borç" value={formatSensitiveTRY(stats.remainingDebt, settings)} />
+            <FinanceStatCard description="Bu ay vadeli" icon={CalendarClock} label="Bu Ay Ödenecek" value={formatSensitiveTRY(stats.dueThisMonth, settings)} />
             <FinanceStatCard description="Yüksek takip önceliği" icon={ShieldAlert} label="Kritik Borçlar" tone="warning" value={String(stats.criticalCount)} />
             <FinanceStatCard description="Vadesi geçmiş kayıt" icon={AlertCircle} label="Gecikenler" tone="danger" value={String(stats.overdueCount)} />
           </div>
@@ -648,7 +650,7 @@ export function FinanceClient({
               description="Bu ay açık taksit toplamı"
               icon={WalletCards}
               label="Aylık Taksit Yükü"
-              value={formatTRY(stats.monthlyInstallmentBurden)}
+              value={formatSensitiveTRY(stats.monthlyInstallmentBurden, settings)}
             />
           </div>
 
@@ -697,7 +699,7 @@ export function FinanceClient({
                     {criticalDebts.slice(0, 4).map((debt) => (
                       <button className="rounded-xl border border-rose-400/15 bg-rose-500/[0.06] p-4 text-left" key={debt.id} onClick={() => void selectDebt(debt)} type="button">
                         <p className="app-text text-sm font-semibold">{debt.title}</p>
-                        <p className="mt-2 text-xs text-rose-300">Kalan {formatTRY(Math.max(debt.total_amount - debt.paid_amount, 0))}</p>
+                        <p className="mt-2 text-xs text-rose-300">Kalan {formatSensitiveTRY(Math.max(debt.total_amount - debt.paid_amount, 0), settings)}</p>
                       </button>
                     ))}
                   </div>
@@ -714,7 +716,7 @@ export function FinanceClient({
                         return (
                           <div className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0" key={payment.id}>
                             <div><p className="app-text text-xs font-medium">{debt?.title ?? "Borç kaydı"}</p><p className="app-muted mt-1 text-[10px]">{payment.payment_date}{payment.method ? ` · ${payment.method}` : ""}</p></div>
-                            <p className="text-sm font-semibold text-emerald-400">{formatTRY(payment.amount)}</p>
+                            <p className="text-sm font-semibold text-emerald-400">{formatSensitiveTRY(payment.amount, settings)}</p>
                           </div>
                         );
                       })}

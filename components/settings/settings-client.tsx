@@ -17,9 +17,11 @@ import {
   Save,
   ShieldCheck,
   SlidersHorizontal,
+  UserRound,
 } from "lucide-react";
 import { useSettings } from "@/components/providers/settings-provider";
 import { AccountCard } from "@/components/settings/account-card";
+import { AccountCenter } from "@/components/settings/account-center";
 import { AppearanceCenter } from "@/components/settings/appearance-center";
 import { SettingsSection } from "@/components/settings/settings-section";
 import {
@@ -45,6 +47,7 @@ import {
   resetUserSettings,
 } from "@/services/settings-service";
 import type {
+  AccountCenterData,
   AiActionKey,
   Category,
   DefaultLandingPage,
@@ -52,14 +55,17 @@ import type {
 } from "@/types";
 
 interface SettingsClientProps {
+  accountData: AccountCenterData;
   aiProviderLabel: string;
   categories: Category[];
   initialError: string;
   userCreatedAt: string;
   userEmail: string;
+  userLastSignInAt: string;
 }
 
 const tabs: SettingsTab[] = [
+  { id: "account", label: "Hesap Merkezi", icon: UserRound },
   { id: "appearance", label: "Görünüm", icon: Eye },
   { id: "data", label: "Veri ve Yedekleme", icon: Database },
   { id: "start", label: "Başlangıç Ekranı", icon: Home },
@@ -103,18 +109,20 @@ function downloadFile(fileName: string, value: string, type: string) {
 }
 
 export function SettingsClient({
+  accountData,
   aiProviderLabel,
   categories,
   initialError,
   userCreatedAt,
   userEmail,
+  userLastSignInAt,
 }: SettingsClientProps) {
   const { replaceSettings, settings, updateSettings } = useSettings();
   const searchParams = useSearchParams();
   const tabFromUrl = searchParams.get("tab") as SettingsTab["id"] | null;
   const initialTab = tabs.some((tab) => tab.id === tabFromUrl)
     ? tabFromUrl!
-    : "appearance";
+    : "account";
   const [manualActiveTab, setManualActiveTab] =
     useState<SettingsTab["id"] | null>(null);
   const activeTab = manualActiveTab ?? initialTab;
@@ -305,6 +313,20 @@ export function SettingsClient({
         />
 
         <div className="min-w-0 max-w-5xl">
+          {activeTab === "account" ? (
+            <AccountCenter
+              accountData={accountData}
+              activeTheme={activeTheme}
+              onOpenAi={() => setManualActiveTab("ai")}
+              onOpenData={() => setManualActiveTab("data")}
+              onSave={savePatch}
+              settings={settings}
+              userCreatedAt={userCreatedAt}
+              userEmail={userEmail}
+              userLastSignInAt={userLastSignInAt}
+            />
+          ) : null}
+
           {activeTab === "appearance" ? (
             <AppearanceCenter onSave={savePatch} settings={settings} />
           ) : null}

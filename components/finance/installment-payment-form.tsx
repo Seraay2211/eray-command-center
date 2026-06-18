@@ -2,12 +2,13 @@
 
 import { useState, type FormEvent } from "react";
 import { Check, LoaderCircle, X } from "lucide-react";
+import { useSettings } from "@/components/providers/settings-provider";
 import { Button } from "@/components/ui/button";
 import { getIstanbulDateKey } from "@/lib/dates/istanbul";
 import { formatFinanceDate } from "@/lib/finance/installments";
+import { formatSensitiveTRY } from "@/lib/privacy";
 import {
   formatNumberTR,
-  formatTRY,
   isValidMoneyInput,
   parseMoneyInput,
 } from "@/lib/utils/currency";
@@ -34,6 +35,7 @@ export function InstallmentPaymentForm({
   onClose,
   onSubmit,
 }: InstallmentPaymentFormProps) {
+  const { settings } = useSettings();
   const remainingExpected = Math.max(
     installment.expected_amount - installment.paid_amount,
     0,
@@ -117,7 +119,7 @@ export function InstallmentPaymentForm({
           <div>
             <dt className="app-muted text-[10px]">Beklenen tutar</dt>
             <dd className="app-text mt-1 font-semibold">
-              {formatTRY(installment.expected_amount)}
+              {formatSensitiveTRY(installment.expected_amount, settings)}
             </dd>
           </div>
         </dl>

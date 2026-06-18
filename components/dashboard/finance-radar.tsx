@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -7,10 +9,11 @@ import {
   ReceiptText,
   ShieldAlert,
 } from "lucide-react";
+import { useSettings } from "@/components/providers/settings-provider";
 import { buttonClassName } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { formatTRY } from "@/lib/utils/currency";
 import { formatFinanceDate } from "@/lib/finance/installments";
+import { formatSensitiveTRY } from "@/lib/privacy";
 import type { FinanceDashboardSummary } from "@/types";
 
 interface FinanceRadarProps {
@@ -27,6 +30,8 @@ function formatPaymentDate(value: string): string {
 }
 
 export function FinanceRadar({ summary }: FinanceRadarProps) {
+  const { settings } = useSettings();
+
   return (
     <Card className="h-full p-4 sm:p-5" data-dashboard-section="finance">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -59,14 +64,14 @@ export function FinanceRadar({ summary }: FinanceRadarProps) {
               <CreditCard className="app-primary size-4" />
               <p className="app-muted mt-2 text-[10px]">Toplam Kalan Borç</p>
               <p className="app-text mt-1 text-lg font-semibold">
-                {formatTRY(summary.remainingDebt)}
+                {formatSensitiveTRY(summary.remainingDebt, settings)}
               </p>
             </div>
             <div className="app-surface-2 rounded-xl border p-3">
               <ReceiptText className="app-primary size-4" />
               <p className="app-muted mt-2 text-[10px]">Bu Ay Ödenecek</p>
               <p className="app-text mt-1 text-lg font-semibold">
-                {formatTRY(summary.dueThisMonth)}
+                {formatSensitiveTRY(summary.dueThisMonth, settings)}
               </p>
             </div>
             <div className="app-surface-2 rounded-xl border p-3">
@@ -89,7 +94,7 @@ export function FinanceRadar({ summary }: FinanceRadarProps) {
             {summary.lastPayment ? (
               <div className="mt-1 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                 <p className="app-text text-sm font-semibold">
-                  {formatTRY(summary.lastPayment.amount)}
+                  {formatSensitiveTRY(summary.lastPayment.amount, settings)}
                 </p>
                 <p className="app-muted text-[10px]">
                   {formatPaymentDate(summary.lastPayment.date)}
@@ -133,12 +138,13 @@ export function FinanceRadar({ summary }: FinanceRadarProps) {
                         </p>
                       </div>
                       <p className="app-text shrink-0 text-xs font-semibold">
-                        {formatTRY(
+                        {formatSensitiveTRY(
                           Math.max(
                             installment.expectedAmount -
                               installment.paidAmount,
                             0,
                           ),
+                          settings,
                         )}
                       </p>
                     </div>

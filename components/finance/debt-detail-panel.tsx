@@ -6,8 +6,9 @@ import { FinanceAttachments } from "@/components/finance/finance-attachments";
 import { InstallmentSchedule } from "@/components/finance/installment-schedule";
 import { PaymentForm } from "@/components/finance/payment-form";
 import { PaymentList } from "@/components/finance/payment-list";
+import { useSettings } from "@/components/providers/settings-provider";
 import { Button } from "@/components/ui/button";
-import { formatTRY } from "@/lib/utils/currency";
+import { formatSensitiveTRY } from "@/lib/privacy";
 import type {
   CreateDebtPaymentWithReceiptInput,
   Debt,
@@ -56,6 +57,8 @@ export function DebtDetailPanel({
   receiptError,
   receiptActionId,
 }: DebtDetailPanelProps) {
+  const { settings } = useSettings();
+
   if (!debt) {
     return (
       <div className="app-card flex min-h-[520px] items-center justify-center rounded-2xl border p-8 text-center">
@@ -94,9 +97,9 @@ export function DebtDetailPanel({
           </div>
         <div className="grid gap-2 min-[440px]:grid-cols-3">
           {[
-            ["Toplam", formatTRY(debt.total_amount)],
-            ["Ödenen", formatTRY(debt.paid_amount)],
-            ["Kalan", formatTRY(remaining)],
+            ["Toplam", formatSensitiveTRY(debt.total_amount, settings)],
+            ["Ödenen", formatSensitiveTRY(debt.paid_amount, settings)],
+            ["Kalan", formatSensitiveTRY(remaining, settings)],
           ].map(([label, value]) => (
             <div className="app-surface-2 rounded-xl border p-3" key={label}>
               <p className="app-muted text-[10px]">{label}</p>
@@ -156,7 +159,8 @@ export function DebtDetailPanel({
               <p className="app-text text-sm font-semibold">Taksit Planı</p>
               <p className="app-muted mt-1 text-[11px]">
                 {debt.installment_count ?? installments.length} dönem ·{" "}
-                {formatTRY(debt.installment_amount ?? 0)} dönemlik ödeme
+                {formatSensitiveTRY(debt.installment_amount ?? 0, settings)}{" "}
+                dönemlik ödeme
               </p>
             </div>
             <InstallmentSchedule

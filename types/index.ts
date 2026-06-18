@@ -751,8 +751,18 @@ export type AppCardStyle =
   | "soft"
   | "glass";
 
+export type BackupReminderPreference = "off" | "weekly" | "monthly";
+
+export type AiResponseTone = "professional" | "simple" | "detailed";
+
+export type DailySummaryStyle = "short" | "balanced" | "detailed";
+
 export interface AppearancePreferences {
+  ai_response_tone: AiResponseTone;
+  backup_reminder: BackupReminderPreference;
   card_style: AppCardStyle;
+  daily_summary_style: DailySummaryStyle;
+  hide_sensitive_amounts: boolean;
   line_height: AppLineHeight;
   text_size: AppTextSize;
 }
@@ -854,6 +864,28 @@ export interface UserDataExport {
     categories: unknown[];
     tags: unknown[];
   };
+}
+
+export interface AccountDataSummary {
+  calendarCount: number;
+  financeCount: number;
+  installmentCount: number;
+  noteCount: number;
+  reportCount: number;
+  taskCount: number;
+}
+
+export interface AccountActivitySummary {
+  lastCalendarActivity: string | null;
+  lastFinanceActivity: string | null;
+  lastNoteActivity: string | null;
+  lastReportActivity: string | null;
+  lastTaskActivity: string | null;
+}
+
+export interface AccountCenterData {
+  activity: AccountActivitySummary;
+  counts: AccountDataSummary;
 }
 
 export interface AiActionRequest {

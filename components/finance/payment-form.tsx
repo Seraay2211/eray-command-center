@@ -10,16 +10,17 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
+import { useSettings } from "@/components/providers/settings-provider";
 import { Button } from "@/components/ui/button";
 import { getIstanbulDateKey } from "@/lib/dates/istanbul";
 import {
   FINANCE_RECEIPT_MIME_TYPES,
   validateFinanceReceiptFile,
 } from "@/lib/finance/receipt-config";
+import { formatSensitiveTRY } from "@/lib/privacy";
 import { getUserFacingError } from "@/lib/user-facing-error";
 import {
   formatNumberTR,
-  formatTRY,
   isValidMoneyInput,
   parseMoneyInput,
 } from "@/lib/utils/currency";
@@ -67,6 +68,7 @@ export function PaymentForm({
   onCancel,
   onSubmit,
 }: PaymentFormProps) {
+  const { settings } = useSettings();
   const [amount, setAmount] = useState("");
   const [paymentDate, setPaymentDate] = useState(getIstanbulDateKey());
   const [method, setMethod] = useState("");
@@ -397,7 +399,9 @@ export function PaymentForm({
               <div className="app-muted">
                 Tutar:{" "}
                 <span className="app-text">
-                  {ocrResult.amount ? formatTRY(ocrResult.amount) : "Okunamadı"}
+                  {ocrResult.amount
+                    ? formatSensitiveTRY(ocrResult.amount, settings)
+                    : "Okunamadı"}
                 </span>
               </div>
               <div className="app-muted">

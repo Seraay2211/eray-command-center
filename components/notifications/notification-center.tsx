@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSettings } from "@/components/providers/settings-provider";
+import { isPrivacyModeEnabled, MASKED_TRY_VALUE } from "@/lib/privacy";
 import {
   deleteNotification,
   getNotifications,
@@ -81,6 +82,12 @@ function priorityClass(
   return "app-border app-surface-2 app-muted";
 }
 
+function maskSensitiveNotificationText(value: string): string {
+  return value
+    .replace(/₺\s?[\d.,]+/g, MASKED_TRY_VALUE)
+    .replace(/\b\d{1,3}(?:\.\d{3})*,\d{2}\b/g, MASKED_TRY_VALUE);
+}
+
 interface NotificationCenterProps {
   initialNotifications: AppNotification[];
   initialUnreadCount: number;
@@ -92,6 +99,7 @@ export function NotificationCenter({
 }: NotificationCenterProps) {
   const router = useRouter();
   const { settings } = useSettings();
+  const shouldMaskSensitiveText = isPrivacyModeEnabled(settings);
   const panelRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>(
@@ -406,7 +414,11 @@ export function NotificationCenter({
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="app-text text-xs font-semibold">
-                            {notification.title}
+                            {shouldMaskSensitiveText
+                              ? maskSensitiveNotificationText(
+                                  notification.title,
+                                )
+                              : notification.title}
                           </h3>
                           <span
                             className={`rounded-md border px-1.5 py-0.5 text-[9px] font-semibold ${priorityClass(notification.priority, settings.highlight_critical_alerts)}`}
@@ -415,7 +427,11 @@ export function NotificationCenter({
                           </span>
                         </div>
                         <p className="app-muted mt-1.5 text-[11px] leading-5">
-                          {notification.message}
+                          {shouldMaskSensitiveText
+                            ? maskSensitiveNotificationText(
+                                notification.message,
+                              )
+                            : notification.message}
                         </p>
                         <div className="app-muted mt-2 flex flex-wrap items-center gap-2 text-[9px]">
                           <span>
