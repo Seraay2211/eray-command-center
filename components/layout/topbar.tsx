@@ -82,11 +82,11 @@ export function Topbar({
   }
 
   return (
-    <header className="app-topbar app-topbar-safe sticky top-0 z-30 flex items-center justify-between border-b px-3 backdrop-blur-xl sm:px-5 lg:px-7">
+    <header className="app-topbar app-topbar-safe sticky top-0 z-30 flex items-center justify-between border-b px-3 shadow-[0_10px_34px_rgba(0,0,0,0.08)] backdrop-blur-xl sm:px-5 lg:px-7">
       <div className="flex min-w-0 items-center gap-3">
         <button
           aria-label="Menüyü aç"
-          className="app-control flex size-9 shrink-0 items-center justify-center rounded-lg border transition lg:hidden"
+          className="app-control flex size-10 shrink-0 items-center justify-center rounded-xl border transition lg:hidden"
           onClick={onMenuClick}
           type="button"
         >
@@ -96,7 +96,7 @@ export function Topbar({
           <span className="sr-only">Ara veya komut çalıştır</span>
           <Search className="app-muted absolute left-3 top-1/2 size-4 -translate-y-1/2" />
           <button
-            className="app-input flex h-9 w-52 items-center rounded-lg border pl-9 pr-16 text-left text-xs outline-none transition lg:w-72 xl:w-80"
+            className="app-input flex h-10 w-56 items-center rounded-xl border bg-[color-mix(in_srgb,var(--surface-2)_74%,transparent)] pl-9 pr-16 text-left text-xs outline-none transition hover:border-[color-mix(in_srgb,var(--primary)_34%,var(--border))] lg:w-72 xl:w-[22rem]"
             onClick={openPalette}
             type="button"
           >
@@ -111,7 +111,7 @@ export function Topbar({
       <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
         <button
           aria-label="Arama paletini aç"
-          className="app-control flex size-9 items-center justify-center rounded-lg border transition sm:hidden"
+          className="app-control flex size-10 items-center justify-center rounded-xl border transition sm:hidden"
           onClick={openPalette}
           type="button"
         >
@@ -124,13 +124,13 @@ export function Topbar({
           />
         ) : null}
         <Link
-          className={`${buttonClassName({ size: "sm", variant: "secondary" })} hidden lg:inline-flex`}
+          className={`${buttonClassName({ size: "sm", variant: "secondary" })} hidden rounded-xl lg:inline-flex`}
           href="/notes?quick=1"
         >
           Hızlı Kayıt
         </Link>
         <Link
-          className={`${buttonClassName({ size: "sm" })} hidden md:inline-flex`}
+          className={`${buttonClassName({ size: "sm" })} hidden rounded-xl md:inline-flex`}
           href="/notes?new=1"
         >
           <Plus className="size-4" />
@@ -143,7 +143,7 @@ export function Topbar({
           <button
             aria-expanded={isProfileOpen}
             aria-haspopup="menu"
-            className="app-control flex min-w-0 items-center gap-2 rounded-xl border px-1.5 py-1 transition hover:border-[color-mix(in_srgb,var(--primary)_45%,var(--border))]"
+            className="app-control flex min-w-0 items-center gap-2 rounded-2xl border px-1.5 py-1 transition hover:border-[color-mix(in_srgb,var(--primary)_45%,var(--border))] hover:bg-[var(--surface-2)]"
             onClick={() => setIsProfileOpen((value) => !value)}
             type="button"
           >
@@ -166,7 +166,7 @@ export function Topbar({
 
           {isProfileOpen ? (
             <div
-              className="app-card absolute right-0 top-[calc(100%+0.75rem)] z-50 w-[min(18rem,calc(100vw-1.5rem))] rounded-2xl border p-3 shadow-2xl"
+              className="app-card absolute right-0 top-[calc(100%+0.75rem)] z-50 w-[min(19rem,calc(100vw-1.5rem))] rounded-[1.35rem] border p-3 shadow-2xl"
               role="menu"
             >
               <div className="app-surface-2 app-border rounded-xl border p-3">

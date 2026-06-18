@@ -23,8 +23,8 @@ export function CommandSummaryCard({ stats }: CommandSummaryCardProps) {
     stats.todayCalendar > 0 ||
     stats.dueThisWeekDebts > 0;
   const summary = hasActivity
-    ? `Bugün ${stats.todayTasks} görevin, ${stats.todayCalendar} takvim kaydın ve bu hafta yaklaşan ${stats.dueThisWeekDebts} ödemen var.`
-    : "Bugün için yoğun bir kayıt görünmüyor. Yeni görev veya not ekleyerek günü planlayabilirsin.";
+    ? `Bugün ${stats.todayTasks} görev, ${stats.todayCalendar} takvim kaydı ve bu hafta takipte ${stats.dueThisWeekDebts} ödeme var.`
+    : "Bugün için yoğun bir akış görünmüyor. Yeni görev, not veya plan ekleyerek günü sakin ve kontrollü ilerletebilirsin.";
   const metrics = [
     {
       icon: CheckSquare2,
@@ -49,9 +49,10 @@ export function CommandSummaryCard({ stats }: CommandSummaryCardProps) {
   ];
 
   return (
-    <Card className="relative overflow-hidden border-[color-mix(in_srgb,var(--primary)_24%,var(--border))] p-5 shadow-xl shadow-[color-mix(in_srgb,var(--primary)_7%,transparent)] sm:p-7">
-      <div className="pointer-events-none absolute -right-20 -top-24 size-72 rounded-full bg-[color-mix(in_srgb,var(--primary)_16%,transparent)] blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-28 left-10 size-56 rounded-full bg-[color-mix(in_srgb,var(--success)_7%,transparent)] blur-3xl" />
+    <Card className="relative overflow-hidden rounded-[1.75rem] border-[color-mix(in_srgb,var(--primary)_24%,var(--border))] p-5 shadow-xl shadow-[color-mix(in_srgb,var(--primary)_7%,transparent)] sm:p-7">
+      <div className="pointer-events-none absolute -right-20 -top-24 size-72 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--primary)_18%,transparent),transparent_70%)] blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-28 left-10 size-56 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--success)_8%,transparent),transparent_70%)] blur-3xl" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,color-mix(in_srgb,var(--primary)_44%,transparent),transparent)]" />
       <div className="relative">
         <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
           <div className="max-w-2xl">
@@ -78,7 +79,7 @@ export function CommandSummaryCard({ stats }: CommandSummaryCardProps) {
           </div>
 
           {stats.criticalDebts > 0 || stats.overdueDebts > 0 ? (
-            <div className="rounded-xl border border-[color-mix(in_srgb,var(--danger)_35%,var(--border))] bg-[color-mix(in_srgb,var(--danger)_8%,var(--surface))] p-3">
+            <div className="rounded-2xl border border-[color-mix(in_srgb,var(--danger)_35%,var(--border))] bg-[color-mix(in_srgb,var(--danger)_8%,var(--surface))] p-3.5">
               <p className="flex items-center gap-2 text-xs font-semibold text-[var(--danger)]">
                 <AlertTriangle className="size-4" />
                 Finans Uyarısı
@@ -96,7 +97,7 @@ export function CommandSummaryCard({ stats }: CommandSummaryCardProps) {
             const Icon = metric.icon;
             return (
               <div
-                className="app-surface-2 rounded-2xl border p-3.5"
+                className="app-surface-2 rounded-2xl border p-3.5 transition hover:border-[color-mix(in_srgb,var(--primary)_30%,var(--border))]"
                 key={metric.label}
               >
                 <div className="flex items-center justify-between gap-3">
@@ -124,8 +125,8 @@ export function CommandSummaryCard({ stats }: CommandSummaryCardProps) {
                   AI Komuta Özeti
                 </p>
                 <p className="app-muted mt-1 text-xs leading-5">
-                  Günün önceliklerini, finans uyarılarını ve önerilen
-                  aksiyonları tek çıktıda hazırla.
+                  Günün önceliklerini, finans uyarılarını ve önerilen üç
+                  aksiyonu tek, okunabilir özet halinde hazırla.
                 </p>
               </div>
             </div>

@@ -63,7 +63,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             onClick={onClose}
             title={isCollapsed ? "Eray Command Center" : undefined}
           >
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-violet-500 text-white shadow-[0_0_28px_rgba(139,92,246,0.25)]">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--primary)] text-white shadow-[0_0_28px_color-mix(in_srgb,var(--primary)_30%,transparent)]">
               <Command className="size-5" strokeWidth={2.2} />
             </span>
             <span className={cn(isCollapsed && "lg:hidden")}>
@@ -77,7 +77,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           </Link>
           <button
             aria-label="Menüyü kapat"
-            className="app-button-ghost flex size-9 items-center justify-center rounded-lg transition lg:hidden"
+            className="app-button-ghost flex size-10 items-center justify-center rounded-xl transition lg:hidden"
             onClick={onClose}
             type="button"
           >

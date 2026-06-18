@@ -45,12 +45,12 @@ const checklistItems = [
   {
     href: "/settings?tab=appearance",
     key: "hasDashboardPreferences",
-    label: "Dashboard kartlarını düzenle",
+    label: "Dashboard düzenini kişiselleştir",
   },
   {
     href: "/settings?tab=appearance",
     key: "hasThemeChoice",
-    label: "Görünüm temasını seç",
+    label: "Tema görünümünü seç",
   },
   {
     href: "/settings?tab=data",
@@ -117,24 +117,26 @@ export function OnboardingCard({ checklist }: OnboardingCardProps) {
   }
 
   return (
-    <Card className="relative overflow-hidden border-[color-mix(in_srgb,var(--primary)_22%,var(--border))] p-4 shadow-lg shadow-[color-mix(in_srgb,var(--primary)_5%,transparent)] sm:p-5">
-      <div className="pointer-events-none absolute -right-20 -top-24 size-56 rounded-full bg-[color-mix(in_srgb,var(--primary)_10%,transparent)] blur-3xl" />
+    <Card className="relative overflow-hidden rounded-[1.5rem] border-[color-mix(in_srgb,var(--primary)_22%,var(--border))] p-4 shadow-lg shadow-[color-mix(in_srgb,var(--primary)_5%,transparent)] sm:p-5">
+      <div className="pointer-events-none absolute -right-20 -top-24 size-64 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--primary)_12%,transparent),transparent_70%)] blur-3xl" />
       <div className="relative space-y-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 items-start gap-3">
-            <span className="app-primary-bg flex size-10 shrink-0 items-center justify-center rounded-2xl shadow-lg">
+            <span className="app-primary-bg flex size-11 shrink-0 items-center justify-center rounded-2xl shadow-lg">
               <Sparkles className="size-4" />
             </span>
             <div className="min-w-0">
               <span className="app-primary text-[10px] font-semibold uppercase tracking-[0.16em]">
-                Lansman Hazırlığı
+                Başlangıç Kontrol Listesi
               </span>
               <h2 className="app-text mt-1 text-base font-semibold">
-                Başlangıç Kontrol Listesi
+                Kurulum Hazırlığı
               </h2>
               <p className="app-muted mt-1 max-w-2xl text-xs leading-5 sm:text-sm">
                 {completedCount} / {checklistItems.length} adım tamamlandı.
-                Sıradaki öneri: {nextItem.label}.
+                <span className="app-text ml-1 font-medium">
+                  Sıradaki öneri: {nextItem.label}.
+                </span>
               </p>
             </div>
           </div>
@@ -176,17 +178,24 @@ export function OnboardingCard({ checklist }: OnboardingCardProps) {
           </div>
         </div>
 
-        <div className="app-surface-2 app-border rounded-2xl border p-3">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="size-4 text-[var(--success)]" />
-              <span className="app-text text-xs font-semibold">
-                Hazırlık seviyesi %{progress}
+        <div className="app-surface-2 app-border rounded-2xl border p-3.5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--success)_14%,transparent)] text-[var(--success)]">
+                <CheckCircle2 className="size-4" />
+              </span>
+              <span className="min-w-0">
+                <span className="app-text block text-xs font-semibold">
+                  Hazırlık seviyesi %{progress}
+                </span>
+                <span className="app-muted block truncate text-[10px]">
+                  Tamamlanan adımlar ve önerilen sonraki işlem.
+                </span>
               </span>
             </div>
             <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--border)] sm:w-56">
               <span
-                className="block h-full rounded-full bg-[var(--primary)] transition-all"
+                className="block h-full rounded-full bg-[linear-gradient(90deg,var(--primary),color-mix(in_srgb,var(--primary)_70%,var(--success)))] transition-all"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -221,7 +230,7 @@ export function OnboardingCard({ checklist }: OnboardingCardProps) {
                       {item.label}
                     </span>
                     <span className="app-muted mt-0.5 block text-[10px]">
-                      {isDone ? "Tamamlandı" : "Devam etmek için aç"}
+                      {isDone ? "Hazır" : "Devam etmek için aç"}
                     </span>
                   </span>
                   <span className="app-primary ml-auto shrink-0 rounded-full bg-[color-mix(in_srgb,var(--primary)_10%,transparent)] px-2 py-1 text-[10px] font-semibold">

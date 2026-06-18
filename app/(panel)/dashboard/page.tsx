@@ -5,7 +5,6 @@ import {
   Bell,
   Bot,
   CalendarDays,
-  CheckCircle2,
   CheckSquare2,
   ChevronRight,
   ClipboardList,
@@ -41,7 +40,6 @@ import {
 } from "@/lib/ai/config";
 import { aiCommands, quickActions } from "@/lib/mock-data";
 import { REPORT_TYPE_LABELS } from "@/lib/reports";
-import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { getUserFacingError } from "@/lib/user-facing-error";
 import { generateFinanceAlerts } from "@/lib/notifications/finance-alerts";
 import { getDashboardData } from "@/services/dashboard-service";
@@ -147,9 +145,6 @@ export default async function DashboardPage() {
     aiProviderLabel,
     getAiProviderDescription(aiProvider),
   );
-  const isSupabaseConfigured = hasSupabaseEnv();
-  const databaseStatus = isSupabaseConfigured ? "Bağlı" : "Bağlantı bekleniyor";
-  const showTechnicalStatus = process.env.NODE_ENV === "development";
   const notificationsCount = notificationsResult.data?.length ?? 0;
   const trackedPaymentCount =
     dashboard.commandStats.dueThisWeekDebts +
@@ -183,26 +178,26 @@ export default async function DashboardPage() {
   ];
   const commandGridItems = [
     {
-      actionLabel: "Komuta merkezine git",
+      actionLabel: "Komuta özetini aç",
       description:
         dashboard.commandStats.todayTasks +
           dashboard.commandStats.todayCalendar +
           trackedPaymentCount >
         0
-          ? `Bugün ${dashboard.commandStats.todayTasks} görev, ${dashboard.commandStats.todayCalendar} plan ve ${trackedPaymentCount} ödeme sinyali takipte.`
-          : "Bugün sakin görünüyor. Yeni bir görev veya notla günü planlayabilirsin.",
+          ? `Bugün ${dashboard.commandStats.todayTasks} görev, ${dashboard.commandStats.todayCalendar} plan ve takipte ${trackedPaymentCount} ödeme sinyali var.`
+          : "Bugün için yoğun bir kayıt görünmüyor. Yeni bir görev veya notla günü netleştirebilirsin.",
       href: "/today",
       icon: Sparkles,
       title: "Bugünün Komuta Özeti",
       eyebrow: "Günlük durum",
     },
     {
-      actionLabel: "Finans'a git",
+      actionLabel: "Finansı incele",
       description: dashboard.financeSummary.available
         ? hasFinanceWarning
-          ? `${dashboard.commandStats.overdueDebts} geciken borç, ${dashboard.commandStats.criticalDebts} kritik kayıt ve ${dashboard.financeSummary.overdueInstallmentCount} geciken taksit var.`
-          : `Bu hafta ${dashboard.commandStats.dueThisWeekDebts} ödeme, bugün ${dashboard.financeSummary.dueTodayInstallmentCount} taksit takipte.`
-        : "Finans kurulumu tamamlanınca ödeme riskleri burada öne çıkacak.",
+          ? `${dashboard.commandStats.overdueDebts} geciken kayıt, ${dashboard.commandStats.criticalDebts} kritik borç ve ${dashboard.financeSummary.overdueInstallmentCount} geciken taksit var.`
+          : `Bu hafta ${dashboard.commandStats.dueThisWeekDebts} ödeme ve bugün ${dashboard.financeSummary.dueTodayInstallmentCount} taksit takipte.`
+        : "Finans kayıtların hazır olduğunda ödeme sinyalleri burada görünür.",
       href: "/finance",
       icon: CreditCard,
       title: "Finans Uyarısı / Ödeme Durumu",
@@ -212,7 +207,7 @@ export default async function DashboardPage() {
       actionLabel: "Görev panosunu aç",
       description:
         dashboard.commandStats.todayTasks > 0
-          ? `Bugün son tarihli ${dashboard.commandStats.todayTasks} görev var. Geciken görev sayısı: ${dashboard.commandStats.overdueTasks}.`
+          ? `Bugün son tarihli ${dashboard.commandStats.todayTasks} görev var. Geciken görev sayısı ${dashboard.commandStats.overdueTasks}.`
           : "Bugün son tarihli görev görünmüyor. Yeni görev ekleyerek akışı netleştirebilirsin.",
       href: "/tasks",
       icon: CheckSquare2,
@@ -223,8 +218,8 @@ export default async function DashboardPage() {
       actionLabel: "Takvimi aç",
       description:
         dashboard.commandStats.todayCalendar > 0
-          ? `Bugün ${dashboard.commandStats.todayCalendar} takvim kaydı ve ${dashboard.todayTodoStats.pending} açık To-Do var.`
-          : "Bugün için plan kaydı yok. Yeni plan veya To-Do ekleyebilirsin.",
+          ? `Bugün ${dashboard.commandStats.todayCalendar} takvim kaydı ve ${dashboard.todayTodoStats.pending} açık yapılacak var.`
+          : "Bugün için plan kaydı yok. Yeni plan veya yapılacak ekleyebilirsin.",
       href: "/calendar",
       icon: CalendarDays,
       title: "Yaklaşan Planlar",
@@ -234,79 +229,123 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6 sm:space-y-8" data-dashboard-root>
-      <header className="app-card relative overflow-hidden rounded-3xl border border-[color-mix(in_srgb,var(--primary)_28%,var(--border))] p-5 shadow-2xl shadow-[color-mix(in_srgb,var(--primary)_10%,transparent)] sm:p-7 lg:p-8">
-        <div className="pointer-events-none absolute -right-24 -top-28 size-80 rounded-full bg-[color-mix(in_srgb,var(--primary)_18%,transparent)] blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-32 left-1/4 size-72 rounded-full bg-[color-mix(in_srgb,var(--success)_8%,transparent)] blur-3xl" />
+      <header className="app-card relative overflow-hidden rounded-[2rem] border border-[color-mix(in_srgb,var(--primary)_30%,var(--border))] p-5 shadow-2xl shadow-[color-mix(in_srgb,var(--primary)_10%,transparent)] sm:p-7 lg:p-8">
+        <div className="pointer-events-none absolute -right-28 -top-32 size-96 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--primary)_26%,transparent),transparent_68%)] blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-32 left-1/4 size-80 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--success)_10%,transparent),transparent_70%)] blur-3xl" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,color-mix(in_srgb,var(--primary)_55%,transparent),transparent)]" />
+
         <div className="relative flex flex-col gap-7 xl:flex-row xl:items-end xl:justify-between">
           <div className="min-w-0">
-            <div className="app-primary mb-3 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em]">
+            <div className="app-primary mb-4 inline-flex items-center gap-2 rounded-full border border-[color-mix(in_srgb,var(--primary)_28%,var(--border))] bg-[color-mix(in_srgb,var(--primary)_8%,var(--surface))] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em]">
               <Sunrise className="size-4" />
               {getDateLabel()}
             </div>
-            <h1 className="app-text max-w-3xl text-3xl font-semibold tracking-[-0.045em] sm:text-4xl lg:text-5xl">
+            <h1 className="app-text max-w-3xl text-3xl font-semibold tracking-[-0.05em] sm:text-4xl lg:text-5xl">
               {getGreeting()}, {displayName}
             </h1>
             <p className="app-muted mt-4 max-w-2xl text-sm leading-6 sm:text-base">
               Bugünün görevlerini, planlarını, notlarını ve finans sinyallerini
-              tek merkezden yönet. Önceliği gör, hızlı karar al, günü sakin
+              tek merkezden yönet. Önceliği gör, hızlı karar al, günü kontrollü
               kapat.
             </p>
-            <div className="mt-5 flex flex-wrap gap-2">
+            <div className="mt-6 flex flex-wrap gap-2">
               {heroSignals.map((signal) => {
                 const Icon = signal.icon;
                 return (
                   <span
-                    className="app-surface-2 app-border inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs"
+                    className="app-surface-2 app-border inline-flex min-w-0 items-center gap-2 rounded-full border px-3 py-2 text-xs shadow-sm"
                     key={signal.label}
                   >
-                    <Icon className="app-primary size-3.5" />
+                    <Icon className="app-primary size-3.5 shrink-0" />
                     <span className="app-text font-semibold">
                       {signal.value}
                     </span>
-                    <span className="app-muted">{signal.label}</span>
+                    <span className="app-muted truncate">{signal.label}</span>
                   </span>
                 );
               })}
             </div>
           </div>
-          <div className="grid w-full gap-2 sm:grid-cols-2 xl:w-auto xl:min-w-[560px] xl:grid-cols-4">
-            <Link
-              className={buttonClassName({
-                className: "w-full",
-                variant: "secondary",
-              })}
-              href="/notes?quick=1"
-            >
-              <Plus className="size-4" />
-              Hızlı Kayıt
-            </Link>
-            <Link
-              className={buttonClassName({
-                className: "w-full",
-                variant: "secondary",
-              })}
-              href="/notes?editor=new"
-            >
-              <FileText className="size-4" />
-              Yeni Not
-            </Link>
-            <Link
-              className={buttonClassName({
-                className: "w-full",
-                variant: "secondary",
-              })}
-              href="/tasks?new=1"
-            >
-              <Plus className="size-4" />
-              Yeni Görev
-            </Link>
-            <Link
-              className={buttonClassName({ className: "w-full" })}
-              href="/calendar?new=1"
-            >
-              <Plus className="size-4" />
-              Yeni Plan
-            </Link>
+
+          <div className="app-surface-2 app-border w-full rounded-[1.75rem] border p-2 shadow-xl shadow-black/10 xl:w-[520px]">
+            <div className="flex items-center justify-between gap-3 px-2.5 py-2">
+              <div>
+                <p className="app-primary text-[10px] font-semibold uppercase tracking-[0.16em]">
+                  Komut Aksiyonları
+                </p>
+                <p className="app-muted mt-0.5 text-[11px]">
+                  En sık kullanılan işlemler tek dokunuşta.
+                </p>
+              </div>
+              <Sparkles className="app-primary size-4 shrink-0" />
+            </div>
+
+            <div className="grid gap-2 min-[420px]:grid-cols-2">
+              <Link
+                className="app-card group flex min-w-0 items-center gap-3 rounded-2xl border p-3 transition hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--primary)_44%,var(--border))] hover:shadow-lg"
+                href="/notes?quick=1"
+              >
+                <span className="app-primary-bg flex size-10 shrink-0 items-center justify-center rounded-xl">
+                  <Plus className="size-4" />
+                </span>
+                <span className="min-w-0">
+                  <span className="app-text block text-sm font-semibold">
+                    Hızlı Kayıt
+                  </span>
+                  <span className="app-muted block truncate text-[11px]">
+                    Aklındaki notu hemen yakala
+                  </span>
+                </span>
+              </Link>
+              <Link
+                className="app-card group flex min-w-0 items-center gap-3 rounded-2xl border p-3 transition hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--primary)_44%,var(--border))] hover:shadow-lg"
+                href="/notes?editor=new"
+              >
+                <span className="app-primary-bg flex size-10 shrink-0 items-center justify-center rounded-xl">
+                  <FileText className="size-4" />
+                </span>
+                <span className="min-w-0">
+                  <span className="app-text block text-sm font-semibold">
+                    Yeni Not
+                  </span>
+                  <span className="app-muted block truncate text-[11px]">
+                    Odaklı editörde başla
+                  </span>
+                </span>
+              </Link>
+              <Link
+                className="app-card group flex min-w-0 items-center gap-3 rounded-2xl border p-3 transition hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--primary)_44%,var(--border))] hover:shadow-lg"
+                href="/tasks?new=1"
+              >
+                <span className="app-primary-bg flex size-10 shrink-0 items-center justify-center rounded-xl">
+                  <CheckSquare2 className="size-4" />
+                </span>
+                <span className="min-w-0">
+                  <span className="app-text block text-sm font-semibold">
+                    Yeni Görev
+                  </span>
+                  <span className="app-muted block truncate text-[11px]">
+                    Sıradaki işi netleştir
+                  </span>
+                </span>
+              </Link>
+              <Link
+                className="group flex min-w-0 items-center gap-3 rounded-2xl border border-[color-mix(in_srgb,var(--primary)_44%,var(--border))] bg-[color-mix(in_srgb,var(--primary)_14%,var(--surface))] p-3 text-[var(--text)] shadow-lg shadow-[color-mix(in_srgb,var(--primary)_12%,transparent)] transition hover:-translate-y-0.5 hover:bg-[color-mix(in_srgb,var(--primary)_18%,var(--surface))]"
+                href="/calendar?new=1"
+              >
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--primary)] text-white shadow-[0_12px_32px_color-mix(in_srgb,var(--primary)_28%,transparent)]">
+                  <CalendarDays className="size-4" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold">
+                    Yeni Plan
+                  </span>
+                  <span className="block truncate text-[11px] text-[color-mix(in_srgb,var(--text)_76%,var(--muted))]">
+                    Takvime yeni odak ekle
+                  </span>
+                </span>
+              </Link>
+            </div>
           </div>
         </div>
       </header>
@@ -319,27 +358,28 @@ export default async function DashboardPage() {
           const Icon = item.icon;
           return (
             <Link
-              className="app-card group relative min-h-44 overflow-hidden rounded-2xl border p-4 transition hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--primary)_42%,var(--border))] hover:shadow-xl hover:shadow-[color-mix(in_srgb,var(--primary)_8%,transparent)] sm:p-5"
+              className="app-card group relative min-h-[13rem] overflow-hidden rounded-[1.4rem] border p-4 transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--primary)_42%,var(--border))] hover:shadow-xl hover:shadow-[color-mix(in_srgb,var(--primary)_8%,transparent)] sm:p-5"
               href={item.href}
               key={item.title}
             >
-              <div className="pointer-events-none absolute -right-12 -top-14 size-36 rounded-full bg-[color-mix(in_srgb,var(--primary)_10%,transparent)] blur-2xl transition group-hover:bg-[color-mix(in_srgb,var(--primary)_16%,transparent)]" />
+              <div className="pointer-events-none absolute -right-14 -top-16 size-44 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--primary)_14%,transparent),transparent_68%)] blur-2xl transition group-hover:bg-[color-mix(in_srgb,var(--primary)_18%,transparent)]" />
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,color-mix(in_srgb,var(--primary)_36%,transparent),transparent)]" />
               <div className="relative flex h-full flex-col">
                 <div className="flex items-start justify-between gap-3">
-                  <span className="app-primary-bg flex size-10 items-center justify-center rounded-2xl">
+                  <span className="app-primary-bg flex size-11 items-center justify-center rounded-2xl shadow-lg shadow-[color-mix(in_srgb,var(--primary)_12%,transparent)]">
                     <Icon className="size-4" />
                   </span>
-                  <span className="app-surface-2 app-muted rounded-full border px-2.5 py-1 text-[10px]">
+                  <span className="app-surface-2 app-muted rounded-full border px-2.5 py-1 text-[10px] font-medium">
                     {item.eyebrow}
                   </span>
                 </div>
-                <h2 className="app-text mt-4 text-base font-semibold leading-6">
+                <h2 className="app-text mt-5 text-base font-semibold leading-6">
                   {item.title}
                 </h2>
-                <p className="app-muted mt-2 line-clamp-3 text-xs leading-5">
+                <p className="app-muted mt-2 line-clamp-3 text-xs leading-5 sm:min-h-[3.75rem]">
                   {item.description}
                 </p>
-                <span className="app-primary mt-auto inline-flex items-center gap-1 pt-4 text-xs font-semibold">
+                <span className="mt-auto inline-flex w-fit items-center gap-1 rounded-full border border-[color-mix(in_srgb,var(--primary)_24%,var(--border))] bg-[color-mix(in_srgb,var(--primary)_8%,var(--surface))] px-3 py-1.5 text-xs font-semibold text-[var(--primary)] transition group-hover:border-[color-mix(in_srgb,var(--primary)_48%,var(--border))]">
                   {item.actionLabel}
                   <ArrowRight className="size-3.5 transition group-hover:translate-x-0.5" />
                 </span>
@@ -418,7 +458,7 @@ export default async function DashboardPage() {
                 {dashboard.todayPlannerEvents.length} plan
               </span>
               <span className="app-surface-2 app-muted rounded-full border px-2.5 py-1 text-[10px]">
-                {dashboard.todayTodoStats.pending} To-Do
+                {dashboard.todayTodoStats.pending} yapılacak
               </span>
             </div>
           </div>
@@ -475,7 +515,7 @@ export default async function DashboardPage() {
               href="/calendar?todo=1"
             >
               <CheckSquare2 className="size-4" />
-              Yeni To-Do
+              Yeni Yapılacak
             </Link>
             <Link
               className={buttonClassName({ variant: "secondary" })}
@@ -667,13 +707,7 @@ export default async function DashboardPage() {
         </DashboardWidgetSection>
 
         <DashboardWidgetSection widgetId="focus_tools">
-          <section
-            className={
-              showTechnicalStatus
-                ? "grid gap-4 md:grid-cols-3"
-                : "grid gap-4 md:grid-cols-2"
-            }
-          >
+          <section className="grid gap-4 md:grid-cols-2">
             <Card className="p-5">
               <div className="flex items-center justify-between">
                 <Pin className="app-primary size-4" />
@@ -722,46 +756,6 @@ export default async function DashboardPage() {
               </div>
             </Card>
 
-            {showTechnicalStatus ? (
-              <Card className="p-5">
-                <div className="flex items-center justify-between">
-                  <h2 className="app-text text-sm font-semibold">
-                    Sistem Durumu
-                  </h2>
-                  <span className="flex items-center gap-1.5 text-[10px] font-medium text-[var(--success)]">
-                    <span className="size-1.5 rounded-full bg-[var(--success)]" />
-                    Stabil
-                  </span>
-                </div>
-                <div className="mt-4 space-y-3 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="app-muted flex items-center gap-2">
-                      <CheckCircle2 className="size-3.5 text-[var(--success)]" />
-                      Veritabanı
-                    </span>
-                    <span className="app-text">{databaseStatus}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="app-muted flex items-center gap-2">
-                      <Sparkles className="size-3.5" />
-                      AI Servisi
-                    </span>
-                    <span className="app-text">{aiProviderLabel}</span>
-                  </div>
-                </div>
-                <Link
-                  className={buttonClassName({
-                    className: "mt-5 w-full",
-                    size: "sm",
-                    variant: "secondary",
-                  })}
-                  href="/today"
-                >
-                  Bugün Merkezine Git
-                  <ArrowRight className="size-3.5" />
-                </Link>
-              </Card>
-            ) : null}
           </section>
         </DashboardWidgetSection>
       </DashboardPersonalizedArea>
