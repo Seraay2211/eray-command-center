@@ -698,6 +698,33 @@ select {
   -webkit-tap-highlight-color: transparent;
 }
 
+.app-shell,
+.app-main,
+.app-page-stack,
+.app-card,
+.app-surface,
+.app-surface-2,
+.app-section-body {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.app-card,
+.app-surface,
+.app-surface-2,
+.app-section-body,
+.app-text,
+.app-muted {
+  overflow-wrap: anywhere;
+}
+
+input,
+textarea,
+select,
+button {
+  max-width: 100%;
+}
+
 .safe-top {
   padding-top: env(safe-area-inset-top);
 }

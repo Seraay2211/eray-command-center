@@ -121,7 +121,7 @@ function getErrorMessage(error: unknown): string {
     message.includes("schema cache") ||
     message.includes("Could not find the table")
   ) {
-    return "Takvim veritabani henuz hazır degil. database/phase-9-calendar.sql dosyasini Supabase SQL Editor icinde calistirin.";
+    return "Takvim alanı şu anda kullanıma hazırlanıyor. Birazdan tekrar deneyebilirsin.";
   }
 
   if (message.toLowerCase().includes("jwt")) {

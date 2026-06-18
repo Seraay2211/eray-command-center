@@ -1,10 +1,12 @@
 import {
   AlertTriangle,
+  Bot,
   CalendarDays,
   CheckSquare2,
   ClockAlert,
   CreditCard,
   ShieldAlert,
+  Sparkles,
 } from "lucide-react";
 import { AiDailyPlan } from "@/components/dashboard/ai-daily-plan";
 import { Card } from "@/components/ui/card";
@@ -47,12 +49,13 @@ export function CommandSummaryCard({ stats }: CommandSummaryCardProps) {
   ];
 
   return (
-    <Card className="relative overflow-hidden p-5 sm:p-7">
-      <div className="pointer-events-none absolute -right-20 -top-24 size-72 rounded-full bg-[color-mix(in_srgb,var(--primary)_14%,transparent)] blur-3xl" />
+    <Card className="relative overflow-hidden border-[color-mix(in_srgb,var(--primary)_24%,var(--border))] p-5 shadow-xl shadow-[color-mix(in_srgb,var(--primary)_7%,transparent)] sm:p-7">
+      <div className="pointer-events-none absolute -right-20 -top-24 size-72 rounded-full bg-[color-mix(in_srgb,var(--primary)_16%,transparent)] blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-28 left-10 size-56 rounded-full bg-[color-mix(in_srgb,var(--success)_7%,transparent)] blur-3xl" />
       <div className="relative">
         <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
           <div className="max-w-2xl">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="app-primary-bg flex size-10 items-center justify-center rounded-xl">
                 <ShieldAlert className="size-5" />
               </span>
@@ -64,8 +67,14 @@ export function CommandSummaryCard({ stats }: CommandSummaryCardProps) {
                   Bugünün Komuta Özeti
                 </h2>
               </div>
+              <span className="app-surface-2 app-muted ml-0 rounded-full border px-2.5 py-1 text-[10px] font-semibold xl:ml-2">
+                <Sparkles className="mr-1 inline size-3" />
+                AI destekli
+              </span>
             </div>
-            <p className="app-muted mt-4 text-sm leading-6">{summary}</p>
+            <p className="app-surface-2 app-text mt-4 rounded-2xl border p-4 text-sm font-medium leading-6">
+              {summary}
+            </p>
           </div>
 
           {stats.criticalDebts > 0 || stats.overdueDebts > 0 ? (
@@ -87,7 +96,7 @@ export function CommandSummaryCard({ stats }: CommandSummaryCardProps) {
             const Icon = metric.icon;
             return (
               <div
-                className="app-surface-2 rounded-xl border p-3"
+                className="app-surface-2 rounded-2xl border p-3.5"
                 key={metric.label}
               >
                 <div className="flex items-center justify-between gap-3">
@@ -104,7 +113,25 @@ export function CommandSummaryCard({ stats }: CommandSummaryCardProps) {
           })}
         </div>
 
-        <AiDailyPlan />
+        <div className="app-surface-2 mt-6 rounded-2xl border p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <span className="app-primary-bg flex size-9 shrink-0 items-center justify-center rounded-xl">
+                <Bot className="size-4" />
+              </span>
+              <div>
+                <p className="app-text text-sm font-semibold">
+                  AI Komuta Özeti
+                </p>
+                <p className="app-muted mt-1 text-xs leading-5">
+                  Günün önceliklerini, finans uyarılarını ve önerilen
+                  aksiyonları tek çıktıda hazırla.
+                </p>
+              </div>
+            </div>
+          </div>
+          <AiDailyPlan />
+        </div>
       </div>
     </Card>
   );

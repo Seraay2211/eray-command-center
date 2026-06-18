@@ -16,6 +16,7 @@ import {
   FINANCE_RECEIPT_MIME_TYPES,
   validateFinanceReceiptFile,
 } from "@/lib/finance/receipt-config";
+import { getUserFacingError } from "@/lib/user-facing-error";
 import {
   formatNumberTR,
   formatTRY,
@@ -169,7 +170,12 @@ export function PaymentForm({
 
       if (!response.ok || !payload.success || !payload.result) {
         setOcrStatus("failed");
-        setOcrError(payload.error ?? "OCR başarısız oldu. Lütfen tekrar dene.");
+        setOcrError(
+          getUserFacingError(
+            payload.error,
+            "OCR başarısız oldu. Lütfen tekrar dene.",
+          ),
+        );
         return;
       }
 

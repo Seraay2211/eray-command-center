@@ -35,6 +35,7 @@ import {
   formatAiOutputForNote,
 } from "@/lib/ai/format-ai-output";
 import { trackRecentItem } from "@/lib/recent-items";
+import { getUserFacingError } from "@/lib/user-facing-error";
 import {
   applyTemplateVariables,
   cleanSystemTemplateContent,
@@ -270,7 +271,9 @@ export function NotesClient({
   const [formError, setFormError] = useState("");
   const [fullscreenError, setFullscreenError] = useState("");
   const [quickCaptureError, setQuickCaptureError] = useState("");
-  const [pageError, setPageError] = useState(initialError);
+  const [pageError, setPageError] = useState(() =>
+    initialError ? getUserFacingError(initialError) : "",
+  );
   const [notice, setNotice] = useState("");
   const [aiOutput, setAiOutput] = useState<AiOutputState>(
     createEmptyAiOutputState(),
@@ -286,10 +289,11 @@ export function NotesClient({
   const [hasMore, setHasMore] = useState(initialNotes.length >= 50);
   const debouncedQuery = useDebounce(query, 250);
 
-  const schemaMissing =
-    pageError.includes("gerekli güncelleme") ||
-    pageError.includes("database/schema.sql");
   const isDevelopment = process.env.NODE_ENV === "development";
+  const schemaMissing =
+    isDevelopment &&
+    (initialError.includes("gerekli güncelleme") ||
+      initialError.includes("kullanıma hazırlanıyor"));
   const selectedNote =
     notes.find((note) => note.id === selectedNoteId) ?? null;
   const fullscreenNote =
@@ -659,7 +663,7 @@ export function NotesClient({
     setIsLoadingMore(false);
 
     if (result.error || !result.data) {
-      setPageError(result.error ?? "Daha fazla not yüklenemedi.");
+      setPageError(getUserFacingError(result.error, "Daha fazla not yüklenemedi."));
       return;
     }
 
@@ -715,7 +719,7 @@ export function NotesClient({
       if (!response.ok || !result.success) {
         const error = result.success
           ? "AI işlemi tamamlanamadı. Lütfen tekrar dene."
-          : result.error;
+          : getUserFacingError(result.error, "AI işlemi tamamlanamadı. Lütfen tekrar dene.");
 
         setAiOutput({
           action,
@@ -798,7 +802,9 @@ export function NotesClient({
     setIsAppendingAi(false);
 
     if (result.error || !result.data) {
-      setPageError(result.error ?? "AI çıktısı nota eklenemedi.");
+      setPageError(
+        getUserFacingError(result.error, "AI çıktısı nota eklenemedi."),
+      );
       return;
     }
 
@@ -840,7 +846,12 @@ export function NotesClient({
     setIsSavingAiNote(false);
 
     if (result.error || !result.data) {
-      setPageError(result.error ?? "AI çıktısı yeni not olarak kaydedilemedi.");
+      setPageError(
+        getUserFacingError(
+          result.error,
+          "AI çıktısı yeni not olarak kaydedilemedi.",
+        ),
+      );
       return;
     }
 
@@ -860,7 +871,7 @@ export function NotesClient({
 
     if (result.error || !result.data) {
       setIsSaving(false);
-      setFormError(result.error ?? "Not kaydedilemedi.");
+      setFormError(getUserFacingError(result.error, "Not kaydedilemedi."));
       return;
     }
 
@@ -879,7 +890,9 @@ export function NotesClient({
             ),
           );
           setEditingNote(savedNote);
-          setFormError(uploadResult.error ?? "Görsel yüklenemedi.");
+          setFormError(
+            getUserFacingError(uploadResult.error, "Görsel yüklenemedi."),
+          );
           return;
         }
 
@@ -894,7 +907,9 @@ export function NotesClient({
           return;
         }
 
-        setFormError(uploadResult.error ?? "Görsel yüklenemedi.");
+        setFormError(
+          getUserFacingError(uploadResult.error, "Görsel yüklenemedi."),
+        );
         return;
       }
 
@@ -946,7 +961,7 @@ export function NotesClient({
 
     if (result.error || !result.data) {
       setIsSaving(false);
-      setFullscreenError(result.error ?? "Not kaydedilemedi.");
+      setFullscreenError(getUserFacingError(result.error, "Not kaydedilemedi."));
       return false;
     }
 
@@ -972,7 +987,9 @@ export function NotesClient({
           }
         }
 
-        setFullscreenError(uploadResult.error ?? "Görsel yüklenemedi.");
+        setFullscreenError(
+          getUserFacingError(uploadResult.error, "Görsel yüklenemedi."),
+        );
         return false;
       }
 
@@ -1029,7 +1046,9 @@ export function NotesClient({
     setIsQuickCaptureSaving(false);
 
     if (result.error || !result.data) {
-      setQuickCaptureError(result.error ?? "Hızlı kayıt oluşturulamadı.");
+      setQuickCaptureError(
+        getUserFacingError(result.error, "Hızlı kayıt oluşturulamadı."),
+      );
       return false;
     }
 
@@ -1077,7 +1096,12 @@ export function NotesClient({
           });
 
     if (result.error || !result.data) {
-      setPageError(result.error ?? "Hızlı kayıt şablona uygulanamadı.");
+      setPageError(
+        getUserFacingError(
+          result.error,
+          "Hızlı kayıt şablona uygulanamadı.",
+        ),
+      );
       return;
     }
 
@@ -1108,7 +1132,7 @@ export function NotesClient({
     });
 
     if (result.error || !result.data) {
-      setPageError(result.error ?? "Kategori güncellenemedi.");
+      setPageError(getUserFacingError(result.error, "Kategori güncellenemedi."));
       return;
     }
 
@@ -1128,7 +1152,7 @@ export function NotesClient({
     });
 
     if (result.error) {
-      setPageError(result.error);
+      setPageError(getUserFacingError(result.error));
       return;
     }
 
@@ -1149,7 +1173,7 @@ export function NotesClient({
     });
 
     if (result.error) {
-      setPageError(result.error);
+      setPageError(getUserFacingError(result.error));
       return;
     }
 
@@ -1169,7 +1193,7 @@ export function NotesClient({
 
       if (!response.ok || !result.success) {
         const error =
-          result.error ?? "Görsel silinemedi. Lütfen tekrar dene.";
+          getUserFacingError(result.error, "Görsel silinemedi. Lütfen tekrar dene.");
         setFormError(error);
         setPageError(error);
         return false;
@@ -1208,7 +1232,12 @@ export function NotesClient({
     setBusyNoteId("");
 
     if (result.error || !result.data) {
-      setPageError(result.error ?? "Sabitleme durumu değiştirilemedi.");
+      setPageError(
+        getUserFacingError(
+          result.error,
+          "Sabitleme durumu değiştirilemedi.",
+        ),
+      );
       return;
     }
 
@@ -1227,7 +1256,9 @@ export function NotesClient({
     setBusyNoteId("");
 
     if (result.error || !result.data) {
-      setPageError(result.error ?? "Favori durumu değiştirilemedi.");
+      setPageError(
+        getUserFacingError(result.error, "Favori durumu değiştirilemedi."),
+      );
       return;
     }
 
@@ -1246,7 +1277,7 @@ export function NotesClient({
     setBusyNoteId("");
 
     if (result.error || !result.data) {
-      setPageError(result.error ?? "Not arşivlenemedi.");
+      setPageError(getUserFacingError(result.error, "Not arşivlenemedi."));
       return;
     }
 
@@ -1269,7 +1300,9 @@ export function NotesClient({
     setBusyNoteId("");
 
     if (result.error || !result.data) {
-      setPageError(result.error ?? "Not arşivden çıkarılamadı.");
+      setPageError(
+        getUserFacingError(result.error, "Not arşivden çıkarılamadı."),
+      );
       return;
     }
 
@@ -1289,7 +1322,7 @@ export function NotesClient({
     setIsDeleting(false);
 
     if (result.error) {
-      setPageError(result.error);
+      setPageError(getUserFacingError(result.error));
       setDeletingNote(null);
       return;
     }
@@ -1437,10 +1470,8 @@ export function NotesClient({
             </p>
             {isDevelopment ? (
               <p className="app-muted mt-3 text-xs leading-5">
-                Geliştirme notu:{" "}
-                <code className="app-surface-2 app-primary rounded px-1.5 py-0.5 font-mono text-xs">
-                  database/phase-22-ai-productivity-suite.sql
-                </code>
+                Geliştirme notu: not alanı için gerekli kurulum adımlarını
+                kontrol et.
               </p>
             ) : null}
             <div className="mt-5 flex flex-col gap-2 sm:flex-row">
@@ -1448,7 +1479,7 @@ export function NotesClient({
                 <Button
                   onClick={() => {
                     navigator.clipboard.writeText(
-                      "database/phase-22-ai-productivity-suite.sql",
+                      "Not alanı için gerekli kurulum adımlarını kontrol et.",
                     );
                     showNotice("Kurulum notu kopyalandı.");
                   }}

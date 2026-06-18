@@ -36,7 +36,7 @@ function toUserFacingError(message: string): string {
     AI_GENERIC_ERROR,
     "Bu not üzerinde işlem yapma yetkin yok.",
     "Geçerli bir AI aksiyonu seçilmedi.",
-    "Gemini bağlantısı doğrulanamadı. API anahtarını kontrol et.",
+    "AI bağlantısı şu anda hazır değil. Birazdan tekrar deneyebilirsin.",
     "Gemini model ayarı geçerli görünmüyor. Model adını kontrol et.",
     "Gemini servisi şu anda yanıt vermiyor. Lütfen tekrar dene.",
     "AI servisi şu anda yoğun görünüyor. Lütfen biraz sonra tekrar dene.",

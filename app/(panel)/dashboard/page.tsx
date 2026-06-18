@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   ArrowRight,
   BarChart3,
+  Bell,
   Bot,
   CalendarDays,
   CheckCircle2,
@@ -9,6 +10,7 @@ import {
   ChevronRight,
   ClipboardList,
   Clock3,
+  CreditCard,
   FileText,
   Pin,
   Plus,
@@ -40,6 +42,7 @@ import {
 import { aiCommands, quickActions } from "@/lib/mock-data";
 import { REPORT_TYPE_LABELS } from "@/lib/reports";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
+import { getUserFacingError } from "@/lib/user-facing-error";
 import { generateFinanceAlerts } from "@/lib/notifications/finance-alerts";
 import { getDashboardData } from "@/services/dashboard-service";
 import { getNotifications } from "@/services/notifications-service";
@@ -128,7 +131,10 @@ export default async function DashboardPage() {
   if (!dashboard) {
     return (
       <DashboardErrorState
-        message={dashboardResult.error ?? "Lütfen bağlantını kontrol edip tekrar dene."}
+        message={getUserFacingError(
+          dashboardResult.error,
+          "Lütfen bağlantını kontrol edip tekrar dene.",
+        )}
       />
     );
   }
@@ -144,26 +150,126 @@ export default async function DashboardPage() {
   const isSupabaseConfigured = hasSupabaseEnv();
   const databaseStatus = isSupabaseConfigured ? "Bağlı" : "Bağlantı bekleniyor";
   const showTechnicalStatus = process.env.NODE_ENV === "development";
+  const notificationsCount = notificationsResult.data?.length ?? 0;
+  const trackedPaymentCount =
+    dashboard.commandStats.dueThisWeekDebts +
+    dashboard.financeSummary.dueTodayInstallmentCount +
+    dashboard.financeSummary.overdueInstallmentCount;
+  const hasFinanceWarning =
+    dashboard.commandStats.overdueDebts > 0 ||
+    dashboard.commandStats.criticalDebts > 0 ||
+    dashboard.financeSummary.overdueInstallmentCount > 0;
+  const heroSignals = [
+    {
+      icon: CheckSquare2,
+      label: "Bugünkü Görev",
+      value: dashboard.commandStats.todayTasks,
+    },
+    {
+      icon: CalendarDays,
+      label: "Takvim Kaydı",
+      value: dashboard.commandStats.todayCalendar,
+    },
+    {
+      icon: CreditCard,
+      label: "Takipte Ödeme",
+      value: trackedPaymentCount,
+    },
+    {
+      icon: Bell,
+      label: "Bildirim",
+      value: notificationsCount,
+    },
+  ];
+  const commandGridItems = [
+    {
+      actionLabel: "Komuta merkezine git",
+      description:
+        dashboard.commandStats.todayTasks +
+          dashboard.commandStats.todayCalendar +
+          trackedPaymentCount >
+        0
+          ? `Bugün ${dashboard.commandStats.todayTasks} görev, ${dashboard.commandStats.todayCalendar} plan ve ${trackedPaymentCount} ödeme sinyali takipte.`
+          : "Bugün sakin görünüyor. Yeni bir görev veya notla günü planlayabilirsin.",
+      href: "/today",
+      icon: Sparkles,
+      title: "Bugünün Komuta Özeti",
+      eyebrow: "Günlük durum",
+    },
+    {
+      actionLabel: "Finans'a git",
+      description: dashboard.financeSummary.available
+        ? hasFinanceWarning
+          ? `${dashboard.commandStats.overdueDebts} geciken borç, ${dashboard.commandStats.criticalDebts} kritik kayıt ve ${dashboard.financeSummary.overdueInstallmentCount} geciken taksit var.`
+          : `Bu hafta ${dashboard.commandStats.dueThisWeekDebts} ödeme, bugün ${dashboard.financeSummary.dueTodayInstallmentCount} taksit takipte.`
+        : "Finans kurulumu tamamlanınca ödeme riskleri burada öne çıkacak.",
+      href: "/finance",
+      icon: CreditCard,
+      title: "Finans Uyarısı / Ödeme Durumu",
+      eyebrow: hasFinanceWarning ? "Dikkat gerekiyor" : "Kontrol altında",
+    },
+    {
+      actionLabel: "Görev panosunu aç",
+      description:
+        dashboard.commandStats.todayTasks > 0
+          ? `Bugün son tarihli ${dashboard.commandStats.todayTasks} görev var. Geciken görev sayısı: ${dashboard.commandStats.overdueTasks}.`
+          : "Bugün son tarihli görev görünmüyor. Yeni görev ekleyerek akışı netleştirebilirsin.",
+      href: "/tasks",
+      icon: CheckSquare2,
+      title: "Bugünkü Görevler",
+      eyebrow: "Operasyon",
+    },
+    {
+      actionLabel: "Takvimi aç",
+      description:
+        dashboard.commandStats.todayCalendar > 0
+          ? `Bugün ${dashboard.commandStats.todayCalendar} takvim kaydı ve ${dashboard.todayTodoStats.pending} açık To-Do var.`
+          : "Bugün için plan kaydı yok. Yeni plan veya To-Do ekleyebilirsin.",
+      href: "/calendar",
+      icon: CalendarDays,
+      title: "Yaklaşan Planlar",
+      eyebrow: "Ajanda",
+    },
+  ];
 
   return (
     <div className="space-y-6 sm:space-y-8" data-dashboard-root>
-      <header className="app-card relative overflow-hidden rounded-2xl border p-5 sm:p-7">
-        <div className="pointer-events-none absolute -right-20 -top-24 size-72 rounded-full bg-[color-mix(in_srgb,var(--primary)_12%,transparent)] blur-3xl" />
-        <div className="relative flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
-          <div>
+      <header className="app-card relative overflow-hidden rounded-3xl border border-[color-mix(in_srgb,var(--primary)_28%,var(--border))] p-5 shadow-2xl shadow-[color-mix(in_srgb,var(--primary)_10%,transparent)] sm:p-7 lg:p-8">
+        <div className="pointer-events-none absolute -right-24 -top-28 size-80 rounded-full bg-[color-mix(in_srgb,var(--primary)_18%,transparent)] blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-32 left-1/4 size-72 rounded-full bg-[color-mix(in_srgb,var(--success)_8%,transparent)] blur-3xl" />
+        <div className="relative flex flex-col gap-7 xl:flex-row xl:items-end xl:justify-between">
+          <div className="min-w-0">
             <div className="app-primary mb-3 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em]">
               <Sunrise className="size-4" />
               {getDateLabel()}
             </div>
-            <h1 className="app-text text-2xl font-semibold tracking-[-0.03em] sm:text-3xl">
+            <h1 className="app-text max-w-3xl text-3xl font-semibold tracking-[-0.045em] sm:text-4xl lg:text-5xl">
               {getGreeting()}, {displayName}
             </h1>
-            <p className="app-muted mt-3 max-w-xl text-sm leading-6">
-              Günün görevlerini, planlarını ve finans risklerini tek ekrandan
-              kontrol et.
+            <p className="app-muted mt-4 max-w-2xl text-sm leading-6 sm:text-base">
+              Bugünün görevlerini, planlarını, notlarını ve finans sinyallerini
+              tek merkezden yönet. Önceliği gör, hızlı karar al, günü sakin
+              kapat.
             </p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {heroSignals.map((signal) => {
+                const Icon = signal.icon;
+                return (
+                  <span
+                    className="app-surface-2 app-border inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs"
+                    key={signal.label}
+                  >
+                    <Icon className="app-primary size-3.5" />
+                    <span className="app-text font-semibold">
+                      {signal.value}
+                    </span>
+                    <span className="app-muted">{signal.label}</span>
+                  </span>
+                );
+              })}
+            </div>
           </div>
-          <div className="grid gap-2 sm:grid-cols-3">
+          <div className="grid w-full gap-2 sm:grid-cols-2 xl:w-auto xl:min-w-[560px] xl:grid-cols-4">
             <Link
               className={buttonClassName({
                 className: "w-full",
@@ -173,6 +279,16 @@ export default async function DashboardPage() {
             >
               <Plus className="size-4" />
               Hızlı Kayıt
+            </Link>
+            <Link
+              className={buttonClassName({
+                className: "w-full",
+                variant: "secondary",
+              })}
+              href="/notes?editor=new"
+            >
+              <FileText className="size-4" />
+              Yeni Not
             </Link>
             <Link
               className={buttonClassName({
@@ -194,6 +310,44 @@ export default async function DashboardPage() {
           </div>
         </div>
       </header>
+
+      <section
+        aria-label="Komuta merkezi kısa bakış"
+        className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+      >
+        {commandGridItems.map((item) => {
+          const Icon = item.icon;
+          return (
+            <Link
+              className="app-card group relative min-h-44 overflow-hidden rounded-2xl border p-4 transition hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--primary)_42%,var(--border))] hover:shadow-xl hover:shadow-[color-mix(in_srgb,var(--primary)_8%,transparent)] sm:p-5"
+              href={item.href}
+              key={item.title}
+            >
+              <div className="pointer-events-none absolute -right-12 -top-14 size-36 rounded-full bg-[color-mix(in_srgb,var(--primary)_10%,transparent)] blur-2xl transition group-hover:bg-[color-mix(in_srgb,var(--primary)_16%,transparent)]" />
+              <div className="relative flex h-full flex-col">
+                <div className="flex items-start justify-between gap-3">
+                  <span className="app-primary-bg flex size-10 items-center justify-center rounded-2xl">
+                    <Icon className="size-4" />
+                  </span>
+                  <span className="app-surface-2 app-muted rounded-full border px-2.5 py-1 text-[10px]">
+                    {item.eyebrow}
+                  </span>
+                </div>
+                <h2 className="app-text mt-4 text-base font-semibold leading-6">
+                  {item.title}
+                </h2>
+                <p className="app-muted mt-2 line-clamp-3 text-xs leading-5">
+                  {item.description}
+                </p>
+                <span className="app-primary mt-auto inline-flex items-center gap-1 pt-4 text-xs font-semibold">
+                  {item.actionLabel}
+                  <ArrowRight className="size-3.5 transition group-hover:translate-x-0.5" />
+                </span>
+              </div>
+            </Link>
+          );
+        })}
+      </section>
 
       <OnboardingCard
         checklist={{

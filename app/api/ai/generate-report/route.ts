@@ -55,7 +55,7 @@ function readIds(
 function safeError(error: unknown): string {
   const message = error instanceof Error ? error.message : AI_GENERIC_ERROR;
   const allowed = [
-    "Gemini bağlantısı doğrulanamadı. API anahtarını kontrol et.",
+    "AI bağlantısı şu anda hazır değil. Birazdan tekrar deneyebilirsin.",
     "AI servisi şu anda yoğun görünüyor. Lütfen biraz sonra tekrar dene.",
     "Oturum bulunamadı. Lütfen tekrar giriş yap.",
     "AI raporu oluşturmak için en az bir not, görev veya manuel metin eklemelisin.",

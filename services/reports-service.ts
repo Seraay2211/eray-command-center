@@ -44,7 +44,7 @@ function getErrorMessage(error: unknown): string {
     message.includes("schema cache") ||
     message.includes("Could not find the table")
   ) {
-    return "Rapor veritabanı henüz hazır değil. database/phase-7-reports.sql dosyasını Supabase SQL Editor içinde çalıştırın.";
+    return "Rapor alanı şu anda kullanıma hazırlanıyor. Birazdan tekrar deneyebilirsin.";
   }
 
   if (message.toLowerCase().includes("jwt")) {

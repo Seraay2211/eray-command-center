@@ -20,6 +20,7 @@ import { useSettings } from "@/components/providers/settings-provider";
 import { useDebounce } from "@/hooks/use-debounce";
 import { trackRecentItem } from "@/lib/recent-items";
 import { getIstanbulTodayDueDate } from "@/lib/dates/istanbul";
+import { getUserFacingError } from "@/lib/user-facing-error";
 import {
   createPlannerEvent,
   deletePlannerEvent,
@@ -121,7 +122,9 @@ export function CalendarClient({
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [busyEventId, setBusyEventId] = useState("");
-  const [pageError, setPageError] = useState(initialError);
+  const [pageError, setPageError] = useState(() =>
+    initialError ? getUserFacingError(initialError) : "",
+  );
   const [formError, setFormError] = useState("");
   const [notice, setNotice] = useState("");
   const [initialTimestamp] = useState(() => Date.now());
@@ -302,7 +305,9 @@ export function CalendarClient({
       setIsLoadingView(false);
 
       if (result.error || !result.data) {
-        setPageError(result.error ?? "Takvim verileri alinamadi.");
+        setPageError(
+          getUserFacingError(result.error, "Takvim verileri alınamadı."),
+        );
         return;
       }
 
@@ -336,7 +341,7 @@ export function CalendarClient({
     setIsSaving(false);
 
     if (result.error || !result.data) {
-      setFormError(result.error ?? "Plan kaydedilemedi.");
+      setFormError(getUserFacingError(result.error, "Plan kaydedilemedi."));
       return;
     }
 
@@ -362,7 +367,7 @@ export function CalendarClient({
     setBusyEventId("");
 
     if (result.error || !result.data) {
-      setPageError(result.error ?? "Plan tamamlanamadi.");
+      setPageError(getUserFacingError(result.error, "Plan tamamlanamadı."));
       return;
     }
 
@@ -387,7 +392,7 @@ export function CalendarClient({
     setIsCreatingTodo(false);
 
     if (result.error || !result.data) {
-      setPageError(result.error ?? "To-Do eklenemedi.");
+      setPageError(getUserFacingError(result.error, "To-Do eklenemedi."));
       return false;
     }
 
@@ -417,7 +422,9 @@ export function CalendarClient({
 
     if (result.error || !result.data) {
       setTodayTasks(previousTasks);
-      setPageError(result.error ?? "To-Do durumu güncellenemedi.");
+      setPageError(
+        getUserFacingError(result.error, "To-Do durumu güncellenemedi."),
+      );
       return;
     }
 
@@ -435,7 +442,7 @@ export function CalendarClient({
     setIsDeleting(false);
 
     if (result.error) {
-      setPageError(result.error);
+      setPageError(getUserFacingError(result.error));
       setDeletingEvent(null);
       return;
     }
@@ -548,7 +555,7 @@ export function CalendarClient({
 
       <TodayTodoList
         busyTaskId={busyTaskId}
-        error={initialTodoError}
+        error={getUserFacingError(initialTodoError, "")}
         focusRequest={todoFocusRequest}
         isCreating={isCreatingTodo}
         onCreate={handleCreateTodo}

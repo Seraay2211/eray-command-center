@@ -35,7 +35,7 @@ function getApiKey(): string {
   const apiKey = process.env.GEMINI_API_KEY?.trim();
 
   if (!apiKey) {
-    throw new Error("Gemini API anahtarı bulunamadı.");
+    throw new Error("AI bağlantısı şu anda hazır değil. Birazdan tekrar deneyebilirsin.");
   }
 
   return apiKey;
@@ -50,7 +50,7 @@ function getFriendlyGeminiError(
   payload: GeminiApiResponse,
 ): string {
   if (status === 401 || status === 403) {
-    return "Gemini bağlantısı doğrulanamadı. API anahtarını kontrol et.";
+    return "AI bağlantısı şu anda hazır değil. Birazdan tekrar deneyebilirsin.";
   }
 
   if (status === 429) {

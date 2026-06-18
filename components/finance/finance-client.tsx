@@ -25,6 +25,7 @@ import { PaymentForm } from "@/components/finance/payment-form";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getIstanbulDateKey } from "@/lib/dates/istanbul";
+import { getUserFacingError } from "@/lib/user-facing-error";
 import { formatTRY } from "@/lib/utils/currency";
 import {
   createDebt,
@@ -128,7 +129,9 @@ export function FinanceClient({
     initialSelectedPaymentError,
   );
   const [receiptError, setReceiptError] = useState("");
-  const [pageError, setPageError] = useState(initialError);
+  const [pageError, setPageError] = useState(() =>
+    initialError ? getUserFacingError(initialError) : "",
+  );
   const [notice, setNotice] = useState("");
 
   const selectedDebt = useMemo(
@@ -182,7 +185,7 @@ export function FinanceClient({
       paymentsResult.error ??
       installmentsResult.error;
     if (error) {
-      setPageError(error);
+      setPageError(getUserFacingError(error));
       return;
     }
     setDebts(debtsResult.data ?? []);
@@ -310,7 +313,7 @@ export function FinanceClient({
     if (!window.confirm(`"${debt.title}" borç kaydı ve ödeme geçmişi silinsin mi?`)) return;
     const result = await deleteDebt(debt.id);
     if (result.error) {
-      setPageError(result.error);
+      setPageError(getUserFacingError(result.error));
       return;
     }
     if (selectedDebtId === debt.id) {
@@ -330,7 +333,7 @@ export function FinanceClient({
       const { receipt, ...paymentInput } = input;
       const result = await createDebtPayment(paymentInput);
       if (result.error || !result.data) {
-        setPaymentError(result.error ?? "Ödeme kaydedilemedi.");
+        setPaymentError(getUserFacingError(result.error, "Ödeme kaydedilemedi."));
         return;
       }
       let savedPayment = result.data.payment;
@@ -367,8 +370,10 @@ export function FinanceClient({
             };
           } else {
             receiptWarning =
-              uploadPayload.error ??
-              "Dekont yüklenemedi. Daha sonra tekrar deneyebilirsin.";
+              getUserFacingError(
+                uploadPayload.error,
+                "Dekont yüklenemedi. Daha sonra tekrar deneyebilirsin.",
+              );
           }
         } catch {
           receiptWarning =
@@ -497,7 +502,10 @@ export function FinanceClient({
 
       if (!response.ok || !payload.success || !payload.signedUrl) {
         setReceiptError(
-          payload.error ?? "Dekont görüntülenemedi. Lütfen tekrar dene.",
+          getUserFacingError(
+            payload.error,
+            "Dekont görüntülenemedi. Lütfen tekrar dene.",
+          ),
         );
         return;
       }
@@ -532,7 +540,10 @@ export function FinanceClient({
 
       if (!response.ok || !payload.success) {
         setReceiptError(
-          payload.error ?? "Dekont silinemedi. Lütfen tekrar dene.",
+          getUserFacingError(
+            payload.error,
+            "Dekont silinemedi. Lütfen tekrar dene.",
+          ),
         );
         return;
       }
@@ -562,7 +573,7 @@ export function FinanceClient({
   async function handleReminder(debt: Debt) {
     const result = await createDebtReminder(debt.id);
     if (result.error) {
-      setPageError(result.error);
+      setPageError(getUserFacingError(result.error));
       return;
     }
     setNotice("Ödeme hatırlatması takvime eklendi.");

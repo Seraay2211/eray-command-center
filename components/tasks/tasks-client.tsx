@@ -26,6 +26,7 @@ import { useSettings } from "@/components/providers/settings-provider";
 import { useDebounce } from "@/hooks/use-debounce";
 import { trackRecentItem } from "@/lib/recent-items";
 import { getIstanbulDateKey } from "@/lib/dates/istanbul";
+import { getUserFacingError } from "@/lib/user-facing-error";
 import { cn } from "@/lib/utils";
 import {
   archiveTask,
@@ -120,7 +121,9 @@ export function TasksClient({
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [formError, setFormError] = useState("");
-  const [pageError, setPageError] = useState(initialError);
+  const [pageError, setPageError] = useState(() =>
+    initialError ? getUserFacingError(initialError) : "",
+  );
   const [notice, setNotice] = useState("");
   const [visibleState, setVisibleState] = useState({
     count: 50,
@@ -131,10 +134,11 @@ export function TasksClient({
   const debouncedQuery = useDebounce(query, 250);
   const todayKey = getIstanbulDateKey(new Date(initialNow));
 
-  const schemaMissing =
-    pageError.includes("phase-6-tasks.sql") ||
-    pageError.includes("phase-19.1-task-archive.sql");
   const isDevelopment = process.env.NODE_ENV === "development";
+  const schemaMissing =
+    isDevelopment &&
+    (initialError.includes("phase-6-tasks.sql") ||
+      initialError.includes("phase-19.1-task-archive.sql"));
   const isTaskArchived = useCallback(
     (task: TaskWithCategory) =>
       Boolean(task.archived_at) || isTaskAutoArchived(task, todayKey),
@@ -309,7 +313,7 @@ export function TasksClient({
     setIsSaving(false);
 
     if (result.error || !result.data) {
-      setFormError(result.error ?? "Görev kaydedilemedi.");
+      setFormError(getUserFacingError(result.error, "Görev kaydedilemedi."));
       return;
     }
 
@@ -343,7 +347,9 @@ export function TasksClient({
     setBusyTaskId("");
 
     if (result.error || !result.data) {
-      setPageError(result.error ?? "Görev durumu değiştirilemedi.");
+      setPageError(
+        getUserFacingError(result.error, "Görev durumu değiştirilemedi."),
+      );
       return;
     }
 
@@ -365,7 +371,7 @@ export function TasksClient({
     setBusyTaskId("");
 
     if (result.error || !result.data) {
-      setPageError(result.error ?? "Görev arşivlenemedi.");
+      setPageError(getUserFacingError(result.error, "Görev arşivlenemedi."));
       return;
     }
 
@@ -382,7 +388,9 @@ export function TasksClient({
     setBusyTaskId("");
 
     if (result.error || !result.data) {
-      setPageError(result.error ?? "Görev arşivden çıkarılamadı.");
+      setPageError(
+        getUserFacingError(result.error, "Görev arşivden çıkarılamadı."),
+      );
       return;
     }
 
@@ -399,7 +407,7 @@ export function TasksClient({
     setIsDeleting(false);
 
     if (result.error) {
-      setPageError(result.error);
+      setPageError(getUserFacingError(result.error));
       setDeletingTask(null);
       return;
     }
@@ -450,7 +458,9 @@ export function TasksClient({
     setIsLoadingMore(false);
 
     if (result.error || !result.data) {
-      setPageError(result.error ?? "Daha fazla görev yüklenemedi.");
+      setPageError(
+        getUserFacingError(result.error, "Daha fazla görev yüklenemedi."),
+      );
       return;
     }
 
@@ -514,12 +524,8 @@ export function TasksClient({
             </p>
             {isDevelopment ? (
               <p className="app-muted mt-3 text-xs leading-5">
-                Geliştirme notu:{" "}
-                <code className="app-surface-2 app-primary rounded px-1.5 py-0.5 font-mono text-xs">
-                  {pageError.includes("phase-19.1")
-                    ? "database/phase-19.1-task-archive.sql"
-                    : "database/phase-6-tasks.sql"}
-                </code>
+                Geliştirme notu: görev alanı için gerekli kurulum adımlarını
+                kontrol et.
               </p>
             ) : null}
             <div className="mt-5 flex flex-col gap-2 sm:flex-row">
@@ -527,9 +533,7 @@ export function TasksClient({
                 <Button
                   onClick={() => {
                     navigator.clipboard.writeText(
-                      pageError.includes("phase-19.1")
-                        ? "database/phase-19.1-task-archive.sql"
-                        : "database/phase-6-tasks.sql",
+                      "Görev alanı için gerekli kurulum adımlarını kontrol et.",
                     );
                     showNotice("Kurulum notu kopyalandı.");
                   }}

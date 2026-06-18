@@ -19,31 +19,39 @@ const sourceConfig = {
   calendar: { icon: CalendarDays, label: "Takvim" },
 } as const;
 
+const priorityLabels = {
+  critical: "Kritik",
+  high: "Yüksek",
+  low: "Düşük",
+  medium: "Orta",
+} as const;
+
 export function PriorityList({ items }: PriorityListProps) {
   return (
-    <Card className="h-full p-4 sm:p-5">
-      <div className="flex items-center gap-3">
-        <span className="app-primary-bg flex size-9 items-center justify-center rounded-xl">
+    <Card className="relative h-full overflow-hidden border-[color-mix(in_srgb,var(--primary)_18%,var(--border))] p-4 sm:p-5">
+      <div className="pointer-events-none absolute -right-16 -top-20 size-52 rounded-full bg-[color-mix(in_srgb,var(--primary)_9%,transparent)] blur-3xl" />
+      <div className="relative flex items-center gap-3">
+        <span className="app-primary-bg flex size-10 items-center justify-center rounded-2xl">
           <ListChecks className="size-4" />
         </span>
         <div>
           <p className="app-primary text-[10px] font-semibold uppercase tracking-[0.14em]">
-            Odak Alanı
+            Akıllı Öncelik
           </p>
           <h2 className="app-text mt-1 text-base font-semibold">
-            Bugünün Öncelikleri
+            Bugün Dikkat Edilecekler
           </h2>
         </div>
       </div>
 
       {items.length > 0 ? (
-        <div className="mt-4 space-y-2">
+        <div className="relative mt-4 space-y-2">
           {items.map((item) => {
             const config = sourceConfig[item.source];
             const Icon = config.icon;
             return (
               <Link
-                className="app-surface-2 group flex items-start gap-3 rounded-xl border p-3 transition hover:border-[color-mix(in_srgb,var(--primary)_35%,var(--border))]"
+                className="app-surface-2 group flex items-start gap-3 rounded-2xl border p-3 transition hover:border-[color-mix(in_srgb,var(--primary)_35%,var(--border))]"
                 href={item.href}
                 key={item.id}
               >
@@ -55,11 +63,15 @@ export function PriorityList({ items }: PriorityListProps) {
                     <span className="app-muted text-[9px] font-semibold uppercase tracking-[0.12em]">
                       {config.label}
                     </span>
-                    {item.priority === "critical" ? (
-                      <span className="rounded-full bg-[color-mix(in_srgb,var(--danger)_12%,transparent)] px-2 py-0.5 text-[9px] font-semibold text-[var(--danger)]">
-                        Kritik
-                      </span>
-                    ) : null}
+                    <span
+                      className={
+                        item.priority === "critical"
+                          ? "rounded-full bg-[color-mix(in_srgb,var(--danger)_12%,transparent)] px-2 py-0.5 text-[9px] font-semibold text-[var(--danger)]"
+                          : "app-surface app-muted rounded-full border px-2 py-0.5 text-[9px] font-semibold"
+                      }
+                    >
+                      {priorityLabels[item.priority]}
+                    </span>
                   </div>
                   <p className="app-text mt-1 truncate text-xs font-semibold">
                     {item.title}
@@ -74,14 +86,13 @@ export function PriorityList({ items }: PriorityListProps) {
           })}
         </div>
       ) : (
-        <div className="app-surface-2 mt-4 rounded-xl border border-dashed p-5 text-center">
+        <div className="app-surface-2 relative mt-4 rounded-2xl border border-dashed p-5 text-center">
           <CheckSquare2 className="mx-auto size-5 text-[var(--success)]" />
           <p className="app-text mt-3 text-sm font-semibold">
-            Kritik öncelik görünmüyor
+            Bugün kritik bir işlem görünmüyor
           </p>
           <p className="app-muted mt-1 text-xs leading-5">
-            Yeni görev veya plan eklediğinde öncelik sırasına göre burada
-            görünecek.
+            Finans, görev ve takvim kayıtların düzenli görünüyor.
           </p>
         </div>
       )}

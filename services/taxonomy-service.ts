@@ -29,7 +29,7 @@ function getErrorMessage(error: unknown): string {
     message.includes("schema cache") ||
     message.includes("Could not find the table")
   ) {
-    return "Kategori ve etiket tabloları hazır değil. database/schema.sql dosyasını Supabase SQL Editor içinde çalıştırın.";
+    return "Düzen alanı şu anda kullanıma hazırlanıyor. Birazdan tekrar deneyebilirsin.";
   }
 
   return message || "Düzen işlemi tamamlanamadi.";

@@ -41,7 +41,7 @@ export function getNoteImageErrorMessage(error: unknown): string {
     message.includes("not found") ||
     message.includes("note-images")
   ) {
-    return "Görsel deposu henüz hazır değil. Supabase SQL Editor içinde database/schema.sql dosyasını çalıştır.";
+    return "Görsel alanı şu anda kullanıma hazırlanıyor. Birazdan tekrar deneyebilirsin.";
   }
 
   if (
@@ -49,7 +49,7 @@ export function getNoteImageErrorMessage(error: unknown): string {
     message.includes("Could not find the table") ||
     message.includes("schema cache")
   ) {
-    return "Görsel veritabanı henüz hazır değil. Supabase SQL Editor içinde database/schema.sql dosyasını çalıştır.";
+    return "Görsel alanı şu anda kullanıma hazırlanıyor. Birazdan tekrar deneyebilirsin.";
   }
 
   if (

@@ -1,8 +1,8 @@
 export const SUPABASE_ENV_ERROR =
-  "Supabase yapılandırması eksik. .env.local dosyasına NEXT_PUBLIC_SUPABASE_URL ve NEXT_PUBLIC_SUPABASE_ANON_KEY değerlerini ekleyin.";
+  "Bağlantı ayarları tamamlanmadığı için çalışma alanı açılamıyor.";
 
 export const SUPABASE_ENV_INVALID_ERROR =
-  "Supabase yapılandırmasında örnek veya geçersiz değerler var. AYARLA_SUPABASE.cmd dosyasını açıp gerçek Project URL ve Publishable key değerlerini girin.";
+  "Bağlantı ayarları geçersiz görünüyor. Lütfen yerel ayarlarını kontrol et.";
 
 function isValidSupabaseUrl(value?: string): boolean {
   if (!value || value.includes("proje-id")) return false;

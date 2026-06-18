@@ -3,13 +3,12 @@
 import Link from "next/link";
 import { useState, useSyncExternalStore } from "react";
 import {
+  ArrowRight,
   Check,
   CheckCircle2,
+  ChevronDown,
   Circle,
-  LayoutDashboard,
-  Palette,
   Sparkles,
-  WalletCards,
   X,
 } from "lucide-react";
 import { Button, buttonClassName } from "@/components/ui/button";
@@ -81,8 +80,19 @@ function getLaunchReadinessServerSnapshot() {
   return false;
 }
 
+function isChecklistItemDone(
+  item: (typeof checklistItems)[number],
+  checklist: OnboardingChecklistState,
+) {
+  if (item.key === "dataBackup") {
+    return false;
+  }
+
+  return Boolean(checklist[item.key]);
+}
+
 export function OnboardingCard({ checklist }: OnboardingCardProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const isHidden = useSyncExternalStore(
     subscribeToLaunchReadiness,
     getLaunchReadinessSnapshot,
@@ -94,10 +104,12 @@ export function OnboardingCard({ checklist }: OnboardingCardProps) {
   }
 
   const completedCount = checklistItems.filter((item) =>
-    item.key === "dataBackup"
-      ? false
-      : Boolean(checklist[item.key]),
+    isChecklistItemDone(item, checklist),
   ).length;
+  const progress = Math.round((completedCount / checklistItems.length) * 100);
+  const nextItem =
+    checklistItems.find((item) => !isChecklistItemDone(item, checklist)) ??
+    checklistItems[0];
 
   function hideOnboarding() {
     localStorage.setItem(launchReadinessStorageKey, "1");
@@ -105,37 +117,57 @@ export function OnboardingCard({ checklist }: OnboardingCardProps) {
   }
 
   return (
-    <Card className="relative overflow-hidden border-[color-mix(in_srgb,var(--primary)_35%,var(--border))] p-4 shadow-xl shadow-[color-mix(in_srgb,var(--primary)_8%,transparent)] sm:p-6">
-      <div className="pointer-events-none absolute -right-16 -top-20 size-56 rounded-full bg-[color-mix(in_srgb,var(--primary)_16%,transparent)] blur-3xl" />
-      <div className="relative space-y-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="flex min-w-0 items-start gap-4">
-            <span className="app-primary-bg flex size-11 shrink-0 items-center justify-center rounded-2xl shadow-lg">
-              <Sparkles className="size-5" />
+    <Card className="relative overflow-hidden border-[color-mix(in_srgb,var(--primary)_22%,var(--border))] p-4 shadow-lg shadow-[color-mix(in_srgb,var(--primary)_5%,transparent)] sm:p-5">
+      <div className="pointer-events-none absolute -right-20 -top-24 size-56 rounded-full bg-[color-mix(in_srgb,var(--primary)_10%,transparent)] blur-3xl" />
+      <div className="relative space-y-4">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="app-primary-bg flex size-10 shrink-0 items-center justify-center rounded-2xl shadow-lg">
+              <Sparkles className="size-4" />
             </span>
             <div className="min-w-0">
               <span className="app-primary text-[10px] font-semibold uppercase tracking-[0.16em]">
                 Lansman Hazırlığı
               </span>
-              <h2 className="app-text mt-2 text-lg font-semibold">
+              <h2 className="app-text mt-1 text-base font-semibold">
                 Başlangıç Kontrol Listesi
               </h2>
-              <p className="app-muted mt-2 max-w-2xl text-sm leading-6">
-                Eray Command Center’ı günlük kullanım için hazırla. Eksik
-                adımları tamamladıkça bu kart sana yol gösterecek.
+              <p className="app-muted mt-1 max-w-2xl text-xs leading-5 sm:text-sm">
+                {completedCount} / {checklistItems.length} adım tamamlandı.
+                Sıradaki öneri: {nextItem.label}.
               </p>
             </div>
           </div>
 
           <div className="flex shrink-0 flex-wrap gap-2">
+            <Link
+              className={buttonClassName({
+                className: "w-full sm:w-auto",
+                size: "sm",
+                variant: "secondary",
+              })}
+              href={nextItem.href}
+            >
+              Devam Et
+              <ArrowRight className="size-3.5" />
+            </Link>
             <Button
-              onClick={() => setIsCollapsed((current) => !current)}
+              className="w-full sm:w-auto"
+              onClick={() => setIsExpanded((current) => !current)}
+              size="sm"
               variant="secondary"
             >
-              {isCollapsed ? "Kontrol listesini aç" : "Küçült"}
+              {isExpanded ? "Detayları Gizle" : "Detayları Aç"}
+              <ChevronDown
+                className={`size-3.5 transition ${
+                  isExpanded ? "rotate-180" : ""
+                }`}
+              />
             </Button>
             <Button
+              aria-label="Başlangıç kontrol listesini gizle"
               onClick={hideOnboarding}
+              size="sm"
               variant="ghost"
             >
               <X className="size-4" />
@@ -144,113 +176,62 @@ export function OnboardingCard({ checklist }: OnboardingCardProps) {
           </div>
         </div>
 
-        {!isCollapsed ? (
-          <>
-            <div className="app-surface-2 app-border rounded-2xl border p-4">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="app-text text-sm font-semibold">
-                    Başlangıç Kontrol Listesi
-                  </p>
-                  <p className="app-muted mt-1 text-[11px]">
-                    {completedCount} / {checklistItems.length} adım tamamlandı.
-                  </p>
-                </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--border)] sm:w-40">
-                  <span
-                    className="block h-full rounded-full bg-[var(--primary)] transition-all"
-                    style={{
-                      width: `${(completedCount / checklistItems.length) * 100}%`,
-                    }}
-                  />
-                </div>
-              </div>
-              <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                {checklistItems.map((item) => {
-                  const isDone =
-                    item.key === "dataBackup"
-                      ? false
-                      : Boolean(checklist[item.key]);
-                  return (
-                    <Link
-                      className="app-card group flex min-w-0 items-center gap-3 rounded-xl border p-3 text-sm transition hover:border-[color-mix(in_srgb,var(--primary)_45%,var(--border))]"
-                      href={item.href}
-                      key={item.label}
-                    >
-                      <span
-                        className={
-                          isDone
-                            ? "flex size-8 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--success)_18%,transparent)] text-[var(--success)]"
-                            : "app-surface-2 app-muted flex size-8 shrink-0 items-center justify-center rounded-full border app-border"
-                        }
-                      >
-                        {isDone ? (
-                          <Check className="size-4" />
-                        ) : (
-                          <Circle className="size-4" />
-                        )}
-                      </span>
-                      <span className="min-w-0">
-                        <span className="app-text block truncate font-medium">
-                          {item.label}
-                        </span>
-                        <span className="app-muted mt-0.5 block text-[10px]">
-                          {isDone ? "Tamamlandı" : "Başlamak için aç"}
-                        </span>
-                      </span>
-                      <span className="app-primary ml-auto shrink-0 rounded-full bg-[color-mix(in_srgb,var(--primary)_10%,transparent)] px-2 py-1 text-[10px] font-semibold">
-                        Aç
-                      </span>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="grid gap-3 md:grid-cols-3">
-              <Link
-                className={buttonClassName({
-                  className: "justify-start",
-                  variant: "secondary",
-                })}
-                href="/finance?new=1"
-              >
-                <WalletCards className="size-4" />
-                Finans Kaydı Ekle
-              </Link>
-              <Link
-                className={buttonClassName({
-                  className: "justify-start",
-                  variant: "secondary",
-                })}
-                href="/settings?tab=appearance"
-              >
-                <Palette className="size-4" />
-                Temayı Düzenle
-              </Link>
-              <Link
-                className={buttonClassName({ className: "justify-start" })}
-                href="/settings?tab=data"
-              >
-                <LayoutDashboard className="size-4" />
-                Veri ve Yedekleme
-              </Link>
-            </div>
-          </>
-        ) : (
-          <div className="app-surface-2 app-border flex flex-col gap-3 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between">
-            <span className="app-muted flex items-center gap-2 text-sm">
+        <div className="app-surface-2 app-border rounded-2xl border p-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2">
               <CheckCircle2 className="size-4 text-[var(--success)]" />
-              Başlangıç kartı küçültüldü. İstediğin zaman tekrar açabilirsin.
-            </span>
-            <Link
-              className={buttonClassName({ size: "sm", variant: "secondary" })}
-              href="/settings?tab=data"
-            >
-              Yedekleme Alanına Git
-            </Link>
+              <span className="app-text text-xs font-semibold">
+                Hazırlık seviyesi %{progress}
+              </span>
+            </div>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--border)] sm:w-56">
+              <span
+                className="block h-full rounded-full bg-[var(--primary)] transition-all"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
           </div>
-        )}
+        </div>
+
+        {isExpanded ? (
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+            {checklistItems.map((item) => {
+              const isDone = isChecklistItemDone(item, checklist);
+              return (
+                <Link
+                  className="app-card group flex min-w-0 items-center gap-3 rounded-xl border p-3 text-sm transition hover:border-[color-mix(in_srgb,var(--primary)_45%,var(--border))]"
+                  href={item.href}
+                  key={item.label}
+                >
+                  <span
+                    className={
+                      isDone
+                        ? "flex size-8 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--success)_18%,transparent)] text-[var(--success)]"
+                        : "app-surface-2 app-muted app-border flex size-8 shrink-0 items-center justify-center rounded-full border"
+                    }
+                  >
+                    {isDone ? (
+                      <Check className="size-4" />
+                    ) : (
+                      <Circle className="size-4" />
+                    )}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="app-text block truncate font-medium">
+                      {item.label}
+                    </span>
+                    <span className="app-muted mt-0.5 block text-[10px]">
+                      {isDone ? "Tamamlandı" : "Devam etmek için aç"}
+                    </span>
+                  </span>
+                  <span className="app-primary ml-auto shrink-0 rounded-full bg-[color-mix(in_srgb,var(--primary)_10%,transparent)] px-2 py-1 text-[10px] font-semibold">
+                    Aç
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        ) : null}
       </div>
     </Card>
   );

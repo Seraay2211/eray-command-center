@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSettings } from "@/components/providers/settings-provider";
+import { getUserFacingError } from "@/lib/user-facing-error";
 import { createOrOpenDailyOperationNote } from "@/services/today-actions";
 
 interface TodayActionsProps {
@@ -42,7 +43,10 @@ export function TodayActions({ existingNoteId }: TodayActionsProps) {
       const result = await createOrOpenDailyOperationNote();
       if (result.error || !result.data) {
         setNoteError(
-          result.error ?? "Günlük operasyon notu oluşturulamadı.",
+          getUserFacingError(
+            result.error,
+            "Günlük operasyon notu oluşturulamadı.",
+          ),
         );
         return;
       }
@@ -66,7 +70,10 @@ export function TodayActions({ existingNoteId }: TodayActionsProps) {
       setAiOutput(
         payload.success && payload.output
           ? payload.output
-          : payload.error ?? "AI özeti oluşturulamadı. Lütfen tekrar dene.",
+          : getUserFacingError(
+              payload.error,
+              "AI özeti oluşturulamadı. Lütfen tekrar dene.",
+            ),
       );
     } catch {
       setAiOutput(

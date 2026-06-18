@@ -194,10 +194,10 @@ function getErrorMessage(error: unknown): string {
     message.includes("Could not find the table")
   ) {
     if (message.includes("planner_events")) {
-      return "Takvim veritabanı henüz hazır değil. database/phase-9-calendar.sql dosyasını Supabase SQL Editor içinde çalıştırın.";
+      return "Takvim alanı şu anda kullanıma hazırlanıyor. Birazdan tekrar deneyebilirsin.";
     }
 
-    return "Veritabanı şeması henüz hazır değil. database/schema.sql dosyasının tamamını Supabase SQL Editor içinde çalıştırın.";
+    return "Çalışma alanı şu anda kullanıma hazırlanıyor. Birazdan tekrar deneyebilirsin.";
   }
 
   if (message.toLowerCase().includes("jwt")) {

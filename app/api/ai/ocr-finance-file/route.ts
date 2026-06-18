@@ -16,7 +16,7 @@ interface GeminiVisionResponse {
 }
 
 const demoWarning =
-  "Gemini API anahtarı bulunamadı, demo OCR sonucu gösteriliyor.";
+  "AI OCR bağlantısı hazır olmadığı için örnek OCR sonucu gösteriliyor.";
 
 function jsonError(error: string, status: number) {
   return NextResponse.json({ error, success: false }, { status });

@@ -35,6 +35,7 @@ import {
   TASK_PRIORITY_OPTIONS,
   TASK_STATUS_OPTIONS,
 } from "@/lib/tasks";
+import { getUserFacingError } from "@/lib/user-facing-error";
 import { formatTRY } from "@/lib/utils/currency";
 import {
   exportFinanceData,
@@ -122,7 +123,9 @@ export function SettingsClient({
     String(settings.critical_debt_threshold),
   );
   const [pendingKey, setPendingKey] = useState("");
-  const [error, setError] = useState(initialError);
+  const [error, setError] = useState(() =>
+    initialError ? getUserFacingError(initialError) : "",
+  );
   const [notice, setNotice] = useState("");
   const [isResetOpen, setIsResetOpen] = useState(false);
   const noticeTimer = useRef<number | null>(null);
@@ -160,7 +163,7 @@ export function SettingsClient({
       setError(
         key === "font"
           ? "Yazı tipi kaydedilemedi. Birazdan tekrar deneyebilirsin."
-          : nextError,
+          : getUserFacingError(nextError, "Ayarlar kaydedilemedi."),
       );
       return;
     }
@@ -185,8 +188,10 @@ export function SettingsClient({
 
     if (result.error || !result.data) {
       setError(
-        result.error ??
+        getUserFacingError(
+          result.error,
           "Dışa aktarma tamamlanamadı. Birazdan tekrar deneyebilirsin.",
+        ),
       );
       return;
     }
@@ -228,7 +233,7 @@ export function SettingsClient({
     setPendingKey("");
 
     if (result.error || !result.data) {
-      setError(result.error ?? "Ayarlar sıfırlanamadı.");
+      setError(getUserFacingError(result.error, "Ayarlar sıfırlanamadı."));
       return;
     }
 
@@ -246,11 +251,12 @@ export function SettingsClient({
       value: category.id,
     })),
   ];
-  const visibleError =
-    error.includes("phase-18-settings-center.sql") ||
-    error.includes("phase-21-appearance-center.sql")
-    ? "Ayarlar şu anda kaydedilemiyor. Lütfen daha sonra tekrar dene."
-    : error;
+  const visibleError = error
+    ? getUserFacingError(
+        error,
+        "Ayarlar şu anda kaydedilemiyor. Lütfen daha sonra tekrar dene.",
+      )
+    : "";
 
   return (
     <div className="app-page-stack mx-auto w-full max-w-6xl min-w-0 space-y-5">

@@ -18,7 +18,7 @@ export function getFinanceReceiptErrorMessage(error: unknown): string {
     message.includes("Bucket not found") ||
     message.includes(FINANCE_RECEIPTS_BUCKET)
   ) {
-    return "Dekont deposu henüz hazır değil. Supabase SQL Editor içinde database/phase-15.3-finance-receipts.sql dosyasını çalıştır.";
+    return "Dekont alanı şu anda kullanıma hazırlanıyor. Birazdan tekrar deneyebilirsin.";
   }
 
   if (
@@ -26,7 +26,7 @@ export function getFinanceReceiptErrorMessage(error: unknown): string {
     message.includes("ocr_status") ||
     message.includes("schema cache")
   ) {
-    return "Dekont veritabanı alanları henüz hazır değil. Supabase SQL Editor içinde database/phase-15.3-finance-receipts.sql dosyasını çalıştır.";
+    return "Dekont alanı şu anda kullanıma hazırlanıyor. Birazdan tekrar deneyebilirsin.";
   }
 
   if (

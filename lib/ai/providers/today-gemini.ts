@@ -14,7 +14,9 @@ export async function generateTodaySummaryWithGemini(
   summary: TodaySummary,
 ): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY?.trim();
-  if (!apiKey) throw new Error("Gemini API anahtarı bulunamadı.");
+  if (!apiKey) {
+    throw new Error("AI bağlantısı şu anda hazır değil. Birazdan tekrar deneyebilirsin.");
+  }
 
   const modelPath = GEMINI_MODEL.startsWith("models/")
     ? GEMINI_MODEL

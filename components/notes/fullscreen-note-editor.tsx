@@ -33,6 +33,7 @@ import {
   formatAiOutputForDisplay,
   formatAiOutputForNote,
 } from "@/lib/ai/format-ai-output";
+import { getUserFacingError } from "@/lib/user-facing-error";
 import { Button } from "@/components/ui/button";
 import { DarkSelect } from "@/components/ui/dark-select";
 import type {
@@ -281,9 +282,10 @@ export function FullscreenNoteEditor({
       if (!response.ok || !result.success) {
         setAiState({
           action,
-            error: result.success
-            ? "AI işlemi tamamlanamadı. Lütfen tekrar dene."
-            : result.error,
+          error: getUserFacingError(
+            result.success ? "" : result.error,
+            "AI işlemi tamamlanamadı. Lütfen tekrar dene.",
+          ),
           isLoading: false,
           output: "",
           provider: null,

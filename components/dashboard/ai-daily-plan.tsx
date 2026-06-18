@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { createNote } from "@/features/notes/actions";
 import { formatAiOutputForNote } from "@/lib/ai/format-ai-output";
+import { getUserFacingError } from "@/lib/user-facing-error";
 
 interface DailyCommandResponse {
   error?: string;
@@ -51,7 +52,9 @@ export function AiDailyPlan() {
       const payload = (await response.json()) as DailyCommandResponse;
 
       if (!response.ok || !payload.success || !payload.output) {
-        setError(payload.error ?? "AI günlük planı oluşturulamadı.");
+        setError(
+          getUserFacingError(payload.error, "AI günlük planı oluşturulamadı."),
+        );
         return;
       }
 
@@ -91,7 +94,7 @@ export function AiDailyPlan() {
     setIsSaving(false);
 
     if (result.error) {
-      setError(result.error);
+      setError(getUserFacingError(result.error));
       return;
     }
 

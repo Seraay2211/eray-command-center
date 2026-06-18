@@ -19,6 +19,7 @@ import {
   TASK_PRIORITY_LABELS,
   TASK_STATUS_LABELS,
 } from "@/lib/tasks";
+import { getUserFacingError } from "@/lib/user-facing-error";
 import { cn } from "@/lib/utils";
 import type {
   AiProvider,
@@ -138,7 +139,12 @@ export function AiReportGenerator({
       const result = (await response.json()) as AiReportResponse;
 
       if (!response.ok || !result.success) {
-        setError(result.success ? "Rapor oluşturulamadı. Lütfen tekrar dene." : result.error);
+        setError(
+          getUserFacingError(
+            result.success ? "" : result.error,
+            "Rapor oluşturulamadı. Lütfen tekrar dene.",
+          ),
+        );
         return;
       }
 

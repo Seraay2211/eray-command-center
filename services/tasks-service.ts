@@ -70,7 +70,7 @@ function getErrorMessage(error: unknown): string {
         : String(error);
 
   if (message.includes("archived_at") || message.includes("PGRST204")) {
-    return "Görev arşivi henüz hazır değil. database/phase-19.1-task-archive.sql dosyasını Supabase SQL Editor içinde bir kez çalıştırın.";
+    return "Görev arşivi şu anda kullanıma hazırlanıyor. Birazdan tekrar deneyebilirsin.";
   }
 
   if (
@@ -78,7 +78,7 @@ function getErrorMessage(error: unknown): string {
     message.includes("schema cache") ||
     message.includes("Could not find the table")
   ) {
-    return "Görev veritabanı henüz hazır değil. database/phase-6-tasks.sql dosyasını Supabase SQL Editor içinde çalıştırın.";
+    return "Görev alanı şu anda kullanıma hazırlanıyor. Birazdan tekrar deneyebilirsin.";
   }
 
   if (message.toLowerCase().includes("jwt")) {

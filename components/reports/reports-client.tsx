@@ -26,6 +26,7 @@ import { Card } from "@/components/ui/card";
 import { useSettings } from "@/components/providers/settings-provider";
 import { useDebounce } from "@/hooks/use-debounce";
 import { trackRecentItem } from "@/lib/recent-items";
+import { getUserFacingError } from "@/lib/user-facing-error";
 import { createNote } from "@/features/notes/actions";
 import {
   archiveReport,
@@ -103,7 +104,9 @@ export function ReportsClient({
   const [isDeleting, setIsDeleting] = useState(false);
   const [busyReportId, setBusyReportId] = useState("");
   const [formError, setFormError] = useState("");
-  const [pageError, setPageError] = useState(initialError);
+  const [pageError, setPageError] = useState(() =>
+    initialError ? getUserFacingError(initialError) : "",
+  );
   const [notice, setNotice] = useState("");
   const noticeTimer = useRef<number | null>(null);
   const [visibleState, setVisibleState] = useState({
@@ -114,8 +117,15 @@ export function ReportsClient({
   const [hasMore, setHasMore] = useState(initialReports.length >= 50);
   const debouncedQuery = useDebounce(query, 250);
 
-  const schemaMissing = pageError.includes("phase-7-reports.sql");
   const isDevelopment = process.env.NODE_ENV === "development";
+  const schemaMissing =
+    isDevelopment && initialError.includes("phase-7-reports.sql");
+  const visibleSourceError = initialSourceError
+    ? getUserFacingError(
+        initialSourceError,
+        "Kaynak verileri yüklenemedi. Raporlar yine de açılabilir.",
+      )
+    : "";
   const selectedReport =
     reports.find((report) => report.id === selectedReportId) ?? null;
 
@@ -283,7 +293,7 @@ export function ReportsClient({
     setIsSaving(false);
 
     if (result.error || !result.data) {
-      setFormError(result.error ?? "Rapor kaydedilemedi.");
+      setFormError(getUserFacingError(result.error, "Rapor kaydedilemedi."));
       return;
     }
 
@@ -308,7 +318,7 @@ export function ReportsClient({
   ): Promise<boolean> {
     const result = await createReport(input);
     if (result.error || !result.data) {
-      setPageError(result.error ?? "AI raporu kaydedilemedi.");
+      setPageError(getUserFacingError(result.error, "AI raporu kaydedilemedi."));
       return false;
     }
 
@@ -333,7 +343,7 @@ export function ReportsClient({
     });
 
     if (result.error) {
-      setPageError(result.error);
+      setPageError(getUserFacingError(result.error));
       return false;
     }
 
@@ -347,7 +357,7 @@ export function ReportsClient({
     setBusyReportId("");
 
     if (result.error || !result.data) {
-      setPageError(result.error ?? "Rapor arşivlenemedi.");
+      setPageError(getUserFacingError(result.error, "Rapor arşivlenemedi."));
       return;
     }
 
@@ -365,7 +375,7 @@ export function ReportsClient({
     setIsDeleting(false);
 
     if (result.error) {
-      setPageError(result.error);
+      setPageError(getUserFacingError(result.error));
       setDeletingReport(null);
       return;
     }
@@ -398,7 +408,9 @@ export function ReportsClient({
     setIsLoadingMore(false);
 
     if (result.error || !result.data) {
-      setPageError(result.error ?? "Daha fazla rapor yuklenemedi.");
+      setPageError(
+        getUserFacingError(result.error, "Daha fazla rapor yüklenemedi."),
+      );
       return;
     }
 
@@ -447,12 +459,13 @@ export function ReportsClient({
             </p>
             {isDevelopment ? (
               <p className="app-muted mt-3 text-xs leading-5">
-                Geliştirme notu: <code className="app-surface-2 app-primary rounded px-1.5 py-0.5 font-mono text-xs">database/phase-7-reports.sql</code>
+                Geliştirme notu: rapor alanı için gerekli kurulum adımlarını
+                kontrol et.
               </p>
             ) : null}
             <div className="mt-5 flex flex-col gap-2 sm:flex-row">
               {isDevelopment ? (
-                <Button onClick={() => { navigator.clipboard.writeText("database/phase-7-reports.sql"); showNotice("Kurulum notu kopyalandı."); }} variant="secondary"><ClipboardCopy className="size-4" /> Kurulum notunu kopyala</Button>
+                <Button onClick={() => { navigator.clipboard.writeText("Rapor alanı için gerekli kurulum adımlarını kontrol et."); showNotice("Kurulum notu kopyalandı."); }} variant="secondary"><ClipboardCopy className="size-4" /> Kurulum notunu kopyala</Button>
               ) : null}
               <Button onClick={() => router.refresh()}><RefreshCw className="size-4" /> Tekrar dene</Button>
             </div>
@@ -460,9 +473,9 @@ export function ReportsClient({
         </Card>
       ) : (
         <div className="space-y-5">
-          {pageError || initialSourceError ? (
+          {pageError || visibleSourceError ? (
             <div className="flex items-start justify-between gap-4 rounded-xl border border-rose-400/15 bg-rose-500/[0.07] p-4 text-xs leading-5 text-rose-200" role="alert">
-              <span className="flex gap-2.5"><AlertCircle className="mt-0.5 size-4 shrink-0 text-rose-400" />{pageError || initialSourceError}</span>
+              <span className="flex gap-2.5"><AlertCircle className="mt-0.5 size-4 shrink-0 text-rose-400" />{pageError || visibleSourceError}</span>
               {pageError ? <button className="text-rose-300/60 hover:text-rose-200" onClick={() => setPageError("")} type="button">Kapat</button> : null}
             </div>
           ) : null}

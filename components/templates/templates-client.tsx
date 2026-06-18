@@ -24,6 +24,7 @@ import { DarkSelect } from "@/components/ui/dark-select";
 import { TemplateCard } from "@/components/templates/template-card";
 import { TemplateDetailPanel } from "@/components/templates/template-detail-panel";
 import { TemplateForm } from "@/components/templates/template-form";
+import { getUserFacingError } from "@/lib/user-facing-error";
 import type {
   Category,
   CreateTemplateInput,
@@ -54,7 +55,9 @@ export function TemplatesClient({
   const [query, setQuery] = useState("");
   const [type, setType] = useState<"all" | TemplateType>("all");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
-  const [error, setError] = useState(initialError);
+  const [error, setError] = useState(() =>
+    initialError ? getUserFacingError(initialError) : "",
+  );
   const [isSaving, setIsSaving] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);
   const [notice, setNotice] = useState("");
@@ -85,7 +88,7 @@ export function TemplatesClient({
     setIsSaving(false);
 
     if (result.error || !result.data) {
-      setError(result.error ?? "Şablon kaydedilemedi.");
+      setError(getUserFacingError(result.error, "Şablon kaydedilemedi."));
       return;
     }
     const savedTemplate = result.data;
@@ -108,7 +111,7 @@ export function TemplatesClient({
 
     const result = await deleteTemplate(template.id);
     if (result.error) {
-      setError(result.error);
+      setError(getUserFacingError(result.error));
       return;
     }
 
@@ -122,7 +125,7 @@ export function TemplatesClient({
   async function handleFavorite(template: Template) {
     const result = await toggleFavoriteTemplate(template.id);
     if (result.error || !result.data) {
-      setError(result.error ?? "Favori güncellenemedi.");
+      setError(getUserFacingError(result.error, "Favori güncellenemedi."));
       return;
     }
     const savedTemplate = result.data;
@@ -142,13 +145,15 @@ export function TemplatesClient({
     setIsSeeding(false);
 
     if (result.error) {
-      setError(result.error);
+      setError(getUserFacingError(result.error));
       return;
     }
 
     const templatesResult = await getTemplates();
     if (templatesResult.error || !templatesResult.data) {
-      setError(templatesResult.error ?? "Şablonlar yenilenemedi.");
+      setError(
+        getUserFacingError(templatesResult.error, "Şablonlar yenilenemedi."),
+      );
       return;
     }
 

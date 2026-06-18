@@ -16,7 +16,9 @@ interface GeminiResponse {
 
 function getApiKey(): string {
   const apiKey = process.env.GEMINI_API_KEY?.trim();
-  if (!apiKey) throw new Error("Gemini API anahtarı bulunamadı.");
+  if (!apiKey) {
+    throw new Error("AI bağlantısı şu anda hazır değil. Birazdan tekrar deneyebilirsin.");
+  }
   return apiKey;
 }
 
@@ -53,7 +55,7 @@ export async function generateFinanceSummaryWithGemini(
 
   if (!response.ok) {
     if (response.status === 401 || response.status === 403) {
-      throw new Error("Gemini bağlantısı doğrulanamadı. API anahtarını kontrol et.");
+      throw new Error("AI bağlantısı şu anda hazır değil. Birazdan tekrar deneyebilirsin.");
     }
     if (response.status === 429) {
       throw new Error("AI servisi şu anda yoğun. Lütfen biraz sonra tekrar dene.");

@@ -11,6 +11,7 @@ import {
   updateTag,
 } from "@/services/taxonomy-service";
 import { getCategoryDisplayName } from "@/lib/categories/display";
+import { getUserFacingError } from "@/lib/user-facing-error";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ColorSwatchPicker } from "@/components/ui/color-swatch-picker";
@@ -51,7 +52,9 @@ export function TaxonomyClient({
 }: TaxonomyClientProps) {
   const [categories, setCategories] = useState(initialCategories);
   const [tags, setTags] = useState(initialTags);
-  const [error, setError] = useState(initialError);
+  const [error, setError] = useState(() =>
+    initialError ? getUserFacingError(initialError) : "",
+  );
   const [notice, setNotice] = useState("");
   const [isSavingCategory, setIsSavingCategory] = useState(false);
   const [isSavingTag, setIsSavingTag] = useState(false);
@@ -78,7 +81,7 @@ export function TaxonomyClient({
     setIsSavingCategory(false);
 
     if (result.error || !result.data) {
-      setError(result.error ?? "Kategori kaydedilemedi.");
+      setError(getUserFacingError(result.error, "Kategori kaydedilemedi."));
       return;
     }
 
@@ -115,7 +118,7 @@ export function TaxonomyClient({
     setIsSavingTag(false);
 
     if (result.error || !result.data) {
-      setError(result.error ?? "Etiket kaydedilemedi.");
+      setError(getUserFacingError(result.error, "Etiket kaydedilemedi."));
       return;
     }
 
@@ -148,7 +151,7 @@ export function TaxonomyClient({
 
     const result = await deleteCategory(category.id);
     if (result.error) {
-      setError(result.error);
+      setError(getUserFacingError(result.error));
       return;
     }
 
@@ -163,7 +166,7 @@ export function TaxonomyClient({
 
     const result = await deleteTag(tag.id);
     if (result.error) {
-      setError(result.error);
+      setError(getUserFacingError(result.error));
       return;
     }
 

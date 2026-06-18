@@ -8,6 +8,7 @@ import {
   formatAiOutputForDisplay,
   formatAiOutputForNote,
 } from "@/lib/ai/format-ai-output";
+import { getUserFacingError } from "@/lib/user-facing-error";
 import { createNote } from "@/features/notes/actions";
 import { AiActionButtons } from "@/components/ai/ai-action-buttons";
 import { AiOutputPanel } from "@/components/ai/ai-output-panel";
@@ -180,7 +181,10 @@ export function AiWorkspace({
               : "Özet oluşturulamadı. Birazdan tekrar deneyebilirsin."
             : result.success
               ? "AI işlemi tamamlanamadı. Lütfen tekrar dene."
-              : result.error;
+              : getUserFacingError(
+                  result.error,
+                  "AI işlemi tamamlanamadı. Lütfen tekrar dene.",
+                );
 
         setOutputState({
           action: selectedAction,
@@ -258,7 +262,10 @@ export function AiWorkspace({
             ? "AI komuta özeti nota kaydedilemedi. Lütfen tekrar dene."
             : outputState.action === "daily_summary"
             ? "Günün özeti nota kaydedilemedi. Lütfen tekrar dene."
-            : result.error,
+            : getUserFacingError(
+                result.error,
+                "AI çıktısı nota kaydedilemedi. Lütfen tekrar dene.",
+              ),
         );
         return;
       }

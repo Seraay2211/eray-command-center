@@ -32,7 +32,9 @@ interface GenerateReportInput {
 
 function getApiKey(): string {
   const apiKey = process.env.GEMINI_API_KEY?.trim();
-  if (!apiKey) throw new Error("Gemini API anahtarı bulunamadı.");
+  if (!apiKey) {
+    throw new Error("AI bağlantısı şu anda hazır değil. Birazdan tekrar deneyebilirsin.");
+  }
   return apiKey;
 }
 
@@ -93,7 +95,7 @@ export async function generateReportWithGemini(input: GenerateReportInput) {
   if (!response.ok) {
     if (response.status === 401 || response.status === 403) {
       throw new Error(
-        "Gemini bağlantısı doğrulanamadı. API anahtarını kontrol et.",
+        "AI bağlantısı şu anda hazır değil. Birazdan tekrar deneyebilirsin.",
       );
     }
     if (response.status === 429) {

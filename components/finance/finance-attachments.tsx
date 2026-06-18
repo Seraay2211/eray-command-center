@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { getUserFacingError } from "@/lib/user-facing-error";
 import {
   appendAttachmentOcrToPaymentNote,
   saveAttachmentOcrAsNote,
@@ -76,7 +77,7 @@ export function FinanceAttachments({
         const payload = (await response.json()) as AttachmentPayload;
         if (ignore) return;
         if (!response.ok || !payload.success) {
-          setError(payload.error ?? "Dosyalar yüklenemedi.");
+          setError(getUserFacingError(payload.error, "Dosyalar yüklenemedi."));
           return;
         }
         setAttachments(payload.attachments ?? []);
@@ -109,7 +110,7 @@ export function FinanceAttachments({
       });
       const payload = (await response.json()) as AttachmentPayload;
       if (!response.ok || !payload.success || !payload.attachment) {
-        setError(payload.error ?? "Dosya yüklenemedi.");
+        setError(getUserFacingError(payload.error, "Dosya yüklenemedi."));
         return;
       }
       setAttachments((current) => [payload.attachment!, ...current]);
@@ -133,7 +134,7 @@ export function FinanceAttachments({
       );
       const payload = (await response.json()) as AttachmentPayload;
       if (!response.ok || !payload.success || !payload.signedUrl) {
-        setError(payload.error ?? "Dosya önizlenemedi.");
+        setError(getUserFacingError(payload.error, "Dosya önizlenemedi."));
         return;
       }
       window.open(payload.signedUrl, "_blank", "noopener,noreferrer");
@@ -156,7 +157,9 @@ export function FinanceAttachments({
       });
       const payload = (await response.json()) as AttachmentPayload;
       if (!response.ok || !payload.success || !payload.attachment) {
-        setError(payload.error ?? "OCR işlemi tamamlanamadı.");
+        setError(
+          getUserFacingError(payload.error, "OCR işlemi tamamlanamadı."),
+        );
         return;
       }
       setAttachments((current) =>
@@ -188,7 +191,7 @@ export function FinanceAttachments({
       );
       const payload = (await response.json()) as AttachmentPayload;
       if (!response.ok || !payload.success) {
-        setError(payload.error ?? "Dosya silinemedi.");
+        setError(getUserFacingError(payload.error, "Dosya silinemedi."));
         return;
       }
       setAttachments((current) =>
@@ -218,7 +221,7 @@ export function FinanceAttachments({
     const result = await appendAttachmentOcrToPaymentNote(attachment.id);
     setActionId("");
     if (result.error) {
-      setError(result.error);
+      setError(getUserFacingError(result.error));
       return;
     }
     setNotice("OCR metni ödeme notuna eklendi.");
@@ -230,7 +233,7 @@ export function FinanceAttachments({
     const result = await saveAttachmentOcrAsNote(attachment.id);
     setActionId("");
     if (result.error) {
-      setError(result.error);
+      setError(getUserFacingError(result.error));
       return;
     }
     setNotice("OCR içeriği yeni not olarak kaydedildi.");

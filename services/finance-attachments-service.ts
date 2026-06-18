@@ -28,7 +28,7 @@ function getErrorMessage(error: unknown): string {
     message.includes("Bucket not found") ||
     message.includes("schema cache")
   ) {
-    return "Finans dosya altyapısı hazır değil. Supabase SQL Editor içinde database/phase-15.3-finance-attachments.sql dosyasını çalıştır.";
+    return "Finans dosya alanı şu anda kullanıma hazırlanıyor. Birazdan tekrar deneyebilirsin.";
   }
   if (
     message.includes("row-level security") ||

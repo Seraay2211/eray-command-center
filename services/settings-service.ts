@@ -296,14 +296,14 @@ function getErrorMessage(error: unknown): string {
         : String(error);
 
   if (isMissingTableError(message)) {
-    return "Ayarlar veritabanı henüz hazır değil. database/phase-8-settings.sql dosyasını Supabase SQL Editor içinde çalıştırın.";
+    return "Ayarlar alanı şu anda kullanıma hazırlanıyor. Birazdan tekrar deneyebilirsin.";
   }
 
   if (
     message.includes("show_dashboard_calendar") ||
     message.includes("user_settings_app_theme_check")
   ) {
-    return "Faz 9 ayar guncellemesi eksik. database/phase-9-calendar.sql dosyasini Supabase SQL Editor icinde calistirin.";
+    return "Ayarlar alanı şu anda kullanıma hazırlanıyor. Birazdan tekrar deneyebilirsin.";
   }
 
   if (
@@ -312,7 +312,7 @@ function getErrorMessage(error: unknown): string {
     message.includes("user_settings_density_check") ||
     message.includes("user_settings_font_family_check")
   ) {
-    return "Görünüm Merkezi ayarları henüz hazır değil. database/phase-21-appearance-center.sql dosyasını Supabase SQL Editor içinde çalıştırın.";
+    return "Görünüm Merkezi şu anda kullanıma hazırlanıyor. Birazdan tekrar deneyebilirsin.";
   }
 
   if (
@@ -322,7 +322,7 @@ function getErrorMessage(error: unknown): string {
     message.includes("critical_debt_threshold") ||
     message.includes("onboarding_completed")
   ) {
-    return "Faz 18 ayar güncellemesi eksik. database/phase-18-settings-center.sql dosyasını Supabase SQL Editor içinde çalıştırın.";
+    return "Ayarlar alanı şu anda kullanıma hazırlanıyor. Birazdan tekrar deneyebilirsin.";
   }
 
   if (message.toLowerCase().includes("jwt")) {

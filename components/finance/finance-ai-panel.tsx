@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AlertCircle, LoaderCircle, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getUserFacingError } from "@/lib/user-facing-error";
 
 type FinanceAiMode =
   | "payment_plan"
@@ -55,7 +56,12 @@ export function FinanceAiPanel({ initialOpen, onClose }: FinanceAiPanelProps) {
       setOutput(payload.output);
       setProvider(payload.provider ?? "");
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Finans özeti oluşturulamadı.");
+      setError(
+        getUserFacingError(
+          requestError instanceof Error ? requestError.message : null,
+          "Finans özeti oluşturulamadı.",
+        ),
+      );
     } finally {
       setIsLoading(false);
     }

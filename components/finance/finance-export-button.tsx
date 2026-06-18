@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Download, LoaderCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getUserFacingError } from "@/lib/user-facing-error";
 import { getFinanceExportData } from "@/services/finance-service";
 
 export function FinanceExportButton({ onError }: { onError: (message: string) => void }) {
@@ -13,7 +14,9 @@ export function FinanceExportButton({ onError }: { onError: (message: string) =>
     try {
       const result = await getFinanceExportData();
       if (result.error || !result.data) {
-        onError(result.error ?? "Finans verisi dışa aktarılamadı.");
+        onError(
+          getUserFacingError(result.error, "Finans verisi dışa aktarılamadı."),
+        );
         return;
       }
       const blob = new Blob([JSON.stringify(result.data, null, 2)], {
