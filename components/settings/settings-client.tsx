@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   Bell,
+  BookOpen,
   Bot,
   CheckCircle2,
   CircleDollarSign,
@@ -13,6 +15,7 @@ import {
   Home,
   LayoutDashboard,
   LoaderCircle,
+  Megaphone,
   RotateCcw,
   Save,
   ShieldCheck,
@@ -23,7 +26,9 @@ import { useSettings } from "@/components/providers/settings-provider";
 import { AccountCard } from "@/components/settings/account-card";
 import { AccountCenter } from "@/components/settings/account-center";
 import { AppearanceCenter } from "@/components/settings/appearance-center";
+import { DashboardLayoutSettings } from "@/components/settings/dashboard-layout-settings";
 import { SettingsSection } from "@/components/settings/settings-section";
+import { SettingsOverview } from "@/components/settings/settings-overview";
 import {
   SettingsSidebar,
   type SettingsTab,
@@ -65,15 +70,34 @@ interface SettingsClientProps {
 }
 
 const tabs: SettingsTab[] = [
-  { id: "account", label: "Hesap Merkezi", icon: UserRound },
-  { id: "appearance", label: "Görünüm", icon: Eye },
-  { id: "data", label: "Veri ve Yedekleme", icon: Database },
-  { id: "start", label: "Başlangıç Ekranı", icon: Home },
-  { id: "notifications", label: "Bildirim Tercihleri", icon: Bell },
-  { id: "finance", label: "Finans Tercihleri", icon: CircleDollarSign },
-  { id: "ai", label: "AI Tercihleri", icon: Bot },
-  { id: "workspace", label: "Çalışma Alanı", icon: SlidersHorizontal },
+  { group: "GENEL", id: "overview", label: "Genel Bakış", icon: SlidersHorizontal },
+  { group: "HESAP", id: "account", label: "Hesap Merkezi", icon: UserRound },
+  { group: "HESAP", id: "data", label: "Veri ve Yedekleme", icon: Database },
+  { group: "DENEYİM", id: "appearance", label: "Görünüm Merkezi", icon: Eye },
+  { group: "DENEYİM", id: "dashboard", label: "Dashboard Düzeni", icon: LayoutDashboard },
+  { group: "DENEYİM", id: "start", label: "Başlangıç Ekranı", icon: Home },
+  { group: "ÇALIŞMA", id: "notifications", label: "Bildirimler", icon: Bell },
+  { group: "ÇALIŞMA", id: "finance", label: "Finans Tercihleri", icon: CircleDollarSign },
+  { group: "ÇALIŞMA", id: "ai", label: "AI Tercihleri", icon: Bot },
+  { group: "ÇALIŞMA", id: "workspace", label: "Çalışma Alanı", icon: SlidersHorizontal },
+  { group: "YARDIM", id: "guide", label: "Kullanım Rehberi", icon: BookOpen },
+  { group: "YARDIM", id: "news", label: "Yenilikler", icon: Megaphone },
 ];
+
+const tabDescriptions: Record<string, string> = {
+  account: "Profil, güvenlik, gizlilik ve hesap kontrollerini düzenle.",
+  ai: "Akıllı asistanın yanıt biçimini ve görünürlüğünü yönet.",
+  appearance: "Tema, yazı tipi, yoğunluk ve arayüz hissini ayarla.",
+  dashboard: "Komuta ekranındaki bölümlerin görünürlüğünü ve sırasını belirle.",
+  data: "Kayıtlarını dışa aktar ve kişisel arşivini güvence altına al.",
+  finance: "Para gösterimi ve borç önceliklendirme tercihlerini düzenle.",
+  guide: "Uygulamayı daha verimli kullanmak için kısa rehberleri incele.",
+  news: "Son iyileştirmeler ve lansman notlarını gör.",
+  notifications: "Bildirim ve uyarı davranışlarını sade şekilde yönet.",
+  overview: "Hesap, görünüm, veri ve çalışma tercihlerini tek merkezden yönet.",
+  start: "Uygulama açılışı ve yeni kayıt varsayılanlarını belirle.",
+  workspace: "Profil adı ve temel çalışma alanı davranışlarını düzenle.",
+};
 
 const landingPageOptions = [
   { label: "Dashboard", value: "dashboard" },
@@ -122,7 +146,7 @@ export function SettingsClient({
   const tabFromUrl = searchParams.get("tab") as SettingsTab["id"] | null;
   const initialTab = tabs.some((tab) => tab.id === tabFromUrl)
     ? tabFromUrl!
-    : "account";
+    : "overview";
   const [manualActiveTab, setManualActiveTab] =
     useState<SettingsTab["id"] | null>(null);
   const activeTab = manualActiveTab ?? initialTab;
@@ -139,6 +163,8 @@ export function SettingsClient({
   const noticeTimer = useRef<number | null>(null);
   const activeTheme =
     getThemeById(settings.app_theme)?.name ?? settings.app_theme;
+  const activeTabMeta =
+    tabs.find((tab) => tab.id === activeTab) ?? tabs[0];
 
   useEffect(
     () => () => {
@@ -268,23 +294,25 @@ export function SettingsClient({
 
   return (
     <div className="app-page-stack mx-auto w-full max-w-6xl min-w-0 space-y-5">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <header className="app-card relative overflow-hidden rounded-[1.75rem] border p-5 sm:p-6">
+        <div className="pointer-events-none absolute -right-24 -top-28 size-80 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--primary)_16%,transparent),transparent_70%)] blur-3xl" />
+        <div className="relative flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="app-primary text-[10px] font-semibold tracking-[0.18em]">
-            KONTROL MERKEZİ
+            AYARLAR
           </p>
           <h1 className="app-text mt-2 text-2xl font-semibold tracking-tight">
-            Ayarlar
+            {activeTabMeta.label}
           </h1>
           <p className="app-muted mt-2 max-w-2xl text-sm leading-6">
-            Eray Command Center deneyimini, görünümünü ve çalışma tercihlerini
-            buradan yönet.
+            {tabDescriptions[activeTab] ?? tabDescriptions.overview}
           </p>
         </div>
         <span className="app-surface-2 app-border app-text inline-flex w-fit items-center gap-2 rounded-full border px-3 py-1.5 text-[10px] font-medium">
           <CheckCircle2 className="size-3.5 text-[var(--success)]" />
           Tercihler hesabınla eşitleniyor
         </span>
+        </div>
       </header>
 
       {notice ? (
@@ -313,6 +341,15 @@ export function SettingsClient({
         />
 
         <div className="min-w-0 max-w-5xl">
+          {activeTab === "overview" ? (
+            <SettingsOverview
+              accountData={accountData}
+              activeTheme={activeTheme}
+              onOpenTab={setManualActiveTab}
+              settings={settings}
+            />
+          ) : null}
+
           {activeTab === "account" ? (
             <AccountCenter
               accountData={accountData}
@@ -329,6 +366,19 @@ export function SettingsClient({
 
           {activeTab === "appearance" ? (
             <AppearanceCenter onSave={savePatch} settings={settings} />
+          ) : null}
+
+          {activeTab === "dashboard" ? (
+            <SettingsSection
+              description="Komuta ekranında görmek istediğin bölümleri ve önceliklerini sakin bir düzende yönet."
+              icon={LayoutDashboard}
+              title="Dashboard Düzeni"
+            >
+              <DashboardLayoutSettings
+                onSave={savePatch}
+                preferences={settings.dashboard_preferences}
+              />
+            </SettingsSection>
           ) : null}
 
           {activeTab === "start" ? (
@@ -800,6 +850,81 @@ export function SettingsClient({
                 <RotateCcw className="size-4" />
                 Ayarları Sıfırla
               </Button>
+            </SettingsSection>
+          ) : null}
+
+          {activeTab === "guide" ? (
+            <SettingsSection
+              description="Uygulamadaki ana alanları hızlıca hatırla ve doğru ekrana tek adımda geç."
+              icon={BookOpen}
+              title="Kullanım Rehberi"
+            >
+              <div className="grid gap-3 sm:grid-cols-2">
+                {[
+                  {
+                    description:
+                      "Günlük durum, öncelikler, hızlı kayıt ve finans sinyallerini tek ekranda takip et.",
+                    href: "/dashboard",
+                    label: "Dashboard’u kullan",
+                  },
+                  {
+                    description:
+                      "Notlarını tam ekran editörde yaz, hızlı kayıtları işle ve şablonlardan yararlan.",
+                    href: "/notes",
+                    label: "Not akışını yönet",
+                  },
+                  {
+                    description:
+                      "Borç, taksit, ödeme ve dekont takibini finans merkezinden kontrol et.",
+                    href: "/finance",
+                    label: "Finansı takip et",
+                  },
+                  {
+                    description:
+                      "Görevleri ve planları günlük akışa bağlayarak günü daha görünür hale getir.",
+                    href: "/calendar",
+                    label: "Takvim ve görevleri planla",
+                  },
+                ].map((item) => (
+                  <Link
+                    className="app-surface-2 app-border rounded-2xl border p-4 transition hover:border-[color-mix(in_srgb,var(--primary)_42%,var(--border))]"
+                    href={item.href}
+                    key={item.label}
+                  >
+                    <p className="app-text text-sm font-semibold">
+                      {item.label}
+                    </p>
+                    <p className="app-muted mt-2 text-xs leading-5">
+                      {item.description}
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            </SettingsSection>
+          ) : null}
+
+          {activeTab === "news" ? (
+            <SettingsSection
+              description="Lansman öncesi yapılan son arayüz ve deneyim iyileştirmelerini gör."
+              icon={Megaphone}
+              title="Yenilikler"
+            >
+              <div className="grid gap-3">
+                {[
+                  "Premium Dashboard görünümü ve komuta aksiyonları yenilendi.",
+                  "Hesap Merkezi, gizlilik modu ve veri kontrolleri eklendi.",
+                  "Finans taksit, ödeme ve dekont akışları stabilize edildi.",
+                  "Tema, yazı tipi ve dashboard kişiselleştirme merkezi güçlendirildi.",
+                ].map((item) => (
+                  <div
+                    className="app-surface-2 app-border flex items-start gap-3 rounded-2xl border p-4"
+                    key={item}
+                  >
+                    <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-[var(--success)]" />
+                    <p className="app-text text-sm leading-6">{item}</p>
+                  </div>
+                ))}
+              </div>
             </SettingsSection>
           ) : null}
 

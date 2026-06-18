@@ -28,7 +28,7 @@ export function SegmentedControl<T extends string>({
     <div
       aria-label={ariaLabel}
       className={cn(
-        "app-surface app-border grid min-w-0 grid-cols-2 gap-1 rounded-xl border p-1 sm:grid-cols-3",
+        "app-surface-2 app-border grid min-w-0 grid-cols-2 gap-0.5 rounded-xl border p-0.5 sm:grid-cols-3",
         className,
       )}
       role="group"
@@ -40,9 +40,9 @@ export function SegmentedControl<T extends string>({
           <button
             aria-pressed={isActive}
             className={cn(
-              "min-h-9 min-w-0 rounded-lg px-2 py-2 text-[11px] font-medium leading-4 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-45",
+              "min-h-8 min-w-0 rounded-[10px] px-2 py-1.5 text-[11px] font-medium leading-4 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--primary)_55%,transparent)] disabled:cursor-not-allowed disabled:opacity-45",
               isActive
-                ? "app-primary-bg shadow-sm"
+                ? "bg-[color-mix(in_srgb,var(--primary)_16%,var(--surface))] text-[var(--text)] shadow-sm ring-1 ring-[color-mix(in_srgb,var(--primary)_34%,transparent)]"
                 : "app-muted hover:bg-[var(--surface-2)] hover:text-[var(--text)]",
             )}
             disabled={disabled}

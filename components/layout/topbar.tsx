@@ -6,11 +6,9 @@ import {
   ChevronDown,
   Database,
   Eye,
-  KeyRound,
   Menu,
   Plus,
   Search,
-  ShieldHalf,
   UserRound,
 } from "lucide-react";
 import { LogoutButton } from "@/components/auth/logout-button";
@@ -193,19 +191,14 @@ export function Topbar({
                     label: "Hesap Merkezi",
                   },
                   {
+                    href: "/settings?tab=appearance",
+                    icon: Eye,
+                    label: "Görünüm Merkezi",
+                  },
+                  {
                     href: "/settings?tab=data",
                     icon: Database,
-                    label: "Verilerimi Dışa Aktar",
-                  },
-                  {
-                    href: "/reset-password",
-                    icon: KeyRound,
-                    label: "Şifreyi Değiştir",
-                  },
-                  {
-                    href: "/settings?tab=ai",
-                    icon: ShieldHalf,
-                    label: "Yardım ve Tercihler",
+                    label: "Veri ve Yedekleme",
                   },
                 ].map((item) => {
                   const Icon = item.icon;

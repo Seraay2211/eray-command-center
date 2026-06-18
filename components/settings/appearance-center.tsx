@@ -10,7 +10,6 @@ import {
   Type,
 } from "lucide-react";
 import type { CSSProperties } from "react";
-import { DashboardLayoutSettings } from "@/components/settings/dashboard-layout-settings";
 import { SegmentedControl } from "@/components/settings/segmented-control";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { ThemeLibrary } from "@/components/settings/theme-library";
@@ -359,10 +358,6 @@ export function AppearanceCenter({
         </div>
       </div>
 
-      <DashboardLayoutSettings
-        onSave={onSave}
-        preferences={settings.dashboard_preferences}
-      />
     </SettingsSection>
   );
 }
