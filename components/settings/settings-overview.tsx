@@ -93,9 +93,14 @@ export function SettingsOverview({
       <Card className="relative overflow-hidden rounded-[1.75rem] p-5 sm:p-6">
         <div className="pointer-events-none absolute -right-24 -top-28 size-80 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--primary)_18%,transparent),transparent_68%)] blur-3xl" />
         <div className="relative">
-          <p className="app-primary text-[10px] font-semibold uppercase tracking-[0.18em]">
-            Ayarlar Genel Bakış
-          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="app-primary text-[10px] font-semibold uppercase tracking-[0.18em]">
+              Ayarlar Genel Bakış
+            </p>
+            <span className="app-surface-2 app-border app-muted rounded-full border px-2.5 py-1 text-[10px] font-semibold">
+              Sürüm: v1.0
+            </span>
+          </div>
           <h2 className="app-text mt-2 text-2xl font-semibold tracking-[-0.035em]">
             Kontrol merkezini sakin ve düzenli tut.
           </h2>
