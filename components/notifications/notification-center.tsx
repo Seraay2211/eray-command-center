@@ -29,9 +29,9 @@ import type {
 } from "@/types/notifications";
 
 const priorityLabels: Record<NotificationPriority, string> = {
-  low: "Düşük",
-  medium: "Orta",
-  high: "Yüksek",
+  low: "Normal",
+  medium: "Normal",
+  high: "Önemli",
   critical: "Kritik",
 };
 
@@ -88,6 +88,10 @@ function maskSensitiveNotificationText(value: string): string {
     .replace(/\b\d{1,3}(?:\.\d{3})*,\d{2}\b/g, MASKED_TRY_VALUE);
 }
 
+function isDynamicNotification(notification: AppNotification): boolean {
+  return notification.metadata?.dynamic === true;
+}
+
 interface NotificationCenterProps {
   initialNotifications: AppNotification[];
   initialUnreadCount: number;
@@ -110,6 +114,10 @@ export function NotificationCenter({
   const [isMarkingAll, setIsMarkingAll] = useState(false);
   const [actionId, setActionId] = useState("");
   const [error, setError] = useState("");
+  const markableUnreadCount = notifications.filter(
+    (notification) =>
+      !notification.is_read && !isDynamicNotification(notification),
+  ).length;
 
   const refresh = useCallback(async () => {
     setIsLoading(true);
@@ -211,7 +219,7 @@ export function NotificationCenter({
   }
 
   async function markAllAsRead() {
-    if (unreadCount === 0) return;
+    if (markableUnreadCount === 0) return;
 
     setIsMarkingAll(true);
     setError("");
@@ -224,13 +232,19 @@ export function NotificationCenter({
 
       const readAt = new Date().toISOString();
       setNotifications((current) =>
-        current.map((item) => ({
-          ...item,
-          is_read: true,
-          read_at: item.read_at ?? readAt,
-        })),
+        current.map((item) =>
+          isDynamicNotification(item)
+            ? item
+            : {
+                ...item,
+                is_read: true,
+                read_at: item.read_at ?? readAt,
+              },
+        ),
       );
-      setUnreadCount(0);
+      setUnreadCount((current) =>
+        Math.max(current - (result.data?.count ?? markableUnreadCount), 0),
+      );
     } catch {
       setError("Bildirimler güncellenemedi.");
     } finally {
@@ -264,7 +278,7 @@ export function NotificationCenter({
   async function openNotification(notification: AppNotification) {
     setActionId(notification.id);
     try {
-      if (!notification.is_read) {
+      if (!notification.is_read && !isDynamicNotification(notification)) {
         await markNotificationAsRead(notification.id);
       }
     } finally {
@@ -277,7 +291,7 @@ export function NotificationCenter({
   const badgeLabel = unreadCount > 99 ? "99+" : String(unreadCount);
 
   return (
-    <div className="relative" ref={panelRef}>
+    <div className="relative shrink-0" ref={panelRef}>
       <button
         aria-controls="notification-panel"
         aria-expanded={isOpen}
@@ -304,16 +318,16 @@ export function NotificationCenter({
       {isOpen ? (
         <section
           aria-label="Bildirim paneli"
-          className="app-card fixed inset-x-3 top-20 z-[100] max-h-[calc(100vh-6rem)] overflow-hidden rounded-2xl border shadow-2xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-12 sm:w-[430px]"
+          className="notification-panel app-card fixed left-3 right-3 top-20 z-[120] max-h-[calc(100vh-6rem)] w-auto overflow-hidden rounded-2xl border shadow-2xl sm:absolute sm:left-auto sm:right-0 sm:top-12"
           id="notification-panel"
         >
           <div className="app-border flex items-center justify-between gap-3 border-b p-4">
-            <div>
+            <div className="min-w-0">
               <h2 className="app-text text-sm font-semibold">Bildirimler</h2>
-              <p className="app-muted mt-1 text-[10px]">
+              <p className="notification-copy app-muted mt-1 text-[10px] leading-4">
                 {unreadCount > 0
                   ? `${unreadCount} okunmamış bildirim`
-                  : "Tüm bildirimler okundu"}
+                  : "Güncel görev, finans ve plan hatırlatmaların."}
               </p>
             </div>
             <button
@@ -328,7 +342,7 @@ export function NotificationCenter({
 
           <div className="app-border flex flex-wrap gap-2 border-b px-4 py-3">
             <Button
-              disabled={isLoading || isMarkingAll || unreadCount === 0}
+              disabled={isLoading || isMarkingAll || markableUnreadCount === 0}
               onClick={() => void markAllAsRead()}
               size="sm"
               variant="secondary"
@@ -353,7 +367,7 @@ export function NotificationCenter({
             </Button>
           </div>
 
-          <div className="max-h-[min(620px,calc(100vh-13rem))] overflow-y-auto p-3">
+          <div className="notification-scroll max-h-[min(620px,calc(100vh-13rem))] overflow-y-auto p-3">
             {isLoading ? (
               <div className="app-muted flex items-center justify-center gap-2 py-12 text-xs">
                 <LoaderCircle className="size-4 animate-spin" />
@@ -375,10 +389,10 @@ export function NotificationCenter({
               <div className="app-surface-2 rounded-xl border border-dashed p-8 text-center">
                 <Bell className="app-muted mx-auto size-5" />
                 <p className="app-text mt-3 text-sm font-semibold">
-                  Henüz bildirimin yok.
+                  Bildirim yok
                 </p>
                 <p className="app-muted mt-1 text-xs">
-                  Operasyon uyarıları burada görünecek.
+                  Şu anda dikkat etmen gereken yeni bir bildirim bulunmuyor.
                 </p>
               </div>
             ) : (
@@ -393,10 +407,13 @@ export function NotificationCenter({
                 ) : null}
                 {notifications.map((notification) => (
                   (() => {
-                    const isDynamic = notification.metadata?.dynamic === true;
+                    const isDynamic = isDynamicNotification(notification);
+                    const sourceLabel =
+                      sourceLabels[notification.source ?? "system"] ??
+                      "Sistem";
                     return (
                   <article
-                    className={`rounded-xl border p-3 transition ${
+                    className={`min-w-0 rounded-xl border p-3 transition ${
                       notification.is_read
                         ? "app-surface"
                         : "border-[color-mix(in_srgb,var(--primary)_34%,var(--border))] bg-[color-mix(in_srgb,var(--primary)_7%,var(--surface))]"
@@ -412,8 +429,11 @@ export function NotificationCenter({
                         }`}
                       />
                       <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="app-text text-xs font-semibold">
+                        <div className="flex min-w-0 flex-wrap items-center gap-2">
+                          <span className="app-surface-2 app-muted rounded-md border px-1.5 py-0.5 text-[9px] font-semibold">
+                            {sourceLabel}
+                          </span>
+                          <h3 className="notification-copy app-text min-w-0 flex-1 text-xs font-semibold leading-5">
                             {shouldMaskSensitiveText
                               ? maskSensitiveNotificationText(
                                   notification.title,
@@ -426,22 +446,18 @@ export function NotificationCenter({
                             {priorityLabels[notification.priority]}
                           </span>
                         </div>
-                        <p className="app-muted mt-1.5 text-[11px] leading-5">
+                        <p className="notification-copy app-muted mt-1.5 text-[11px] leading-5">
                           {shouldMaskSensitiveText
                             ? maskSensitiveNotificationText(
                                 notification.message,
                               )
                             : notification.message}
                         </p>
-                        <div className="app-muted mt-2 flex flex-wrap items-center gap-2 text-[9px]">
-                          <span>
-                            {sourceLabels[notification.source ?? "system"] ??
-                              "Sistem"}
-                          </span>
-                          <span>·</span>
+                        <div className="notification-meta app-muted mt-2 flex flex-wrap items-center gap-2 text-[9px]">
                           <time dateTime={notification.created_at}>
                             {formatNotificationDate(notification.created_at)}
                           </time>
+                          {isDynamic ? <span>Aktif hatırlatma</span> : null}
                         </div>
                         <div className="mt-3 flex flex-wrap gap-1.5">
                           {notification.action_url ? (
@@ -457,7 +473,7 @@ export function NotificationCenter({
                               ) : (
                                 <ExternalLink className="size-3.5" />
                               )}
-                              Aç
+                              İncele
                             </Button>
                           ) : null}
                           {!notification.is_read ? (
@@ -495,6 +511,10 @@ export function NotificationCenter({
                 ))}
               </div>
             )}
+          </div>
+
+          <div className="app-border app-muted border-t px-4 py-3 text-[10px] leading-4">
+            Bildirimler görev, finans ve takvim hatırlatmalarından oluşur.
           </div>
         </section>
       ) : null}

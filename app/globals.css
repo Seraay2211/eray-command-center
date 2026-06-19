@@ -718,6 +718,27 @@ select {
   overflow-wrap: anywhere;
 }
 
+.notification-panel,
+.notification-panel * {
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.notification-panel {
+  width: min(420px, calc(100vw - 1.5rem));
+  min-width: min(320px, calc(100vw - 1.5rem));
+  max-width: calc(100vw - 1.5rem);
+}
+
+.notification-panel .notification-copy {
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+.notification-panel .notification-scroll {
+  overscroll-behavior: contain;
+}
+
 input,
 textarea,
 select,
