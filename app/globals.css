@@ -773,6 +773,29 @@ button {
   padding-bottom: max(1rem, env(safe-area-inset-bottom));
 }
 
+.mobile-bottom-nav {
+  padding-bottom: max(0.55rem, env(safe-area-inset-bottom));
+}
+
+.mobile-bottom-sheet {
+  max-height: min(78vh, calc(100vh - 1.25rem));
+  overflow-y: auto;
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+html[data-pwa-standalone="true"] .app-topbar {
+  background: color-mix(in srgb, var(--background) 96%, transparent);
+}
+
+@media (max-width: 1023px) {
+  .app-mobile-main-safe {
+    padding-bottom: max(
+      6.75rem,
+      calc(5.85rem + env(safe-area-inset-bottom))
+    );
+  }
+}
+
 @media (display-mode: standalone) {
   .pwa-install-hint {
     display: none;
@@ -780,6 +803,12 @@ button {
 }
 
 @media (max-width: 639px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+
   button,
   [role="button"],
   a {
@@ -788,6 +817,25 @@ button {
 
   .mobile-tap-target {
     min-height: 44px;
+  }
+
+  .notification-panel {
+    top: calc(4.35rem + env(safe-area-inset-top));
+    max-height: calc(100vh - 5.5rem - env(safe-area-inset-bottom));
+  }
+
+  [data-dashboard-root] {
+    overflow-x: clip;
+  }
+
+  [data-dashboard-root] > header,
+  [data-dashboard-root] .app-card {
+    border-radius: 1.35rem;
+  }
+
+  [data-dashboard-root] a,
+  [data-dashboard-root] button {
+    min-width: 0;
   }
 }
 

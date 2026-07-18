@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
   ChevronDown,
@@ -26,12 +27,35 @@ interface TopbarProps {
   userEmail: string;
 }
 
+const mobilePageTitles: Record<string, string> = {
+  "/dashboard": "Dashboard",
+  "/today": "Bugün",
+  "/notes": "Notlar",
+  "/finance": "Finans",
+  "/tasks": "Görevler",
+  "/calendar": "Takvim",
+  "/reports": "Raporlar",
+  "/templates": "Şablonlar",
+  "/taxonomy": "Düzen",
+  "/ai": "AI Asistan",
+  "/settings": "Ayarlar",
+};
+
+function getMobilePageTitle(pathname: string) {
+  const match = Object.entries(mobilePageTitles).find(
+    ([route]) => pathname === route || pathname.startsWith(`${route}/`),
+  );
+
+  return match?.[1] ?? "Komuta Merkezi";
+}
+
 export function Topbar({
   initialNotifications,
   initialUnreadCount,
   onMenuClick,
   userEmail,
 }: TopbarProps) {
+  const pathname = usePathname();
   const { settings, t, updateSettings } = useSettings();
   const { openPalette } = useCommandPalette();
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
@@ -80,7 +104,7 @@ export function Topbar({
   }
 
   return (
-    <header className="app-topbar app-topbar-safe sticky top-0 z-30 flex items-center justify-between border-b px-3 shadow-[0_10px_34px_rgba(0,0,0,0.08)] backdrop-blur-xl sm:px-5 lg:px-7">
+    <header className="app-topbar app-topbar-safe sticky top-0 z-30 flex items-center justify-between gap-2 border-b px-3 shadow-[0_10px_34px_rgba(0,0,0,0.08)] backdrop-blur-xl sm:px-5 lg:px-7">
       <div className="flex min-w-0 items-center gap-3">
         <button
           aria-label="Menüyü aç"
@@ -90,6 +114,14 @@ export function Topbar({
         >
           <Menu className="size-5" />
         </button>
+        <div className="min-w-0 sm:hidden">
+          <p className="app-text truncate text-sm font-semibold">
+            Eray Command
+          </p>
+          <p className="app-muted truncate text-[11px]">
+            {getMobilePageTitle(pathname)}
+          </p>
+        </div>
         <div className="relative hidden sm:block">
           <span className="sr-only">Ara veya komut çalıştır</span>
           <Search className="app-muted absolute left-3 top-1/2 size-4 -translate-y-1/2" />

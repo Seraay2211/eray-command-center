@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     "Kişisel operasyon, not, görev, takvim ve finans kontrol merkezi.",
   manifest: "/manifest.json",
   icons: {
-    apple: [{ url: "/icons/icon-192.png", sizes: "192x192" }],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
     icon: [
       { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
       { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
@@ -29,6 +29,12 @@ export const metadata: Metadata = {
     address: false,
     email: false,
     telephone: false,
+  },
+  other: {
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-status-bar-style": "black-translucent",
+    "apple-mobile-web-app-title": "Eray Command Center",
+    "mobile-web-app-capable": "yes",
   },
 };
 

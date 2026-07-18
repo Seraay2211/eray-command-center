@@ -8,9 +8,12 @@ import {
   type ReactNode,
 } from "react";
 import { Sidebar } from "@/components/layout/sidebar";
+import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
 import { Topbar } from "@/components/layout/topbar";
+import { OfflineBanner } from "@/components/pwa/offline-banner";
 import { useSettings } from "@/components/providers/settings-provider";
 import { CommandPaletteProvider } from "@/components/search/command-palette";
+import { useStandaloneMode } from "@/hooks/use-standalone-mode";
 import {
   getAppFontStack,
   normalizeAppFontFamily,
@@ -33,6 +36,7 @@ export function AppShell({
 }: AppShellProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { settings } = useSettings();
+  const { isStandalone } = useStandaloneMode();
   const isCollapsed = settings.sidebar_mode === "collapsed";
   const selectedFont = normalizeAppFontFamily(settings.font_family);
   const shellStyle = useMemo(
@@ -53,11 +57,22 @@ export function AppShell({
     };
   }, [isSidebarOpen]);
 
+  useEffect(() => {
+    document.documentElement.dataset.pwaStandalone = isStandalone
+      ? "true"
+      : "false";
+
+    return () => {
+      delete document.documentElement.dataset.pwaStandalone;
+    };
+  }, [isStandalone]);
+
   return (
     <CommandPaletteProvider>
       <div
         className="app-shell min-h-screen"
         data-font={selectedFont}
+        data-standalone={isStandalone ? "true" : "false"}
         style={shellStyle}
       >
         <Sidebar
@@ -76,10 +91,12 @@ export function AppShell({
             onMenuClick={() => setIsSidebarOpen(true)}
             userEmail={userEmail}
           />
-          <main className="app-main app-main-safe mx-auto min-w-0 w-full max-w-[1600px] px-3 py-4 sm:px-6 sm:py-5 lg:px-8">
+          <OfflineBanner />
+          <main className="app-main app-main-safe app-mobile-main-safe mx-auto min-w-0 w-full max-w-[1600px] px-3 py-4 sm:px-6 sm:py-5 lg:px-8">
             {children}
           </main>
         </div>
+        <MobileBottomNav />
       </div>
     </CommandPaletteProvider>
   );
