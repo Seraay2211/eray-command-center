@@ -98,15 +98,15 @@ export function SettingsOverview({
               Ayarlar Genel Bakış
             </p>
             <span className="app-surface-2 app-border app-muted rounded-full border px-2.5 py-1 text-[10px] font-semibold">
-              Sürüm: v1.0
+              Sürüm: v1.1
             </span>
           </div>
           <h2 className="app-text mt-2 text-2xl font-semibold tracking-[-0.035em]">
-            Kontrol merkezini sakin ve düzenli tut.
+            Komuta merkezini kendi çalışma ritmine göre şekillendir.
           </h2>
           <p className="app-muted mt-2 max-w-2xl text-sm leading-6">
-            Hesap, görünüm, veri ve çalışma tercihlerini tek merkezden yönet.
-            En sık kullanılan alanlara buradan hızlıca geçebilirsin.
+            Tema, yazı tipi, gizlilik, bildirim ve yedekleme seçeneklerine
+            hızlıca ulaş. Günlük kullanımı sade tutan ayarlar burada.
           </p>
         </div>
       </Card>

@@ -30,13 +30,15 @@ export const ThemeCard = memo(function ThemeCard({
     colorful: "Renkli",
     premium: "Premium",
     simple: "Sade",
+    focus: "Odak",
+    finance: "Finans",
   };
 
   return (
     <button
       aria-pressed={isActive}
       className={cn(
-        "app-theme-card relative flex h-full min-h-36 min-w-0 flex-col overflow-hidden rounded-xl border p-3 text-left transition duration-200 hover:-translate-y-0.5 hover:shadow-lg",
+        "app-theme-card relative flex h-full min-h-48 min-w-0 flex-col overflow-hidden rounded-2xl border p-3.5 text-left transition duration-200 hover:-translate-y-0.5 hover:shadow-xl",
         isActive && "app-theme-card-active",
       )}
       onClick={() => onSelect(theme.id)}
@@ -50,21 +52,19 @@ export const ThemeCard = memo(function ThemeCard({
       ) : null}
 
       <div
-        className="flex h-8 overflow-hidden rounded-lg border"
-        style={{ borderColor: theme.colors.border }}
+        className="relative h-20 overflow-hidden rounded-xl border p-2"
+        style={{ background: theme.colors.background, borderColor: theme.colors.border }}
       >
-        <span
-          className="h-full w-[44%]"
-          style={{ background: theme.colors.background }}
-        />
-        <span
-          className="h-full w-[36%]"
-          style={{ background: theme.colors.surface }}
-        />
-        <span
-          className="h-full flex-1"
-          style={{ background: theme.colors.primary }}
-        />
+        <div className="flex h-full gap-2">
+          <span className="w-5 rounded-md" style={{ background: theme.colors.surface2 }} />
+          <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+            <span className="h-2 w-2/3 rounded-full" style={{ background: theme.colors.primary }} />
+            <span className="flex flex-1 gap-1.5">
+              <span className="flex-1 rounded-md border" style={{ background: theme.colors.surface, borderColor: theme.colors.border }} />
+              <span className="w-1/3 rounded-md" style={{ background: theme.colors.surface2 }} />
+            </span>
+          </span>
+        </div>
       </div>
 
       <div className="mt-2.5 min-w-0 flex-1 pr-5">

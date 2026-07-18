@@ -979,7 +979,7 @@ alter table public.user_settings
     check (density in ('comfortable', 'balanced', 'compact')),
   drop constraint if exists user_settings_font_family_check,
   add constraint user_settings_font_family_check
-    check (font_family in ('system', 'inter', 'geist', 'manrope', 'jakarta', 'nunito', 'roboto'));
+    check (font_family in ('system', 'inter', 'geist', 'manrope', 'jakarta', 'nunito', 'roboto', 'ibm-plex', 'outfit', 'space-grotesk'));
 
 alter table public.user_settings
   drop constraint if exists user_settings_default_landing_page_check,
@@ -1043,7 +1043,19 @@ alter table public.user_settings
       'cloud-silver',
       'crimson-executive',
       'oceanic-teal',
-      'desert-night'
+      'desert-night',
+      'executive-noir',
+      'midnight-sapphire',
+      'emerald-command',
+      'obsidian-violet',
+      'arctic-focus',
+      'sandstone-pro',
+      'crimson-ledger',
+      'carbon-cyan',
+      'olive-tactical',
+      'bronze-night',
+      'storm-blue',
+      'neon-graphite'
     )
   );
 

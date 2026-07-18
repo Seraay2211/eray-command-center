@@ -229,7 +229,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6 sm:space-y-8" data-dashboard-root>
-      <header className="app-card relative overflow-hidden rounded-[2rem] border border-[color-mix(in_srgb,var(--primary)_30%,var(--border))] p-5 shadow-2xl shadow-[color-mix(in_srgb,var(--primary)_10%,transparent)] sm:p-7 lg:p-8">
+      <header className="app-visual-hero relative overflow-hidden rounded-[2rem] border p-5 sm:p-7 lg:p-8">
         <div className="pointer-events-none absolute -right-28 -top-32 size-96 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--primary)_26%,transparent),transparent_68%)] blur-3xl" />
         <div className="pointer-events-none absolute -bottom-32 left-1/4 size-80 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--success)_10%,transparent),transparent_70%)] blur-3xl" />
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,color-mix(in_srgb,var(--primary)_55%,transparent),transparent)]" />

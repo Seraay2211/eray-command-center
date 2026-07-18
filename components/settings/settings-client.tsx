@@ -294,7 +294,7 @@ export function SettingsClient({
 
   return (
     <div className="app-page-stack mx-auto w-full max-w-6xl min-w-0 space-y-5">
-      <header className="app-card relative overflow-hidden rounded-[1.75rem] border p-5 sm:p-6">
+      <header className="app-visual-hero relative overflow-hidden rounded-[1.75rem] border p-5 sm:p-6">
         <div className="pointer-events-none absolute -right-24 -top-28 size-80 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--primary)_16%,transparent),transparent_70%)] blur-3xl" />
         <div className="relative flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>

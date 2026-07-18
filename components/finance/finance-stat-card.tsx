@@ -18,10 +18,10 @@ export function FinanceStatCard({
 }: FinanceStatCardProps) {
   const toneClass =
     tone === "danger"
-      ? "bg-rose-500/10 text-rose-400"
+      ? "bg-[color-mix(in_srgb,var(--finance-negative)_10%,transparent)] text-[var(--finance-negative)]"
       : tone === "warning"
-        ? "bg-amber-500/10 text-amber-400"
-        : "bg-violet-500/10 app-primary";
+        ? "bg-[color-mix(in_srgb,var(--warning)_10%,transparent)] text-[var(--warning)]"
+        : "bg-[var(--primary-soft)] app-primary";
 
   return (
     <Card className="p-4">

@@ -9,12 +9,15 @@ const SYSTEM_FONT_STACK =
   'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 
 export const APP_FONT_OPTIONS: AppFontOption[] = [
-  { label: "Sistem Varsayılanı", value: "system" },
+  { label: "Sistem", value: "system" },
   { label: "Inter", value: "inter" },
   { label: "Manrope", value: "manrope" },
   { label: "Plus Jakarta Sans", value: "jakarta" },
   { label: "Nunito Sans", value: "nunito" },
   { label: "Roboto", value: "roboto" },
+  { label: "IBM Plex Sans", value: "ibm-plex" },
+  { label: "Outfit", value: "outfit" },
+  { label: "Space Grotesk", value: "space-grotesk" },
 ];
 
 const APP_FONT_STACKS: Record<AppFontFamily, string> = {
@@ -29,6 +32,12 @@ const APP_FONT_STACKS: Record<AppFontFamily, string> = {
   nunito:
     '"Nunito Sans", Verdana, "Segoe UI", ui-sans-serif, system-ui, sans-serif',
   roboto: 'Roboto, Arial, "Segoe UI", ui-sans-serif, system-ui, sans-serif',
+  "ibm-plex":
+    '"IBM Plex Sans", "Segoe UI", Tahoma, ui-sans-serif, system-ui, sans-serif',
+  outfit:
+    'Outfit, "Aptos Display", "Century Gothic", "Segoe UI", ui-sans-serif, sans-serif',
+  "space-grotesk":
+    '"Space Grotesk", Bahnschrift, "Trebuchet MS", "Segoe UI", ui-sans-serif, sans-serif',
 };
 
 export function normalizeAppFontFamily(
@@ -44,6 +53,6 @@ export function getAppFontStack(value: AppFontFamily): string {
 export function getAppFontLabel(value: AppFontFamily): string {
   return (
     APP_FONT_OPTIONS.find((option) => option.value === value)?.label ??
-    "Sistem Varsayılanı"
+    "Sistem"
   );
 }

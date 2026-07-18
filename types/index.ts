@@ -721,7 +721,19 @@ export type AppTheme =
   | "cloud-silver"
   | "crimson-executive"
   | "oceanic-teal"
-  | "desert-night";
+  | "desert-night"
+  | "executive-noir"
+  | "midnight-sapphire"
+  | "emerald-command"
+  | "obsidian-violet"
+  | "arctic-focus"
+  | "sandstone-pro"
+  | "crimson-ledger"
+  | "carbon-cyan"
+  | "olive-tactical"
+  | "bronze-night"
+  | "storm-blue"
+  | "neon-graphite";
 
 export type AppLanguage = "tr" | "en";
 
@@ -738,7 +750,10 @@ export type AppFontFamily =
   | "manrope"
   | "jakarta"
   | "nunito"
-  | "roboto";
+  | "roboto"
+  | "ibm-plex"
+  | "outfit"
+  | "space-grotesk";
 
 export type AppTextSize = "small" | "normal" | "large";
 

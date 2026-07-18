@@ -6,19 +6,15 @@ import {
   AlertCircle,
   Banknote,
   CalendarClock,
-  CircleDollarSign,
-  CreditCard,
   Plus,
   RefreshCw,
-  ShieldAlert,
-  Sparkles,
   WalletCards,
 } from "lucide-react";
 import { DebtCard } from "@/components/finance/debt-card";
 import { DebtDetailPanel } from "@/components/finance/debt-detail-panel";
 import { DebtForm } from "@/components/finance/debt-form";
 import { FinanceAiPanel } from "@/components/finance/finance-ai-panel";
-import { FinanceExportButton } from "@/components/finance/finance-export-button";
+import { FinanceCommandHero } from "@/components/finance/finance-command-hero";
 import { FinanceStatCard } from "@/components/finance/finance-stat-card";
 import { InstallmentPaymentForm } from "@/components/finance/installment-payment-form";
 import { PaymentForm } from "@/components/finance/payment-form";
@@ -593,18 +589,15 @@ export function FinanceClient({
 
   return (
     <div>
-      <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-        <div>
-          <p className="app-primary text-[10px] font-semibold uppercase tracking-[0.18em]">Finans kontrol merkezi</p>
-          <h1 className="app-text mt-2 text-2xl font-semibold tracking-tight">Borç ve Ödeme Takibi</h1>
-          <p className="app-muted mt-2 max-w-2xl text-sm">Borçlarını, ödeme geçmişini ve yaklaşan vadeleri tek çalışma alanında takip et.</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <FinanceExportButton onError={setPageError} />
-          <Button onClick={() => { setIsAiOpen(true); replaceParams({ action: "summary" }); }} variant="secondary"><Sparkles className="size-4" /> Finans Özeti</Button>
-          <Button onClick={openNew}><Plus className="size-4" /> Yeni Borç</Button>
-        </div>
-      </div>
+      <FinanceCommandHero
+        onError={setPageError}
+        onOpenAi={() => {
+          setIsAiOpen(true);
+          replaceParams({ action: "summary" });
+        }}
+        onOpenNew={openNew}
+        stats={stats}
+      />
 
       {notice ? <div className="app-surface fixed inset-x-3 top-20 z-[120] rounded-xl border border-emerald-400/20 px-4 py-3 text-xs text-emerald-500 shadow-2xl sm:left-auto sm:right-4">{notice}</div> : null}
 
@@ -616,16 +609,8 @@ export function FinanceClient({
           <Button className="mt-5" onClick={() => router.refresh()}><RefreshCw className="size-4" /> Tekrar Kontrol Et</Button>
         </Card>
       ) : (
-        <div className="space-y-6">
+        <div className="mt-6 space-y-6">
           {pageError ? <div className="flex gap-2 rounded-xl border border-rose-400/20 bg-rose-500/10 p-4 text-xs text-rose-300"><AlertCircle className="size-4 shrink-0" />{pageError}</div> : null}
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-            <FinanceStatCard description="İptal olmayan kayıtlar" icon={CircleDollarSign} label="Toplam Borç" value={formatSensitiveTRY(stats.totalDebt, settings)} />
-            <FinanceStatCard description="Kaydedilen ödemeler" icon={CreditCard} label="Toplam Ödenen" value={formatSensitiveTRY(stats.totalPaid, settings)} />
-            <FinanceStatCard description="Aktif kalan tutar" icon={WalletCards} label="Kalan Borç" value={formatSensitiveTRY(stats.remainingDebt, settings)} />
-            <FinanceStatCard description="Bu ay vadeli" icon={CalendarClock} label="Bu Ay Ödenecek" value={formatSensitiveTRY(stats.dueThisMonth, settings)} />
-            <FinanceStatCard description="Yüksek takip önceliği" icon={ShieldAlert} label="Kritik Borçlar" tone="warning" value={String(stats.criticalCount)} />
-            <FinanceStatCard description="Vadesi geçmiş kayıt" icon={AlertCircle} label="Gecikenler" tone="danger" value={String(stats.overdueCount)} />
-          </div>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <FinanceStatCard
               description="Vadesi bugün olan taksitler"

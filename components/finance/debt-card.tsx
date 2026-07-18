@@ -92,7 +92,7 @@ export function DebtCard({
         </div>
         <div>
           <p className="app-muted text-[10px]">Ödenen</p>
-          <p className="mt-1 font-medium text-emerald-400">
+          <p className="mt-1 font-medium text-[var(--finance-positive)]">
             {formatSensitiveTRY(debt.paid_amount, settings)}
           </p>
         </div>

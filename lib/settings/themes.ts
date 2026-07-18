@@ -8,7 +8,9 @@ export type ThemeFilter =
   | "light"
   | "colorful"
   | "premium"
-  | "simple";
+  | "simple"
+  | "focus"
+  | "finance";
 export type ThemeTag = Exclude<ThemeFilter, "all">;
 
 export interface ThemeDefinition {
@@ -27,9 +29,18 @@ export interface ThemeDefinition {
     text: string;
     muted: string;
     primary: string;
+    elevated?: string;
+    primarySoft?: string;
     success: string;
     warning: string;
     danger: string;
+    info?: string;
+    financePositive?: string;
+    financeNegative?: string;
+    shadow?: string;
+    glow?: string;
+    gradientAccent?: string;
+    chartColors?: readonly string[];
   };
 }
 
@@ -916,6 +927,176 @@ export const APP_THEMES: ThemeDefinition[] = [
       danger: "#dd685d",
     },
   },
+  {
+    id: "executive-noir",
+    name: "Executive Noir",
+    description: "Grafit yüzeyler ve altın vurgularla seçkin yönetici görünümü.",
+    mode: "dark",
+    category: "premium",
+    tags: ["dark", "premium", "finance"],
+    colors: {
+      background: "#070707", surface: "#101010", surface2: "#191919", elevated: "#22211e",
+      border: "#35322a", text: "#f7f3e8", muted: "#aaa393", primary: "#d6b86a",
+      primarySoft: "#2a2416", success: "#45a477", warning: "#d79b42", danger: "#d85d62",
+      info: "#7597c6", financePositive: "#55b783", financeNegative: "#df6a70",
+      shadow: "0 24px 70px rgba(0,0,0,.48)", glow: "0 0 36px rgba(214,184,106,.13)",
+      gradientAccent: "linear-gradient(135deg,#e4ca82,#9d7b32)", chartColors: ["#d6b86a", "#55b783", "#7597c6", "#d85d62"],
+    },
+  },
+  {
+    id: "midnight-sapphire",
+    name: "Midnight Sapphire",
+    description: "Derin lacivert ve safir ışığıyla sakin kurumsal odak.",
+    mode: "dark", category: "premium", tags: ["dark", "premium", "focus"],
+    colors: {
+      background: "#050b18", surface: "#0b1426", surface2: "#101d35", elevated: "#172746",
+      border: "#284264", text: "#f2f7ff", muted: "#91a6c4", primary: "#3b82f6",
+      primarySoft: "#102c58", success: "#35b986", warning: "#e8af48", danger: "#ed6675",
+      info: "#38bdf8", financePositive: "#43c08b", financeNegative: "#ed6675",
+      shadow: "0 24px 70px rgba(1,8,24,.5)", glow: "0 0 40px rgba(59,130,246,.18)",
+      gradientAccent: "linear-gradient(135deg,#60a5fa,#1d4ed8)", chartColors: ["#3b82f6", "#38bdf8", "#35b986", "#a78bfa"],
+    },
+  },
+  {
+    id: "emerald-command",
+    name: "Emerald Command",
+    description: "Finans takibi için düşük parlamalı zümrüt çalışma alanı.",
+    mode: "dark", category: "premium", tags: ["dark", "finance", "focus"],
+    colors: {
+      background: "#06110d", surface: "#0b1a14", surface2: "#10251c", elevated: "#173126",
+      border: "#28513e", text: "#effbf5", muted: "#8eaa9d", primary: "#2fb67d",
+      primarySoft: "#103927", success: "#45c88a", warning: "#ddb14e", danger: "#df676a",
+      info: "#4da5a0", financePositive: "#55d494", financeNegative: "#e06c6f",
+      shadow: "0 24px 70px rgba(1,15,9,.5)", glow: "0 0 38px rgba(47,182,125,.15)",
+      gradientAccent: "linear-gradient(135deg,#43d99b,#147552)", chartColors: ["#2fb67d", "#84cc9b", "#4da5a0", "#ddb14e"],
+    },
+  },
+  {
+    id: "obsidian-violet",
+    name: "Obsidian Violet",
+    description: "Obsidyen siyahı üzerinde zarif menekşe ışıltısı.",
+    mode: "dark", category: "premium", tags: ["dark", "premium", "focus"],
+    colors: {
+      background: "#08070c", surface: "#100d17", surface2: "#1a1425", elevated: "#251c34",
+      border: "#433259", text: "#f8f4ff", muted: "#aa9ab9", primary: "#9b6cff",
+      primarySoft: "#2a1d43", success: "#42be88", warning: "#e8ac46", danger: "#ed637d",
+      info: "#7c8cff", financePositive: "#4fc590", financeNegative: "#ed637d",
+      shadow: "0 24px 70px rgba(5,2,12,.52)", glow: "0 0 42px rgba(155,108,255,.2)",
+      gradientAccent: "linear-gradient(135deg,#bd8cff,#7047db)", chartColors: ["#9b6cff", "#d8b4fe", "#42be88", "#7c8cff"],
+    },
+  },
+  {
+    id: "arctic-focus",
+    name: "Arctic Focus",
+    description: "Buz mavisi vurgularla ferah ve dikkat dağıtmayan açık tema.",
+    mode: "light", category: "light", tags: ["light", "focus", "simple"],
+    colors: {
+      background: "#eef7fb", surface: "#ffffff", surface2: "#e4f0f5", elevated: "#ffffff",
+      border: "#bfd4de", text: "#152a34", muted: "#607985", primary: "#4d93b8",
+      primarySoft: "#d9edf6", success: "#25845f", warning: "#ad6d1c", danger: "#c44555",
+      info: "#3e86b2", financePositive: "#278961", financeNegative: "#c44555",
+      shadow: "0 20px 55px rgba(30,75,96,.12)", glow: "0 0 34px rgba(77,147,184,.12)",
+      gradientAccent: "linear-gradient(135deg,#72b7d6,#39799d)", chartColors: ["#4d93b8", "#55a78d", "#8b7fc7", "#c28a44"],
+    },
+  },
+  {
+    id: "sandstone-pro",
+    name: "Sandstone Pro",
+    description: "Sıcak kum tonlarında uzun kullanıma uygun profesyonel görünüm.",
+    mode: "light", category: "premium", tags: ["light", "premium", "focus"],
+    colors: {
+      background: "#f5efe5", surface: "#fffaf2", surface2: "#ece0d0", elevated: "#fffdf8",
+      border: "#d2bda3", text: "#302820", muted: "#746558", primary: "#a56f44",
+      primarySoft: "#ead9c5", success: "#3f8055", warning: "#b26c21", danger: "#b94a4a",
+      info: "#667f9c", financePositive: "#3f8055", financeNegative: "#b94a4a",
+      shadow: "0 20px 55px rgba(81,57,33,.13)", glow: "0 0 30px rgba(165,111,68,.11)",
+      gradientAccent: "linear-gradient(135deg,#c99568,#8d5833)", chartColors: ["#a56f44", "#3f8055", "#667f9c", "#b26c21"],
+    },
+  },
+  {
+    id: "crimson-ledger",
+    name: "Crimson Ledger",
+    description: "Öncelik ve finans risklerini belirginleştiren kontrollü koyu kırmızı.",
+    mode: "dark", category: "premium", tags: ["dark", "finance", "premium"],
+    colors: {
+      background: "#0d0709", surface: "#170c10", surface2: "#211117", elevated: "#301820",
+      border: "#56303b", text: "#fff3f5", muted: "#c09aa3", primary: "#c6425c",
+      primarySoft: "#3a1520", success: "#46b77c", warning: "#e8a34a", danger: "#ef5b6d",
+      info: "#7b91c5", financePositive: "#49bc80", financeNegative: "#ef5b6d",
+      shadow: "0 24px 70px rgba(16,3,7,.5)", glow: "0 0 38px rgba(198,66,92,.17)",
+      gradientAccent: "linear-gradient(135deg,#e45c74,#9d263c)", chartColors: ["#c6425c", "#e8a34a", "#46b77c", "#7b91c5"],
+    },
+  },
+  {
+    id: "carbon-cyan",
+    name: "Carbon Cyan",
+    description: "Karbon grafit yüzeylerde net camgöbeği komuta vurguları.",
+    mode: "dark", category: "colorful", tags: ["dark", "focus", "colorful"],
+    colors: {
+      background: "#070a0c", surface: "#0e1417", surface2: "#182126", elevated: "#202d33",
+      border: "#33464e", text: "#effcff", muted: "#8daab3", primary: "#20c8d8",
+      primarySoft: "#10363c", success: "#3fc28a", warning: "#e8b14c", danger: "#ef6874",
+      info: "#45a9e6", financePositive: "#45c790", financeNegative: "#ef6874",
+      shadow: "0 24px 70px rgba(0,8,11,.52)", glow: "0 0 42px rgba(32,200,216,.19)",
+      gradientAccent: "linear-gradient(135deg,#42e1ec,#1594a3)", chartColors: ["#20c8d8", "#45a9e6", "#3fc28a", "#a78bfa"],
+    },
+  },
+  {
+    id: "olive-tactical",
+    name: "Olive Tactical",
+    description: "Düşük parlamalı zeytin tonlarında planlama ve odak teması.",
+    mode: "dark", category: "dark", tags: ["dark", "focus", "simple"],
+    colors: {
+      background: "#0c0e08", surface: "#15190f", surface2: "#202719", elevated: "#2a3220",
+      border: "#414a31", text: "#f2f4e8", muted: "#aeb79a", primary: "#91a856",
+      primarySoft: "#2e3820", success: "#68aa59", warning: "#d2a640", danger: "#d86458",
+      info: "#74939a", financePositive: "#73b765", financeNegative: "#d86458",
+      shadow: "0 24px 70px rgba(5,7,2,.48)", glow: "0 0 34px rgba(145,168,86,.13)",
+      gradientAccent: "linear-gradient(135deg,#aabc6d,#667638)", chartColors: ["#91a856", "#c1b86a", "#68aa59", "#74939a"],
+    },
+  },
+  {
+    id: "bronze-night",
+    name: "Bronze Night",
+    description: "Bronz ve koyu kahve tonlarında sıcak premium ofis görünümü.",
+    mode: "dark", category: "premium", tags: ["dark", "premium", "finance"],
+    colors: {
+      background: "#100a07", surface: "#1a110c", surface2: "#291a12", elevated: "#352219",
+      border: "#5b3d29", text: "#fff7ed", muted: "#c9a788", primary: "#c1844f",
+      primarySoft: "#3d2817", success: "#50ad76", warning: "#e1a343", danger: "#df675d",
+      info: "#728fae", financePositive: "#55b77d", financeNegative: "#df675d",
+      shadow: "0 24px 70px rgba(14,6,2,.5)", glow: "0 0 38px rgba(193,132,79,.15)",
+      gradientAccent: "linear-gradient(135deg,#dda36e,#8e562d)", chartColors: ["#c1844f", "#e0b57e", "#50ad76", "#728fae"],
+    },
+  },
+  {
+    id: "storm-blue",
+    name: "Storm Blue",
+    description: "Fırtına mavisi ve gri tonlarında ciddi, yüksek okunabilirlik.",
+    mode: "dark", category: "dark", tags: ["dark", "focus", "simple"],
+    colors: {
+      background: "#0b1119", surface: "#111c28", surface2: "#1b2838", elevated: "#25364a",
+      border: "#3a5067", text: "#f1f6fb", muted: "#9aaabd", primary: "#5b88b4",
+      primarySoft: "#20364c", success: "#44b582", warning: "#dfaa48", danger: "#df6672",
+      info: "#63a6d8", financePositive: "#4abb87", financeNegative: "#df6672",
+      shadow: "0 24px 70px rgba(3,9,16,.5)", glow: "0 0 36px rgba(91,136,180,.16)",
+      gradientAccent: "linear-gradient(135deg,#77a7d2,#3e668d)", chartColors: ["#5b88b4", "#63a6d8", "#44b582", "#a48ad1"],
+    },
+  },
+  {
+    id: "neon-graphite",
+    name: "Neon Graphite",
+    description: "Grafit tabanda kontrollü lime ve camgöbeği teknoloji vurguları.",
+    mode: "dark", category: "colorful", tags: ["dark", "colorful", "focus"],
+    colors: {
+      background: "#080a0a", surface: "#101515", surface2: "#192020", elevated: "#222c2b",
+      border: "#344542", text: "#f2fff4", muted: "#91aaa2", primary: "#77e45b",
+      primarySoft: "#203b1c", success: "#58d975", warning: "#dfc14b", danger: "#ed6868",
+      info: "#2bd6d0", financePositive: "#62de7d", financeNegative: "#ed6868",
+      shadow: "0 24px 70px rgba(1,8,6,.52)", glow: "0 0 42px rgba(119,228,91,.18)",
+      gradientAccent: "linear-gradient(135deg,#8df173,#2bd6d0)", chartColors: ["#77e45b", "#2bd6d0", "#58d975", "#dfc14b"],
+    },
+  },
 ];
 
 export const APP_THEME_IDS = APP_THEMES.map((theme) => theme.id);
@@ -945,6 +1126,36 @@ export const NEW_THEME_IDS: AppTheme[] = [
   "crimson-executive",
   "oceanic-teal",
   "desert-night",
+  "executive-noir",
+  "midnight-sapphire",
+  "emerald-command",
+  "obsidian-violet",
+  "arctic-focus",
+  "sandstone-pro",
+  "crimson-ledger",
+  "carbon-cyan",
+  "olive-tactical",
+  "bronze-night",
+  "storm-blue",
+  "neon-graphite",
+];
+
+export const VISUAL_PACK_V11_THEME_IDS: AppTheme[] = [
+  "executive-noir",
+  "midnight-sapphire",
+  "emerald-command",
+  "obsidian-violet",
+  "arctic-focus",
+  "sandstone-pro",
+  "crimson-ledger",
+  "carbon-cyan",
+  "olive-tactical",
+  "pearl-minimal",
+  "royal_indigo",
+  "bronze-night",
+  "glacier-mint",
+  "storm-blue",
+  "neon-graphite",
 ];
 export const LIGHT_THEME_IDS = APP_THEMES.filter(
   (theme) => theme.mode === "light",

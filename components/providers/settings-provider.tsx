@@ -17,6 +17,7 @@ import {
 import { normalizeAppearancePreferences } from "@/lib/settings/appearance-preferences";
 import { normalizeDashboardPreferences } from "@/lib/settings/dashboard-preferences";
 import {
+  getThemeById,
   isLightTheme,
   isNewThemeId,
   isThemeId,
@@ -40,8 +41,12 @@ const APP_FONTS = [
   "jakarta",
   "nunito",
   "roboto",
+  "ibm-plex",
+  "outfit",
+  "space-grotesk",
 ] as const;
 const APP_DENSITIES = ["comfortable", "balanced", "compact"] as const;
+const LOCAL_FONT_FALLBACKS = ["ibm-plex", "outfit", "space-grotesk"] as const;
 
 interface SettingsContextValue {
   settings: UserSettings;
@@ -73,6 +78,54 @@ function applyDocumentSettings(settings: UserSettings) {
   root.dataset.dashboardLayout = settings.dashboard_layout;
   root.lang = settings.language;
   root.style.colorScheme = isLightTheme(settings.app_theme) ? "light" : "dark";
+
+  const theme = getThemeById(settings.app_theme);
+  if (theme) {
+    const { colors } = theme;
+    const variables: Record<string, string> = {
+      "--app-background": colors.background,
+      "--app-surface": colors.surface,
+      "--app-surface-2": colors.surface2,
+      "--app-elevated": colors.elevated ?? colors.surface2,
+      "--app-border": colors.border,
+      "--app-text": colors.text,
+      "--app-muted": colors.muted,
+      "--app-primary": colors.primary,
+      "--app-primary-soft":
+        colors.primarySoft ??
+        `color-mix(in srgb, ${colors.primary} 14%, ${colors.surface})`,
+      "--app-success": colors.success,
+      "--app-warning": colors.warning,
+      "--app-danger": colors.danger,
+      "--app-info": colors.info ?? colors.primary,
+      "--app-finance-positive": colors.financePositive ?? colors.success,
+      "--app-finance-negative": colors.financeNegative ?? colors.danger,
+      "--app-shadow":
+        colors.shadow ??
+        `0 20px 55px color-mix(in srgb, ${colors.background} 62%, transparent)`,
+      "--app-glow":
+        colors.glow ??
+        `0 0 36px color-mix(in srgb, ${colors.primary} 14%, transparent)`,
+      "--app-gradient-accent":
+        colors.gradientAccent ??
+        `linear-gradient(135deg, color-mix(in srgb, ${colors.primary} 82%, white), ${colors.primary})`,
+    };
+    (
+      colors.chartColors ?? [
+        colors.primary,
+        colors.success,
+        colors.warning,
+        colors.danger,
+      ]
+    )
+      .slice(0, 4)
+      .forEach((color, index) => {
+        variables[`--app-chart-${index + 1}`] = color;
+      });
+    Object.entries(variables).forEach(([name, value]) => {
+      root.style.setProperty(name, value);
+    });
+  }
 }
 
 function resetDocumentSettings() {
@@ -199,6 +252,12 @@ function mergePersistedSettings(settings: UserSettings): UserSettings {
     ...settings,
     ...(localTheme && isNewThemeId(localTheme)
       ? { app_theme: localTheme }
+      : {}),
+    ...(localFallback.font_family &&
+    LOCAL_FONT_FALLBACKS.includes(
+      localFallback.font_family as (typeof LOCAL_FONT_FALLBACKS)[number],
+    )
+      ? { font_family: localFallback.font_family }
       : {}),
     ...(!settings.appearance_preferences &&
     localFallback.appearance_preferences

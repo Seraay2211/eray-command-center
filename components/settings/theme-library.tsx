@@ -13,7 +13,9 @@ import {
   APP_THEMES,
   getThemeById,
   getThemeTags,
+  VISUAL_PACK_V11_THEME_IDS,
   type ThemeFilter,
+  type ThemeDefinition,
 } from "@/lib/settings/themes";
 import { cn } from "@/lib/utils";
 import type { AppTheme } from "@/types";
@@ -27,11 +29,11 @@ const FEATURED_THEME_LIMIT = 6;
 
 const THEME_FILTERS: Array<{ label: string; value: ThemeFilter }> = [
   { label: "Tümü", value: "all" },
-  { label: "Koyu", value: "dark" },
-  { label: "Açık", value: "light" },
-  { label: "Renkli", value: "colorful" },
+  { label: "Koyu Temalar", value: "dark" },
+  { label: "Açık Temalar", value: "light" },
   { label: "Premium", value: "premium" },
-  { label: "Sade", value: "simple" },
+  { label: "Odak", value: "focus" },
+  { label: "Finans", value: "finance" },
 ];
 
 function normalizeSearch(value: string): string {
@@ -66,9 +68,12 @@ export function ThemeLibrary({
   }, [isOpen]);
 
   const featuredThemes = useMemo(() => {
-    const themes = activeTheme
-      ? [activeTheme, ...APP_THEMES.filter((theme) => theme.id !== activeTheme.id)]
-      : APP_THEMES;
+    const visualPackThemes = VISUAL_PACK_V11_THEME_IDS.map((themeId) =>
+      getThemeById(themeId),
+    ).filter((theme): theme is ThemeDefinition => Boolean(theme));
+    const themes = activeTheme && !VISUAL_PACK_V11_THEME_IDS.includes(activeTheme.id)
+      ? [activeTheme, ...visualPackThemes]
+      : visualPackThemes;
     return themes.slice(0, FEATURED_THEME_LIMIT);
   }, [activeTheme]);
 
@@ -90,17 +95,17 @@ export function ThemeLibrary({
 
   return (
     <>
-      <div className="app-surface-2 app-border min-w-0 rounded-2xl border p-3 sm:p-4">
+      <div className="app-visual-hero min-w-0 overflow-hidden rounded-3xl border p-4 sm:p-5">
         <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <Palette className="app-primary size-4" />
               <h3 className="app-text text-sm font-semibold">
-                Tema Kütüphanesi
+                Visual Pack v1.1
               </h3>
             </div>
             <p className="app-muted mt-1 text-xs leading-5">
-              Öne çıkan temalardan birini seç veya tüm koleksiyonu aç.
+              Günlük çalışma ritmine göre hazırlanmış 15 yeni görünümü keşfet.
             </p>
           </div>
           <Button
@@ -110,11 +115,11 @@ export function ThemeLibrary({
             variant="secondary"
           >
             <Palette className="size-3.5" />
-            Tüm Temaları Aç
+            Tema Kütüphanesini Aç
           </Button>
         </div>
 
-        <div className="mt-3 flex flex-wrap gap-1.5">
+        <div className="mt-4 flex flex-wrap gap-1.5">
           {THEME_FILTERS.slice(1).map((filter) => (
             <span
               className="app-surface app-border rounded-full border px-2 py-1 text-[9px] font-medium app-muted"
@@ -125,7 +130,7 @@ export function ThemeLibrary({
           ))}
         </div>
 
-        <div className="mt-4 grid min-w-0 auto-rows-fr gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-5 grid min-w-0 auto-rows-fr gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {featuredThemes.map((theme) => (
             <ThemeCard
               isActive={activeThemeId === theme.id}
@@ -156,7 +161,7 @@ export function ThemeLibrary({
                   Tema Kütüphanesi
                 </h2>
                 <p className="app-muted mt-1 text-xs leading-5">
-                  Tüm temaları kategoriye göre incele ve çalışma alanına uygula.
+                  Koyu, açık, premium, odak ve finans görünümlerini karşılaştır.
                 </p>
               </div>
               <button
@@ -185,7 +190,7 @@ export function ThemeLibrary({
 
               <div
                 aria-label="Tema filtresi"
-                className="app-surface app-border grid min-w-0 grid-cols-3 gap-1 rounded-xl border p-1 sm:grid-cols-6"
+                className="app-surface app-border grid min-w-0 grid-cols-2 gap-1 rounded-xl border p-1 sm:grid-cols-3"
                 role="group"
               >
                 {THEME_FILTERS.map((filter) => (

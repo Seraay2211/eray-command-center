@@ -628,6 +628,80 @@ html[data-theme="desert-night"] {
   --app-danger: #dd685d;
 }
 
+html[data-theme="executive-noir"] {
+  --app-background: #070707; --app-surface: #101010; --app-surface-2: #191919;
+  --app-border: #35322a; --app-text: #f7f3e8; --app-muted: #aaa393;
+  --app-primary: #d6b86a; --app-success: #45a477; --app-warning: #d79b42; --app-danger: #d85d62;
+}
+
+html[data-theme="midnight-sapphire"] {
+  --app-background: #050b18; --app-surface: #0b1426; --app-surface-2: #101d35;
+  --app-border: #284264; --app-text: #f2f7ff; --app-muted: #91a6c4;
+  --app-primary: #3b82f6; --app-success: #35b986; --app-warning: #e8af48; --app-danger: #ed6675;
+}
+
+html[data-theme="emerald-command"] {
+  --app-background: #06110d; --app-surface: #0b1a14; --app-surface-2: #10251c;
+  --app-border: #28513e; --app-text: #effbf5; --app-muted: #8eaa9d;
+  --app-primary: #2fb67d; --app-success: #45c88a; --app-warning: #ddb14e; --app-danger: #df676a;
+}
+
+html[data-theme="obsidian-violet"] {
+  --app-background: #08070c; --app-surface: #100d17; --app-surface-2: #1a1425;
+  --app-border: #433259; --app-text: #f8f4ff; --app-muted: #aa9ab9;
+  --app-primary: #9b6cff; --app-success: #42be88; --app-warning: #e8ac46; --app-danger: #ed637d;
+}
+
+html[data-theme="arctic-focus"] {
+  --app-background: #eef7fb; --app-surface: #ffffff; --app-surface-2: #e4f0f5;
+  --app-border: #bfd4de; --app-text: #152a34; --app-muted: #607985;
+  --app-primary: #4d93b8; --app-success: #25845f; --app-warning: #ad6d1c; --app-danger: #c44555;
+  color-scheme: light;
+}
+
+html[data-theme="sandstone-pro"] {
+  --app-background: #f5efe5; --app-surface: #fffaf2; --app-surface-2: #ece0d0;
+  --app-border: #d2bda3; --app-text: #302820; --app-muted: #746558;
+  --app-primary: #a56f44; --app-success: #3f8055; --app-warning: #b26c21; --app-danger: #b94a4a;
+  color-scheme: light;
+}
+
+html[data-theme="crimson-ledger"] {
+  --app-background: #0d0709; --app-surface: #170c10; --app-surface-2: #211117;
+  --app-border: #56303b; --app-text: #fff3f5; --app-muted: #c09aa3;
+  --app-primary: #c6425c; --app-success: #46b77c; --app-warning: #e8a34a; --app-danger: #ef5b6d;
+}
+
+html[data-theme="carbon-cyan"] {
+  --app-background: #070a0c; --app-surface: #0e1417; --app-surface-2: #182126;
+  --app-border: #33464e; --app-text: #effcff; --app-muted: #8daab3;
+  --app-primary: #20c8d8; --app-success: #3fc28a; --app-warning: #e8b14c; --app-danger: #ef6874;
+}
+
+html[data-theme="olive-tactical"] {
+  --app-background: #0c0e08; --app-surface: #15190f; --app-surface-2: #202719;
+  --app-border: #414a31; --app-text: #f2f4e8; --app-muted: #aeb79a;
+  --app-primary: #91a856; --app-success: #68aa59; --app-warning: #d2a640; --app-danger: #d86458;
+}
+
+html[data-theme="bronze-night"] {
+  --app-background: #100a07; --app-surface: #1a110c; --app-surface-2: #291a12;
+  --app-border: #5b3d29; --app-text: #fff7ed; --app-muted: #c9a788;
+  --app-primary: #c1844f; --app-success: #50ad76; --app-warning: #e1a343; --app-danger: #df675d;
+}
+
+html[data-theme="storm-blue"] {
+  --app-background: #0b1119; --app-surface: #111c28; --app-surface-2: #1b2838;
+  --app-border: #3a5067; --app-text: #f1f6fb; --app-muted: #9aaabd;
+  --app-primary: #5b88b4; --app-success: #44b582; --app-warning: #dfaa48; --app-danger: #df6672;
+}
+
+html[data-theme="neon-graphite"] {
+  --app-background: #080a0a; --app-surface: #101515; --app-surface-2: #192020;
+  --app-border: #344542; --app-text: #f2fff4; --app-muted: #91aaa2;
+  --app-primary: #77e45b; --app-success: #58d975; --app-warning: #dfc14b; --app-danger: #ed6868;
+}
+
 :root,
 html[data-theme] {
   --background: var(--app-background);
@@ -640,6 +714,18 @@ html[data-theme] {
   --success: var(--app-success);
   --warning: var(--app-warning);
   --danger: var(--app-danger);
+  --elevated: var(--app-elevated, var(--app-surface-2));
+  --primary-soft: var(--app-primary-soft, color-mix(in srgb, var(--app-primary) 14%, var(--app-surface)));
+  --info: var(--app-info, var(--app-primary));
+  --finance-positive: var(--app-finance-positive, var(--app-success));
+  --finance-negative: var(--app-finance-negative, var(--app-danger));
+  --visual-shadow: var(--app-shadow, 0 20px 55px color-mix(in srgb, var(--app-background) 62%, transparent));
+  --visual-glow: var(--app-glow, 0 0 36px color-mix(in srgb, var(--app-primary) 14%, transparent));
+  --visual-gradient: var(--app-gradient-accent, linear-gradient(135deg, color-mix(in srgb, var(--app-primary) 82%, white), var(--app-primary)));
+  --chart-1: var(--app-chart-1, var(--app-primary));
+  --chart-2: var(--app-chart-2, var(--app-success));
+  --chart-3: var(--app-chart-3, var(--app-warning));
+  --chart-4: var(--app-chart-4, var(--app-danger));
 }
 
 * {
@@ -931,6 +1017,22 @@ html[data-pwa-standalone="true"] .app-topbar {
 .app-card {
   border-color: color-mix(in srgb, var(--border) 75%, transparent);
   background: color-mix(in srgb, var(--surface) 94%, transparent);
+  box-shadow: 0 12px 36px color-mix(in srgb, var(--background) 26%, transparent);
+}
+
+.app-elevated {
+  border-color: var(--border);
+  background: var(--elevated);
+  color: var(--text);
+  box-shadow: var(--visual-shadow);
+}
+
+.app-visual-hero {
+  border-color: color-mix(in srgb, var(--primary) 24%, var(--border));
+  background:
+    radial-gradient(circle at 90% 0%, color-mix(in srgb, var(--primary) 18%, transparent), transparent 38%),
+    linear-gradient(145deg, color-mix(in srgb, var(--elevated) 94%, transparent), var(--surface));
+  box-shadow: var(--visual-shadow);
 }
 
 .app-button-primary {

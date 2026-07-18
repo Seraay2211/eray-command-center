@@ -193,6 +193,9 @@ const fontFamilies: AppFontFamily[] = [
   "jakarta",
   "nunito",
   "roboto",
+  "ibm-plex",
+  "outfit",
+  "space-grotesk",
 ];
 const landingPages: DefaultLandingPage[] = [
   "dashboard",
@@ -845,6 +848,25 @@ export async function updateUserSettings(
         data: {
           ...current,
           app_theme: values.app_theme,
+        },
+        error: null,
+      };
+    }
+
+    if (
+      error &&
+      values.font_family &&
+      ["ibm-plex", "outfit", "space-grotesk"].includes(values.font_family) &&
+      error.message.includes("user_settings_font_family_check")
+    ) {
+      const current =
+        (await readSettings(supabase, user.id)) ??
+        createDefaultUserSettings(user.id);
+
+      return {
+        data: {
+          ...current,
+          font_family: values.font_family,
         },
         error: null,
       };

@@ -119,7 +119,7 @@ export function AppearanceCenter({
 
   return (
     <SettingsSection
-      description="Çalışma alanının tema, yazı, yoğunluk ve dashboard görünümünü buradan yönet."
+      description="Visual Pack, yazı tipi ve arayüz ritmini tek yerden kişiselleştir."
       icon={Eye}
       title="Görünüm Merkezi"
     >
@@ -176,8 +176,7 @@ export function AppearanceCenter({
               Yazı ve Okunabilirlik
             </h3>
             <p className="app-muted mt-1 text-xs leading-5">
-              Türkçe karakterleri destekleyen yazı ailesini ve okuma ritmini
-              seç.
+              Dokuz yazı ailesinden çalışma tarzına en uygun olanı seç. Değişiklik anında uygulanır.
             </p>
           </div>
         </div>
