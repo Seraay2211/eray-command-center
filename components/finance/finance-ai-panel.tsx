@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AlertCircle, LoaderCircle, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getUserFacingError } from "@/lib/user-facing-error";
@@ -26,6 +26,7 @@ interface FinanceAiPanelProps {
 }
 
 export function FinanceAiPanel({ initialOpen, onClose }: FinanceAiPanelProps) {
+  const requestInFlight = useRef(false);
   const [isOpen, setIsOpen] = useState(initialOpen);
   const [isLoading, setIsLoading] = useState(false);
   const [output, setOutput] = useState("");
@@ -35,6 +36,8 @@ export function FinanceAiPanel({ initialOpen, onClose }: FinanceAiPanelProps) {
   if (!isOpen) return null;
 
   async function run(mode: FinanceAiMode) {
+    if (requestInFlight.current) return;
+    requestInFlight.current = true;
     setIsLoading(true);
     setError("");
     setOutput("");
@@ -63,6 +66,7 @@ export function FinanceAiPanel({ initialOpen, onClose }: FinanceAiPanelProps) {
         ),
       );
     } finally {
+      requestInFlight.current = false;
       setIsLoading(false);
     }
   }

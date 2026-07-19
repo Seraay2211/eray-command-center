@@ -2,6 +2,7 @@ import "server-only";
 
 import { GEMINI_MODEL } from "@/lib/ai/config";
 import { AI_PLAIN_TEXT_INSTRUCTION } from "@/lib/ai/format-ai-output";
+import { fetchAi, readAiJson } from "@/lib/ai/safe-fetch";
 import type { TodaySummary } from "@/types/today";
 
 interface GeminiResponse {
@@ -48,7 +49,7 @@ export async function generateTodaySummaryWithGemini(
       priority: item.priority,
     })),
   };
-  const response = await fetch(
+  const response = await fetchAi(
     `https://generativelanguage.googleapis.com/v1beta/${modelPath}:generateContent?key=${encodeURIComponent(apiKey)}`,
     {
       method: "POST",
@@ -89,7 +90,7 @@ export async function generateTodaySummaryWithGemini(
     throw new Error("AI çıktısı oluşturulamadı. Birazdan tekrar deneyebilirsin.");
   }
 
-  const payload = (await response.json()) as GeminiResponse;
+  const payload = await readAiJson<GeminiResponse>(response);
   const output =
     payload.candidates?.[0]?.content?.parts
       ?.map((part) => part.text ?? "")

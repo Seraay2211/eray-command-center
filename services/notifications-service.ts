@@ -8,6 +8,7 @@ import type { ActionResult } from "@/types";
 import type {
   AppNotification,
   CreateNotificationInput,
+  NotificationCenterSnapshot,
   NotificationPriority,
   NotificationType,
 } from "@/types/notifications";
@@ -142,7 +143,7 @@ async function buildDynamicNotifications(
         .is("archived_at", null)
         .neq("status", "done")
         .not("due_date", "is", null)
-        .lt("due_date", endIso)
+        .lte("due_date", todayKey)
         .order("due_date", { ascending: true })
         .limit(12),
       supabase
@@ -166,7 +167,7 @@ async function buildDynamicNotifications(
 
     const taskNotifications = (tasksResult.data ?? []).map((task) => {
       const dueDate = String(task.due_date ?? "");
-      const isOverdue = dueDate < startIso;
+      const isOverdue = dueDate < todayKey;
       return buildDynamicNotification({
         actionUrl: `/tasks?task=${encodeURIComponent(String(task.id))}`,
         createdAt: dueDate || undefined,
@@ -247,6 +248,40 @@ async function buildDynamicNotifications(
   }
 }
 
+function getNotificationIdentity(
+  notification: Pick<AppNotification, "source_id" | "type">,
+): string | null {
+  return notification.source_id
+    ? `${notification.type}:${notification.source_id}`
+    : null;
+}
+
+function mergeNotifications(
+  dynamicNotifications: AppNotification[],
+  storedNotifications: AppNotification[],
+  limit: number,
+): AppNotification[] {
+  const dynamicKeys = new Set(
+    dynamicNotifications
+      .map(getNotificationIdentity)
+      .filter((key): key is string => Boolean(key)),
+  );
+
+  return [
+    ...dynamicNotifications,
+    ...storedNotifications.filter((notification) => {
+      const key = getNotificationIdentity(notification);
+      return !key || !dynamicKeys.has(key);
+    }),
+  ]
+    .sort(
+      (left, right) =>
+        new Date(right.created_at).getTime() -
+        new Date(left.created_at).getTime(),
+    )
+    .slice(0, limit);
+}
+
 async function getContext() {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getUser();
@@ -286,13 +321,67 @@ export async function getNotifications(
         );
 
     return {
-      data: [...dynamicNotifications, ...storedNotifications]
-        .sort(
-          (left, right) =>
-            new Date(right.created_at).getTime() -
-            new Date(left.created_at).getTime(),
-        )
-        .slice(0, limit),
+      data: mergeNotifications(
+        dynamicNotifications,
+        storedNotifications,
+        limit,
+      ),
+      error: null,
+    };
+  } catch (error) {
+    return { data: null, error: getNotificationErrorMessage(error) };
+  }
+}
+
+export async function getNotificationCenterSnapshot(
+  limitValue = 30,
+): Promise<ActionResult<NotificationCenterSnapshot>> {
+  try {
+    const limit = Math.min(Math.max(limitValue, 1), 50);
+    const { supabase, userId } = await getContext();
+    const [dynamicNotifications, storedResult, unreadResult] =
+      await Promise.all([
+        buildDynamicNotifications(supabase, userId),
+        supabase
+          .from("notifications")
+          .select(notificationSelect)
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(limit),
+        supabase
+          .from("notifications")
+          .select("id,type,source_id")
+          .eq("user_id", userId)
+          .eq("is_read", false)
+          .limit(100),
+      ]);
+
+    const storedNotifications = storedResult.error
+      ? []
+      : (storedResult.data ?? []).map((item) =>
+          mapNotification(item as Record<string, unknown>),
+        );
+
+    return {
+      data: {
+        notifications: mergeNotifications(
+          dynamicNotifications,
+          storedNotifications,
+          limit,
+        ),
+        unreadCount: dynamicNotifications.length +
+          (unreadResult.error
+            ? 0
+            : (unreadResult.data ?? []).filter((notification) => {
+                const identity = notification.source_id
+                  ? `${String(notification.type)}:${String(notification.source_id)}`
+                  : null;
+                return !identity || !dynamicNotifications.some(
+                  (dynamicNotification) =>
+                    getNotificationIdentity(dynamicNotification) === identity,
+                );
+              }).length),
+      },
       error: null,
     };
   } catch (error) {
@@ -309,15 +398,25 @@ export async function getUnreadNotificationCount(): Promise<
       buildDynamicNotifications(supabase, userId),
       supabase
         .from("notifications")
-        .select("id", { count: "exact", head: true })
+        .select("id,type,source_id")
         .eq("user_id", userId)
-        .eq("is_read", false),
+        .eq("is_read", false)
+        .limit(100),
     ]);
 
     return {
-      data:
-        dynamicNotifications.length +
-        (storedResult.error ? 0 : (storedResult.count ?? 0)),
+      data: dynamicNotifications.length +
+        (storedResult.error
+          ? 0
+          : (storedResult.data ?? []).filter((notification) => {
+              const identity = notification.source_id
+                ? `${String(notification.type)}:${String(notification.source_id)}`
+                : null;
+              return !identity || !dynamicNotifications.some(
+                (dynamicNotification) =>
+                  getNotificationIdentity(dynamicNotification) === identity,
+              );
+            }).length),
       error: null,
     };
   } catch (error) {

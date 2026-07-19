@@ -4,11 +4,8 @@ import { AppShell } from "@/components/layout/app-shell";
 import { SettingsProvider } from "@/components/providers/settings-provider";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
-import {
-  getNotifications,
-  getUnreadNotificationCount,
-} from "@/services/notifications-service";
-import { getOrCreateUserSettings } from "@/services/settings-service";
+import { getInitialNotificationSnapshot } from "@/lib/notifications/initial-snapshot";
+import { getInitialUserSettings } from "@/lib/settings/initial-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -42,25 +39,18 @@ export default async function PanelLayout({ children }: PanelLayoutProps) {
 
   const userEmail =
     typeof claims.email === "string" ? claims.email : "Kullanıcı";
-  const settingsResult = await getOrCreateUserSettings();
-  const [notificationsResult, unreadResult] =
-    settingsResult.data?.notifications_enabled
-      ? await Promise.all([
-          getNotifications(30),
-          getUnreadNotificationCount(),
-        ])
-      : [
-          { data: [], error: null },
-          { data: 0, error: null },
-        ];
+  const settingsResult = await getInitialUserSettings();
+  const notificationSnapshot = settingsResult.data?.notifications_enabled
+    ? await getInitialNotificationSnapshot()
+    : { data: { notifications: [], unreadCount: 0 }, error: null };
 
   return (
     <SettingsProvider
       initialSettings={settingsResult.data!}
     >
       <AppShell
-        initialNotifications={notificationsResult.data ?? []}
-        initialUnreadCount={unreadResult.data ?? 0}
+        initialNotifications={notificationSnapshot.data?.notifications ?? []}
+        initialUnreadCount={notificationSnapshot.data?.unreadCount ?? 0}
         userEmail={userEmail}
       >
         {children}

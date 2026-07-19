@@ -41,10 +41,9 @@ import {
 import { aiCommands, quickActions } from "@/lib/mock-data";
 import { REPORT_TYPE_LABELS } from "@/lib/reports";
 import { getUserFacingError } from "@/lib/user-facing-error";
-import { generateFinanceAlerts } from "@/lib/notifications/finance-alerts";
+import { getInitialNotificationSnapshot } from "@/lib/notifications/initial-snapshot";
+import { getInitialUserSettings } from "@/lib/settings/initial-settings";
 import { getDashboardData } from "@/services/dashboard-service";
-import { getNotifications } from "@/services/notifications-service";
-import { getUserSettings } from "@/services/settings-service";
 import type { DashboardStats, StatItem } from "@/types";
 
 export const metadata = {
@@ -115,15 +114,12 @@ export default async function DashboardPage() {
   const [
     dashboardResult,
     settingsResult,
-    financeAlertsResult,
-    notificationsResult,
+    notificationSnapshot,
   ] = await Promise.all([
     getDashboardData(),
-    getUserSettings(),
-    generateFinanceAlerts(),
-    getNotifications(6),
+    getInitialUserSettings(),
+    getInitialNotificationSnapshot(),
   ]);
-  void financeAlertsResult;
   const dashboard = dashboardResult.data;
 
   if (!dashboard) {
@@ -145,7 +141,8 @@ export default async function DashboardPage() {
     aiProviderLabel,
     getAiProviderDescription(aiProvider),
   );
-  const notificationsCount = notificationsResult.data?.length ?? 0;
+  const notifications = notificationSnapshot.data?.notifications ?? [];
+  const notificationsCount = notifications.length;
   const trackedPaymentCount =
     dashboard.commandStats.dueThisWeekDebts +
     dashboard.financeSummary.dueTodayInstallmentCount +
@@ -537,7 +534,7 @@ export default async function DashboardPage() {
 
         <DashboardWidgetSection widgetId="notifications">
           <NotificationsPreviewCard
-            notifications={notificationsResult.data ?? []}
+            notifications={notifications}
           />
         </DashboardWidgetSection>
 

@@ -3,6 +3,7 @@ import "server-only";
 import { getAiActionDefinition } from "@/lib/ai/actions";
 import { AI_GENERIC_ERROR, GEMINI_MODEL } from "@/lib/ai/config";
 import { AI_PLAIN_TEXT_INSTRUCTION } from "@/lib/ai/format-ai-output";
+import { fetchAi } from "@/lib/ai/safe-fetch";
 import type { AiActionKey } from "@/types";
 
 interface GeminiApiError {
@@ -91,7 +92,7 @@ export async function generateWithGemini({
   provider: "gemini";
 }> {
   const definition = getAiActionDefinition(action);
-  const response = await fetch(
+  const response = await fetchAi(
     `https://generativelanguage.googleapis.com/v1beta/${getModelPath(
       GEMINI_MODEL,
     )}:generateContent?key=${encodeURIComponent(getApiKey())}`,

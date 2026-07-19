@@ -10,6 +10,7 @@ import type {
   AiReportSourceTask,
   ReportType,
 } from "@/types";
+import { fetchAi, readAiJson } from "@/lib/ai/safe-fetch";
 
 interface GeminiReportResponse {
   candidates?: Array<{
@@ -67,7 +68,7 @@ export async function generateReportWithGemini(input: GenerateReportInput) {
   const modelPath = GEMINI_MODEL.startsWith("models/")
     ? GEMINI_MODEL
     : `models/${GEMINI_MODEL}`;
-  const response = await fetch(
+  const response = await fetchAi(
     `https://generativelanguage.googleapis.com/v1beta/${modelPath}:generateContent?key=${encodeURIComponent(getApiKey())}`,
     {
       method: "POST",
@@ -90,7 +91,7 @@ export async function generateReportWithGemini(input: GenerateReportInput) {
       }),
     },
   );
-  const payload = (await response.json()) as GeminiReportResponse;
+  const payload = await readAiJson<GeminiReportResponse>(response);
 
   if (!response.ok) {
     if (response.status === 401 || response.status === 403) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   AlertCircle,
   Bot,
@@ -25,6 +25,7 @@ interface DailyCommandResponse {
 }
 
 export function AiDailyPlan() {
+  const requestInFlight = useRef(false);
   const [output, setOutput] = useState("");
   const [provider, setProvider] = useState<"demo" | "gemini" | null>(null);
   const [error, setError] = useState("");
@@ -42,6 +43,8 @@ export function AiDailyPlan() {
   }
 
   async function generatePlan() {
+    if (requestInFlight.current) return;
+    requestInFlight.current = true;
     setIsPending(true);
     setError("");
 
@@ -64,6 +67,7 @@ export function AiDailyPlan() {
     } catch {
       setError("AI günlük planı oluşturulamadı. Lütfen tekrar dene.");
     } finally {
+      requestInFlight.current = false;
       setIsPending(false);
     }
   }

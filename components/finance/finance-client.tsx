@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   AlertCircle,
@@ -13,7 +14,6 @@ import {
 import { DebtCard } from "@/components/finance/debt-card";
 import { DebtDetailPanel } from "@/components/finance/debt-detail-panel";
 import { DebtForm } from "@/components/finance/debt-form";
-import { FinanceAiPanel } from "@/components/finance/finance-ai-panel";
 import { FinanceCommandHero } from "@/components/finance/finance-command-hero";
 import { FinanceStatCard } from "@/components/finance/finance-stat-card";
 import { InstallmentPaymentForm } from "@/components/finance/installment-payment-form";
@@ -46,6 +46,14 @@ import type {
   DebtPayment,
   FinanceStats,
 } from "@/types";
+
+const FinanceAiPanel = dynamic(
+  () =>
+    import("@/components/finance/finance-ai-panel").then(
+      (module) => module.FinanceAiPanel,
+    ),
+  { ssr: false },
+);
 
 interface FinanceClientProps {
   initialAiOpen: boolean;
@@ -92,6 +100,9 @@ export function FinanceClient({
   const router = useRouter();
   const searchParams = useSearchParams();
   const paymentRequestRef = useRef(0);
+  const saveMutationRef = useRef(false);
+  const paymentMutationRef = useRef(false);
+  const paymentDeleteRef = useRef(new Set<string>());
   const [debts, setDebts] = useState(initialDebts);
   const [installments, setInstallments] = useState(initialInstallments);
   const [stats, setStats] = useState(initialStats ?? emptyStats);
@@ -155,6 +166,19 @@ export function FinanceClient({
       ),
     [debts],
   );
+  const installmentsByDebt = useMemo(() => {
+    const index = new Map<string, DebtInstallment[]>();
+    installments.forEach((installment) => {
+      const current = index.get(installment.debt_id);
+      if (current) current.push(installment);
+      else index.set(installment.debt_id, [installment]);
+    });
+    return index;
+  }, [installments]);
+  const debtsById = useMemo(
+    () => new Map(debts.map((debt) => [debt.id, debt])),
+    [debts],
+  );
   const schemaMissing = pageError.includes("Finans alanı şu anda");
 
   const replaceParams = useCallback(
@@ -190,6 +214,21 @@ export function FinanceClient({
     setStats(statsResult.data ?? emptyStats);
     setRecentPayments(paymentsResult.data ?? []);
     setInstallments(installmentsResult.data ?? []);
+    setPageError("");
+  }
+
+  async function refreshSummaryData() {
+    const [statsResult, paymentsResult] = await Promise.all([
+      getFinanceStats(),
+      getRecentPayments(8),
+    ]);
+    const error = statsResult.error ?? paymentsResult.error;
+    if (error) {
+      setPageError(getUserFacingError(error));
+      return;
+    }
+    setStats(statsResult.data ?? emptyStats);
+    setRecentPayments(paymentsResult.data ?? []);
     setPageError("");
   }
 
@@ -261,7 +300,8 @@ export function FinanceClient({
   }
 
   async function handleSave(input: CreateDebtInput) {
-    if (isSaving) return;
+    if (saveMutationRef.current) return;
+    saveMutationRef.current = true;
     const isEditing = Boolean(editingDebt);
     setIsSaving(true);
     setFormError("");
@@ -303,6 +343,7 @@ export function FinanceClient({
           : "Borç kaydı oluşturulamadı.",
       );
     } finally {
+      saveMutationRef.current = false;
       setIsSaving(false);
     }
   }
@@ -324,6 +365,8 @@ export function FinanceClient({
   }
 
   async function handlePayment(input: CreateDebtPaymentWithReceiptInput) {
+    if (paymentMutationRef.current) return;
+    paymentMutationRef.current = true;
     setIsSavingPayment(true);
     setPaymentError("");
     setPaymentHistoryError("");
@@ -394,16 +437,18 @@ export function FinanceClient({
             ? "Ödeme ve dekont kaydedildi. Kalan borç güncellendi."
             : "Ödeme kaydedildi ve kalan borç güncellendi.",
       );
-      void refreshData();
+      void refreshSummaryData();
     } catch {
       setPaymentError("Ödeme kaydedilemedi. Lütfen tekrar dene.");
     } finally {
+      paymentMutationRef.current = false;
       setIsSavingPayment(false);
     }
   }
 
   async function handleInstallmentPayment(input: CreateDebtPaymentInput) {
-    if (isSavingPayment) return;
+    if (paymentMutationRef.current) return;
+    paymentMutationRef.current = true;
     setIsSavingPayment(true);
     setPaymentError("");
     setPaymentHistoryError("");
@@ -431,15 +476,17 @@ export function FinanceClient({
       setInstallmentPayment(null);
       replaceParams({ debt: result.data.debt.id, installment: null });
       setNotice("Taksit ödemesi kaydedildi ve kalan borç güncellendi.");
-      void refreshData();
+      void refreshSummaryData();
     } catch {
       setPaymentError("Taksit ödemesi kaydedilemedi. Lütfen tekrar dene.");
     } finally {
+      paymentMutationRef.current = false;
       setIsSavingPayment(false);
     }
   }
 
   async function handleDeletePayment(payment: DebtPayment) {
+    if (paymentDeleteRef.current.has(payment.id)) return;
     if (
       !window.confirm(
         "Bu ödeme kaydı silinecek ve borcun ödenen tutarı geri düşecek. Emin misin?",
@@ -447,6 +494,7 @@ export function FinanceClient({
     ) {
       return;
     }
+    paymentDeleteRef.current.add(payment.id);
     setIsDeletingPayment(payment.id);
     setPaymentError("");
     setPaymentHistoryError("");
@@ -477,10 +525,11 @@ export function FinanceClient({
         result.data.warning ??
           "Ödeme silindi ve borç toplamı güncellendi.",
       );
-      void refreshData();
+      void refreshSummaryData();
     } catch {
       setPaymentHistoryError("Ödeme silinemedi. Lütfen tekrar dene.");
     } finally {
+      paymentDeleteRef.current.delete(payment.id);
       setIsDeletingPayment("");
     }
   }
@@ -654,9 +703,7 @@ export function FinanceClient({
                     {debts.map((debt) => (
                       <DebtCard
                         debt={debt}
-                        installments={installments.filter(
-                          (item) => item.debt_id === debt.id,
-                        )}
+                        installments={installmentsByDebt.get(debt.id) ?? []}
                         isSelected={selectedDebtId === debt.id}
                         key={debt.id}
                         onDelete={(item) => void handleDelete(item)}
@@ -697,7 +744,7 @@ export function FinanceClient({
                   {recentPayments.length ? (
                     <div className="divide-y divide-[var(--border)]">
                       {recentPayments.map((payment) => {
-                        const debt = debts.find((item) => item.id === payment.debt_id);
+                        const debt = debtsById.get(payment.debt_id);
                         return (
                           <div className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0" key={payment.id}>
                             <div><p className="app-text text-xs font-medium">{debt?.title ?? "Borç kaydı"}</p><p className="app-muted mt-1 text-[10px]">{payment.payment_date}{payment.method ? ` · ${payment.method}` : ""}</p></div>

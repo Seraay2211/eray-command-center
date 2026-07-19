@@ -6,11 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 interface PanelErrorProps {
-  error: Error & { digest?: string };
   reset: () => void;
 }
 
-export default function PanelError({ error, reset }: PanelErrorProps) {
+export default function PanelError({ reset }: PanelErrorProps) {
   const router = useRouter();
 
   return (
@@ -25,9 +24,6 @@ export default function PanelError({ error, reset }: PanelErrorProps) {
         Veriler alınırken geçici bir sorun oluştu. Tekrar deneyebilir veya
         Dashboard&apos;a dönebilirsin.
       </p>
-      {error.digest ? (
-        <p className="app-muted mt-3 text-[10px]">Hata kodu: {error.digest}</p>
-      ) : null}
       <div className="mt-6 flex flex-col justify-center gap-2 sm:flex-row">
         <Button onClick={reset}>
           <RefreshCw className="size-4" />

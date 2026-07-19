@@ -6,6 +6,7 @@ import {
   type FinanceAiInput,
   FINANCE_SYSTEM_INSTRUCTION,
 } from "@/lib/ai/finance-prompts";
+import { fetchAi, readAiJson } from "@/lib/ai/safe-fetch";
 
 interface GeminiResponse {
   candidates?: Array<{
@@ -28,7 +29,7 @@ export async function generateFinanceSummaryWithGemini(
   const modelPath = GEMINI_MODEL.startsWith("models/")
     ? GEMINI_MODEL
     : `models/${GEMINI_MODEL}`;
-  const response = await fetch(
+  const response = await fetchAi(
     `https://generativelanguage.googleapis.com/v1beta/${modelPath}:generateContent?key=${encodeURIComponent(getApiKey())}`,
     {
       method: "POST",
@@ -51,7 +52,7 @@ export async function generateFinanceSummaryWithGemini(
       }),
     },
   );
-  const payload = (await response.json()) as GeminiResponse;
+  const payload = await readAiJson<GeminiResponse>(response);
 
   if (!response.ok) {
     if (response.status === 401 || response.status === 403) {

@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { useRouter } from "next/navigation";
 import {
   Bell,
@@ -18,8 +24,7 @@ import { useSettings } from "@/components/providers/settings-provider";
 import { isPrivacyModeEnabled, MASKED_TRY_VALUE } from "@/lib/privacy";
 import {
   deleteNotification,
-  getNotifications,
-  getUnreadNotificationCount,
+  getNotificationCenterSnapshot,
   markAllNotificationsAsRead,
   markNotificationAsRead,
 } from "@/services/notifications-service";
@@ -45,9 +50,9 @@ const sourceLabels: Record<string, string> = {
   system: "Sistem",
 };
 
-function formatNotificationDate(value: string): string {
+function formatNotificationDate(value: string, currentTime: number): string {
   const date = new Date(value);
-  const elapsed = Date.now() - date.getTime();
+  const elapsed = currentTime - date.getTime();
   const minute = 60 * 1000;
   const hour = 60 * minute;
   const day = 24 * hour;
@@ -92,6 +97,19 @@ function isDynamicNotification(notification: AppNotification): boolean {
   return notification.metadata?.dynamic === true;
 }
 
+function subscribeToClock(callback: () => void) {
+  const timer = window.setInterval(callback, 60_000);
+  return () => window.clearInterval(timer);
+}
+
+function getClockSnapshot() {
+  return Math.floor(Date.now() / 60_000) * 60_000;
+}
+
+function getServerClockSnapshot() {
+  return 0;
+}
+
 interface NotificationCenterProps {
   initialNotifications: AppNotification[];
   initialUnreadCount: number;
@@ -114,6 +132,11 @@ export function NotificationCenter({
   const [isMarkingAll, setIsMarkingAll] = useState(false);
   const [actionId, setActionId] = useState("");
   const [error, setError] = useState("");
+  const currentTime = useSyncExternalStore(
+    subscribeToClock,
+    getClockSnapshot,
+    getServerClockSnapshot,
+  );
   const markableUnreadCount = notifications.filter(
     (notification) =>
       !notification.is_read && !isDynamicNotification(notification),
@@ -124,22 +147,15 @@ export function NotificationCenter({
     setError("");
 
     try {
-      const [notificationsResult, countResult] = await Promise.all([
-        getNotifications(30),
-        getUnreadNotificationCount(),
-      ]);
+      const snapshotResult = await getNotificationCenterSnapshot(30);
 
-      if (
-        notificationsResult.error ||
-        countResult.error ||
-        !notificationsResult.data
-      ) {
+      if (snapshotResult.error || !snapshotResult.data) {
         setError("Bildirimler alınamadı.");
         return;
       }
 
-      setNotifications(notificationsResult.data);
-      setUnreadCount(countResult.data ?? 0);
+      setNotifications(snapshotResult.data.notifications);
+      setUnreadCount(snapshotResult.data.unreadCount);
     } catch {
       setError("Bildirimler alınamadı.");
     } finally {
@@ -455,7 +471,10 @@ export function NotificationCenter({
                         </p>
                         <div className="notification-meta app-muted mt-2 flex flex-wrap items-center gap-2 text-[9px]">
                           <time dateTime={notification.created_at}>
-                            {formatNotificationDate(notification.created_at)}
+                    {formatNotificationDate(
+                      notification.created_at,
+                      currentTime,
+                    )}
                           </time>
                           {isDynamic ? <span>Aktif hatırlatma</span> : null}
                         </div>

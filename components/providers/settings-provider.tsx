@@ -281,19 +281,31 @@ export function SettingsProvider({
 }: SettingsProviderProps) {
   const updateRequestId = useRef(0);
   const updateQueue = useRef<Promise<void>>(Promise.resolve());
+  const hasMergedLocalSettings = useRef(false);
   const [settings, setSettings] = useState(() =>
-    mergePersistedSettings(initialSettings),
+    normalizeClientSettings(initialSettings),
   );
 
   useEffect(() => {
+    const timer = window.setTimeout(() => {
+      hasMergedLocalSettings.current = true;
+      setSettings(mergePersistedSettings(initialSettings));
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [initialSettings]);
+
+  useEffect(() => {
     applyDocumentSettings(settings);
-    saveLocalFallback(settings);
+    if (hasMergedLocalSettings.current) {
+      saveLocalFallback(settings);
+    }
   }, [settings]);
 
   useEffect(() => () => resetDocumentSettings(), []);
 
   const replaceSettings = useCallback((nextSettings: UserSettings) => {
     const normalized = normalizeClientSettings(nextSettings);
+    hasMergedLocalSettings.current = true;
     setSettings(normalized);
     applyDocumentSettings(normalized);
     saveLocalFallback(normalized);

@@ -41,6 +41,10 @@ function getWeekRange() {
   };
 }
 
+function getInitialTimestamp() {
+  return Date.now();
+}
+
 export default async function CalendarPage({
   searchParams,
 }: CalendarPageProps) {
@@ -74,6 +78,7 @@ export default async function CalendarPage({
 
   return (
     <CalendarClient
+      initialTimestamp={getInitialTimestamp()}
       initialError={
         eventsResult.error ??
         statsResult.error ??

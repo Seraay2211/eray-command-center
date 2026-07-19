@@ -37,6 +37,11 @@ export interface AppNotification {
   created_at: string;
 }
 
+export interface NotificationCenterSnapshot {
+  notifications: AppNotification[];
+  unreadCount: number;
+}
+
 export interface CreateNotificationInput {
   type: NotificationType;
   title: string;

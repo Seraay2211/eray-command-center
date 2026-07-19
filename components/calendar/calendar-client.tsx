@@ -51,6 +51,7 @@ interface CalendarClientProps {
   initialTodayTasks: TaskWithCategory[];
   initialTodoError: string;
   initialTodoOpen: boolean;
+  initialTimestamp: number;
   initialView: CalendarView;
   notes: NoteWithRelations[];
   tasks: TaskWithCategory[];
@@ -93,6 +94,7 @@ export function CalendarClient({
   initialTodayTasks,
   initialTodoError,
   initialTodoOpen,
+  initialTimestamp,
   initialView,
   notes,
   tasks,
@@ -127,7 +129,6 @@ export function CalendarClient({
   );
   const [formError, setFormError] = useState("");
   const [notice, setNotice] = useState("");
-  const [initialTimestamp] = useState(() => Date.now());
   const [isLoadingView, setIsLoadingView] = useState(false);
   const [isCreatingTodo, setIsCreatingTodo] = useState(false);
   const [busyTaskId, setBusyTaskId] = useState("");

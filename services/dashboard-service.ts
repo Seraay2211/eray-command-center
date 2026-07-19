@@ -204,7 +204,7 @@ function getErrorMessage(error: unknown): string {
     return "Oturum doğrulanamadı. Lütfen yeniden giriş yapın.";
   }
 
-  return message || "Dashboard verileri alınamadı.";
+  return "Dashboard verileri alınamadı. Birazdan tekrar deneyebilirsin.";
 }
 
 function getTurkeyDateParts(value: Date) {

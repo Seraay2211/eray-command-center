@@ -5,11 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 interface GlobalErrorProps {
-  error: Error & { digest?: string };
   reset: () => void;
 }
 
-export default function GlobalError({ error, reset }: GlobalErrorProps) {
+export default function GlobalError({ reset }: GlobalErrorProps) {
   return (
     <main className="app-bg flex min-h-dvh items-center justify-center px-4 py-10">
       <Card className="w-full max-w-lg p-6 text-center sm:p-8">
@@ -23,11 +22,6 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
           İşlem tamamlanamadı. Sayfayı yeniden deneyebilir veya ana ekrana
           dönebilirsin.
         </p>
-        {error.digest ? (
-          <p className="app-muted mt-3 text-[10px]">
-            Hata kodu: {error.digest}
-          </p>
-        ) : null}
         <div className="mt-6 flex flex-col justify-center gap-2 sm:flex-row">
           <Button onClick={reset}>
             <RefreshCw className="size-4" />
