@@ -41,6 +41,7 @@ import {
 import { aiCommands, quickActions } from "@/lib/mock-data";
 import { REPORT_TYPE_LABELS } from "@/lib/reports";
 import { getUserFacingError } from "@/lib/user-facing-error";
+import { getIstanbulDateKey } from "@/lib/dates/istanbul";
 import { getInitialNotificationSnapshot } from "@/lib/notifications/initial-snapshot";
 import { getInitialUserSettings } from "@/lib/settings/initial-settings";
 import { getDashboardData } from "@/services/dashboard-service";
@@ -543,7 +544,8 @@ export default async function DashboardPage() {
 
         <DashboardWidgetSection widgetId="notifications">
           <NotificationsPreviewCard
-            notifications={notifications}
+            dashboard={dashboard}
+            todayDateKey={getIstanbulDateKey()}
           />
         </DashboardWidgetSection>
 
