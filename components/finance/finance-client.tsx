@@ -18,6 +18,7 @@ import { FinanceCommandHero } from "@/components/finance/finance-command-hero";
 import { FinanceStatCard } from "@/components/finance/finance-stat-card";
 import { InstallmentPaymentForm } from "@/components/finance/installment-payment-form";
 import { PaymentForm } from "@/components/finance/payment-form";
+import { SmartFinancePlan } from "@/components/finance/smart-finance-plan";
 import { useSettings } from "@/components/providers/settings-provider";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -660,6 +661,18 @@ export function FinanceClient({
       ) : (
         <div className="mt-6 space-y-6">
           {pageError ? <div className="flex gap-2 rounded-xl border border-rose-400/20 bg-rose-500/10 p-4 text-xs text-rose-300"><AlertCircle className="size-4 shrink-0" />{pageError}</div> : null}
+          <SmartFinancePlan
+            debts={debts}
+            installments={installments}
+            onInspect={(debtId) => {
+              const debt = debtsById.get(debtId);
+              if (debt) void selectDebt(debt);
+            }}
+            onOpenAi={() => {
+              setIsAiOpen(true);
+              replaceParams({ action: "summary" });
+            }}
+          />
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <FinanceStatCard
               description="Vadesi bugün olan taksitler"
