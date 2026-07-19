@@ -408,7 +408,16 @@ export default async function DashboardPage() {
       <InstallHintCard />
       <DashboardPersonalizedArea>
         <DashboardWidgetSection widgetId="command_summary">
-          <CommandSummaryCard stats={dashboard.commandStats} />
+          <CommandSummaryCard
+            financeSummary={dashboard.financeSummary}
+            isPrivacyEnabled={Boolean(
+              settingsResult.data?.appearance_preferences
+                ?.hide_sensitive_amounts,
+            )}
+            openTasksCount={dashboard.stats.openTasks}
+            priorities={dashboard.priorities}
+            stats={dashboard.commandStats}
+          />
         </DashboardWidgetSection>
 
         <DashboardWidgetSection widgetId="overview_stats">

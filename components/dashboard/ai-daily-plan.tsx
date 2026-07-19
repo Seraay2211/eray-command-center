@@ -117,7 +117,7 @@ export function AiDailyPlan() {
         ) : (
           <Sparkles className="size-4" />
         )}
-        {isPending ? "Komuta özeti hazırlanıyor..." : "Komuta Özeti Oluştur"}
+        {isPending ? "Bugün yorumlanıyor..." : "AI ile Bugünü Yorumla"}
       </Button>
 
       {error ? (

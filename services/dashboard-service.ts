@@ -934,7 +934,7 @@ async function getDashboardIntelligence(
       priority: task.priority,
       dueDate: task.due_date,
     })),
-  ].slice(0, 8);
+  ];
 
   const activeRemainingDebt = debts.reduce(
     (sum, debt) => sum + getDebtRemainingAmount(debt),
@@ -1081,14 +1081,14 @@ export async function getDashboardData(): Promise<ActionResult<DashboardData>> {
         priorities: [...intelligence.priorityItems, ...calendarPriorities]
           .sort((left, right) => {
             const getRank = (item: DashboardPriorityItem) => {
-              if (item.id.startsWith("task-overdue-")) return 1;
-              if (item.id.startsWith("task-today-")) return 2;
-              if (item.id.startsWith("installment-overdue-")) return 3;
-              if (item.id.startsWith("installment-today-")) return 4;
-              if (item.id.startsWith("debt-overdue-")) return 5;
-              if (item.id.startsWith("debt-week-")) return 6;
-              if (item.id.startsWith("calendar-")) return 7;
-              return 8;
+              if (item.id.startsWith("installment-overdue-")) return 1;
+              if (item.id.startsWith("debt-overdue-")) return 1;
+              if (item.id.startsWith("installment-today-")) return 2;
+              if (item.id.startsWith("debt-week-")) return 2;
+              if (item.id.startsWith("task-overdue-")) return 3;
+              if (item.id.startsWith("task-today-")) return 4;
+              if (item.id.startsWith("calendar-")) return 5;
+              return 6;
             };
 
             return getRank(left) - getRank(right);
