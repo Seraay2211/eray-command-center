@@ -389,6 +389,28 @@ export interface WeeklyReviewData {
   upcomingPayments: number;
 }
 
+export type DailyArchiveActivityType =
+  | "note_created"
+  | "task_completed"
+  | "task_created"
+  | "payment"
+  | "finance_due"
+  | "calendar";
+
+export interface DailyArchiveActivity {
+  amount?: number;
+  href: string;
+  id: string;
+  occurredAt: string;
+  title: string;
+  type: DailyArchiveActivityType;
+}
+
+export interface DailyArchiveData {
+  activities: DailyArchiveActivity[];
+  available: boolean;
+}
+
 export interface DashboardData {
   stats: DashboardStats;
   commandStats: DashboardCommandStats;
@@ -403,6 +425,7 @@ export interface DashboardData {
   todayTodoStats: TodayTodoStats;
   financeSummary: FinanceDashboardSummary;
   weeklyReview: WeeklyReviewData;
+  dailyArchive: DailyArchiveData;
 }
 
 export interface Category {

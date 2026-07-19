@@ -121,6 +121,22 @@ export const QUICK_ACTIONS: SearchResult[] = [
     href: "/dashboard",
     meta: "Hızlı aksiyon",
   },
+  {
+    id: "action-daily-archive",
+    type: "action",
+    title: "Günlük Arşivi Aç",
+    description: "Bugün ve son günlerde oluşan kayıtları gösterir.",
+    href: "/dashboard#daily-archive",
+    meta: "Günlük aksiyon",
+  },
+  {
+    id: "action-daily-note",
+    type: "action",
+    title: "Gün Sonu Notu Yaz",
+    description: "Not editörünü günlük değerlendirme için açar.",
+    href: "/notes?editor=new",
+    meta: "Günlük aksiyon",
+  },
 ];
 
 export function filterQuickActions(query: string): SearchResult[] {

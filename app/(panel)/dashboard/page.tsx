@@ -20,6 +20,7 @@ import { CommandSummaryCard } from "@/components/dashboard/command-summary-card"
 import { DashboardErrorState } from "@/components/dashboard/dashboard-error-state";
 import { DashboardPersonalizedArea } from "@/components/dashboard/dashboard-personalized-area";
 import { DashboardWidgetSection } from "@/components/dashboard/dashboard-widget-section";
+import { DailyArchiveCard } from "@/components/dashboard/daily-archive-card";
 import { DailyJournalShortcut } from "@/components/dashboard/daily-journal-shortcut";
 import { FinanceRadar } from "@/components/dashboard/finance-radar";
 import { NotificationsPreviewCard } from "@/components/dashboard/notifications-preview-card";
@@ -543,6 +544,12 @@ export default async function DashboardPage() {
           <section className="grid items-start gap-4 xl:grid-cols-2">
             <DailyJournalShortcut />
             <WeeklyReviewCard review={dashboard.weeklyReview} />
+            <div className="xl:col-span-2">
+              <DailyArchiveCard
+                archive={dashboard.dailyArchive}
+                todayDateKey={getIstanbulDateKey()}
+              />
+            </div>
           </section>
         </DashboardWidgetSection>
 

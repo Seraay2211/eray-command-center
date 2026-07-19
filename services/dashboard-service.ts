@@ -7,6 +7,8 @@ import type {
   ActionResult,
   DashboardCommandStats,
   DashboardData,
+  DailyArchiveActivity,
+  DailyArchiveData,
   DashboardPinnedSummary,
   DashboardPriorityItem,
   DashboardRecentNote,
@@ -1089,6 +1091,117 @@ async function getWeeklyReviewActivity(
   };
 }
 
+async function getDailyArchiveData(
+  userId: string,
+  supabase: SupabaseServerClient,
+): Promise<DailyArchiveData> {
+  const { startIso, endIso } = getTodayRange();
+  const weekStartIso = addDays(new Date(startIso), -6).toISOString();
+  const [notesResult, tasksResult, paymentsResult, calendarResult] =
+    await Promise.all([
+      supabase
+        .from("notes")
+        .select("id,title,created_at")
+        .eq("user_id", userId)
+        .gte("created_at", weekStartIso)
+        .lt("created_at", endIso)
+        .order("created_at", { ascending: false })
+        .limit(20),
+      supabase
+        .from("tasks")
+        .select("id,title,created_at,completed_at")
+        .eq("user_id", userId)
+        .or(`created_at.gte.${weekStartIso},completed_at.gte.${weekStartIso}`)
+        .order("created_at", { ascending: false })
+        .limit(20),
+      supabase
+        .from("debt_payments")
+        .select("id,debt_id,amount,payment_date,created_at")
+        .eq("user_id", userId)
+        .gte("payment_date", getIstanbulDateKey(new Date(weekStartIso)))
+        .lte("payment_date", getIstanbulDateKey(new Date(startIso)))
+        .order("payment_date", { ascending: false })
+        .limit(20),
+      supabase
+        .from("planner_events")
+        .select("id,title,start_at")
+        .eq("user_id", userId)
+        .gte("start_at", weekStartIso)
+        .lt("start_at", endIso)
+        .order("start_at", { ascending: false })
+        .limit(20),
+    ]);
+  const activities: DailyArchiveActivity[] = [];
+
+  (notesResult.data ?? []).forEach((note) => {
+    activities.push({
+      href: `/notes?note=${encodeURIComponent(String(note.id))}`,
+      id: `note-${String(note.id)}`,
+      occurredAt: String(note.created_at),
+      title: String(note.title || "Yeni not"),
+      type: "note_created",
+    });
+  });
+
+  (tasksResult.data ?? []).forEach((task) => {
+    const taskId = String(task.id);
+    const href = `/tasks?task=${encodeURIComponent(taskId)}`;
+    if (task.created_at && String(task.created_at) >= weekStartIso) {
+      activities.push({
+        href,
+        id: `task-created-${taskId}`,
+        occurredAt: String(task.created_at),
+        title: String(task.title || "Yeni görev"),
+        type: "task_created",
+      });
+    }
+    if (task.completed_at && String(task.completed_at) >= weekStartIso) {
+      activities.push({
+        href,
+        id: `task-completed-${taskId}`,
+        occurredAt: String(task.completed_at),
+        title: String(task.title || "Tamamlanan görev"),
+        type: "task_completed",
+      });
+    }
+  });
+
+  (paymentsResult.data ?? []).forEach((payment) => {
+    const paymentDate = String(payment.payment_date);
+    activities.push({
+      amount: Number(payment.amount) || 0,
+      href: `/finance?debt=${encodeURIComponent(String(payment.debt_id))}`,
+      id: `payment-${String(payment.id)}`,
+      occurredAt: new Date(`${paymentDate}T12:00:00+03:00`).toISOString(),
+      title: "Ödeme kaydı",
+      type: "payment",
+    });
+  });
+
+  (calendarResult.data ?? []).forEach((event) => {
+    activities.push({
+      href: `/calendar?event=${encodeURIComponent(String(event.id))}`,
+      id: `calendar-${String(event.id)}`,
+      occurredAt: String(event.start_at),
+      title: String(event.title || "Planlı kayıt"),
+      type: "calendar",
+    });
+  });
+
+  return {
+    activities: activities
+      .sort(
+        (left, right) =>
+          new Date(right.occurredAt).getTime() -
+          new Date(left.occurredAt).getTime(),
+      )
+      .slice(0, 60),
+    available: [notesResult, tasksResult, paymentsResult, calendarResult].some(
+      (result) => !result.error,
+    ),
+  };
+}
+
 export async function getDashboardData(): Promise<ActionResult<DashboardData>> {
   try {
     const { supabase, userId } = await getDashboardContext();
@@ -1102,6 +1215,7 @@ export async function getDashboardData(): Promise<ActionResult<DashboardData>> {
       todayTodoStats,
       intelligence,
       weeklyActivity,
+      dailyArchive,
     ] = await Promise.all([
       getDashboardStats(userId, supabase),
       getRecentNotes(userId, supabase),
@@ -1112,6 +1226,7 @@ export async function getDashboardData(): Promise<ActionResult<DashboardData>> {
       getTodayTodoStats(userId, supabase),
       getDashboardIntelligence(userId, supabase),
       getWeeklyReviewActivity(userId, supabase),
+      getDailyArchiveData(userId, supabase),
     ]);
     const calendarPriorities: DashboardPriorityItem[] = todayPlannerEvents
       .filter((event) => event.status !== "done" && event.status !== "cancelled")
@@ -1174,6 +1289,34 @@ export async function getDashboardData(): Promise<ActionResult<DashboardData>> {
                 installment.dueDate >= getIstanbulDateKey() &&
                 installment.status !== "overdue",
             ).length,
+        },
+        dailyArchive: {
+          ...dailyArchive,
+          activities: [
+            ...dailyArchive.activities,
+            ...(intelligence.financeSummary.overdueCount > 0 ||
+            intelligence.financeSummary.overdueInstallmentCount > 0
+              ? [
+                  {
+                    href: "/finance",
+                    id: "finance-overdue-today",
+                    occurredAt: new Date().toISOString(),
+                    title: "Geciken ödeme kaydını kontrol et",
+                    type: "finance_due" as const,
+                  },
+                ]
+              : intelligence.financeSummary.dueTodayInstallmentCount > 0
+                ? [
+                    {
+                      href: "/finance",
+                      id: "finance-due-today",
+                      occurredAt: new Date().toISOString(),
+                      title: "Bugünkü ödeme planını kontrol et",
+                      type: "finance_due" as const,
+                    },
+                  ]
+                : []),
+          ],
         },
       },
       error: null,
