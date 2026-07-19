@@ -29,6 +29,7 @@ import { QuickCaptureCard } from "@/components/dashboard/quick-capture-card";
 import { RecentNoteCard } from "@/components/dashboard/recent-note-card";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { TaskItem } from "@/components/dashboard/task-item";
+import { WeeklyReviewCard } from "@/components/dashboard/weekly-review-card";
 import { OnboardingCard } from "@/components/onboarding/onboarding-card";
 import { InstallHintCard } from "@/components/pwa/install-hint-card";
 import { buttonClassName } from "@/components/ui/button";
@@ -539,7 +540,10 @@ export default async function DashboardPage() {
         </DashboardWidgetSection>
 
         <DashboardWidgetSection widgetId="daily_journal">
-          <DailyJournalShortcut />
+          <section className="grid items-start gap-4 xl:grid-cols-2">
+            <DailyJournalShortcut />
+            <WeeklyReviewCard review={dashboard.weeklyReview} />
+          </section>
         </DashboardWidgetSection>
 
         <DashboardWidgetSection widgetId="notifications">

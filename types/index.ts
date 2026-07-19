@@ -378,6 +378,17 @@ export interface FinanceDashboardSummary {
   }>;
 }
 
+export interface WeeklyReviewData {
+  activeTasks: number;
+  available: boolean;
+  completedTasks: number;
+  notesCreated: number;
+  overdueFinanceItems: number;
+  overdueTasks: number;
+  paymentsMade: number;
+  upcomingPayments: number;
+}
+
 export interface DashboardData {
   stats: DashboardStats;
   commandStats: DashboardCommandStats;
@@ -391,6 +402,7 @@ export interface DashboardData {
   plannerStats: PlannerStats;
   todayTodoStats: TodayTodoStats;
   financeSummary: FinanceDashboardSummary;
+  weeklyReview: WeeklyReviewData;
 }
 
 export interface Category {

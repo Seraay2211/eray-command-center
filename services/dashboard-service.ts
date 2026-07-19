@@ -23,6 +23,7 @@ import type {
   TaskStatus,
   Tag,
   TodayTodoStats,
+  WeeklyReviewData,
 } from "@/types";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
@@ -1034,6 +1035,60 @@ async function getDashboardIntelligence(
   };
 }
 
+async function getWeeklyReviewActivity(
+  userId: string,
+  supabase: SupabaseServerClient,
+): Promise<Pick<
+  WeeklyReviewData,
+  "available" | "completedTasks" | "notesCreated" | "paymentsMade"
+>> {
+  const { startIso, endIso } = getTodayRange();
+  const weekStart = addDays(new Date(startIso), -6);
+  const weekStartIso = weekStart.toISOString();
+  const weekStartKey = getIstanbulDateKey(weekStart);
+  const todayKey = getIstanbulDateKey(new Date(startIso));
+  const [completedTasksResult, paymentsResult, notesResult] = await Promise.all([
+    supabase
+      .from("tasks")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .gte("completed_at", weekStartIso)
+      .lt("completed_at", endIso),
+    supabase
+      .from("debt_payments")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .gte("payment_date", weekStartKey)
+      .lte("payment_date", todayKey),
+    supabase
+      .from("notes")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .gte("created_at", weekStartIso)
+      .lt("created_at", endIso),
+  ]);
+
+  if (
+    completedTasksResult.error ||
+    paymentsResult.error ||
+    notesResult.error
+  ) {
+    return {
+      available: false,
+      completedTasks: 0,
+      notesCreated: 0,
+      paymentsMade: 0,
+    };
+  }
+
+  return {
+    available: true,
+    completedTasks: completedTasksResult.count ?? 0,
+    notesCreated: notesResult.count ?? 0,
+    paymentsMade: paymentsResult.count ?? 0,
+  };
+}
+
 export async function getDashboardData(): Promise<ActionResult<DashboardData>> {
   try {
     const { supabase, userId } = await getDashboardContext();
@@ -1046,6 +1101,7 @@ export async function getDashboardData(): Promise<ActionResult<DashboardData>> {
       plannerStats,
       todayTodoStats,
       intelligence,
+      weeklyActivity,
     ] = await Promise.all([
       getDashboardStats(userId, supabase),
       getRecentNotes(userId, supabase),
@@ -1055,6 +1111,7 @@ export async function getDashboardData(): Promise<ActionResult<DashboardData>> {
       getPlannerStats(userId, supabase),
       getTodayTodoStats(userId, supabase),
       getDashboardIntelligence(userId, supabase),
+      getWeeklyReviewActivity(userId, supabase),
     ]);
     const calendarPriorities: DashboardPriorityItem[] = todayPlannerEvents
       .filter((event) => event.status !== "done" && event.status !== "cancelled")
@@ -1103,6 +1160,21 @@ export async function getDashboardData(): Promise<ActionResult<DashboardData>> {
         plannerStats,
         todayTodoStats,
         financeSummary: intelligence.financeSummary,
+        weeklyReview: {
+          ...weeklyActivity,
+          activeTasks: stats.openTasks,
+          overdueFinanceItems:
+            intelligence.commandStats.overdueDebts +
+            intelligence.financeSummary.overdueInstallmentCount,
+          overdueTasks: intelligence.commandStats.overdueTasks,
+          upcomingPayments:
+            intelligence.financeSummary.dueThisWeekCount +
+            intelligence.financeSummary.upcomingInstallments.filter(
+              (installment) =>
+                installment.dueDate >= getIstanbulDateKey() &&
+                installment.status !== "overdue",
+            ).length,
+        },
       },
       error: null,
     };
