@@ -2,7 +2,6 @@ import "server-only";
 
 import { getIstanbulDateKey, getIstanbulDayRange } from "@/lib/dates/istanbul";
 import { createClient } from "@/lib/supabase/server";
-import { formatTRY } from "@/lib/utils/currency";
 import type { Debt } from "@/types";
 import type {
   CreateNotificationInput,
@@ -12,6 +11,7 @@ import type {
 const financeAlertTypes: NotificationType[] = [
   "finance_overdue",
   "finance_due_today",
+  "finance_due_soon",
   "finance_critical",
 ];
 
@@ -30,7 +30,20 @@ function mapDebt(raw: Record<string, unknown>): Debt {
     ...(raw as unknown as Debt),
     total_amount: toNumber(raw.total_amount),
     paid_amount: toNumber(raw.paid_amount),
+    reminder_days_before:
+      raw.reminder_days_before === null ||
+      raw.reminder_days_before === undefined
+        ? 3
+        : toNumber(raw.reminder_days_before),
   };
+}
+
+function isReminderColumnMissing(message: string): boolean {
+  return (
+    message.includes("reminder_days_before") ||
+    message.includes("schema cache") ||
+    message.includes("PGRST204")
+  );
 }
 
 function buildAlertCandidates(
@@ -53,8 +66,8 @@ function buildAlertCandidates(
     if (debt.due_date && debt.due_date < today) {
       alerts.push({
         type: "finance_overdue",
-        title: "Vadesi geçen borç",
-        message: `${debt.title} borcunun vadesi geçti. Kalan tutar: ${formatTRY(remaining)}`,
+        title: "Geciken borç var",
+        message: "Son ödeme tarihi geçmiş bir borç kaydı bulunuyor.",
         source: "finance",
         source_id: debt.id,
         priority: "critical",
@@ -66,8 +79,8 @@ function buildAlertCandidates(
     if (debt.due_date === today) {
       alerts.push({
         type: "finance_due_today",
-        title: "Bugün ödenecek borç",
-        message: `${debt.title} borcunun ödeme tarihi bugün. Kalan tutar: ${formatTRY(remaining)}`,
+        title: "Bugün son ödeme günü",
+        message: "Bugün son ödeme tarihi olan bir borç kaydı var.",
         source: "finance",
         source_id: debt.id,
         priority: "high",
@@ -76,11 +89,31 @@ function buildAlertCandidates(
       });
     }
 
+    if (debt.due_date && debt.due_date > today) {
+      const reminderDate = new Date(`${today}T12:00:00+03:00`);
+      reminderDate.setDate(
+        reminderDate.getDate() + (debt.reminder_days_before ?? 3),
+      );
+      const reminderLimit = getIstanbulDateKey(reminderDate);
+      if (debt.due_date <= reminderLimit) {
+        alerts.push({
+          type: "finance_due_soon",
+          title: "Yaklaşan son ödeme tarihi",
+          message: "Son ödeme tarihi yaklaşan bir borç kaydı var.",
+          source: "finance",
+          source_id: debt.id,
+          priority: "high",
+          action_url: actionUrl,
+          metadata,
+        });
+      }
+    }
+
     if (debt.priority === "critical") {
       alerts.push({
         type: "finance_critical",
         title: "Kritik borç takibi",
-        message: `${debt.title} kritik öncelikte takip ediliyor. Kalan tutar: ${formatTRY(remaining)}`,
+        message: "Kritik öncelikte takip edilen bir borç kaydı var.",
         source: "finance",
         source_id: debt.id,
         priority: "high",
@@ -109,14 +142,30 @@ export async function generateFinanceAlerts(
     );
 
     if (!debts) {
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from("debts")
         .select(
-          "id,user_id,title,creditor,total_amount,paid_amount,currency,status,priority,due_date,installment_count,notes,created_at,updated_at",
+          "id,user_id,title,creditor,total_amount,paid_amount,currency,status,priority,due_date,reminder_days_before,installment_count,notes,created_at,updated_at",
         )
         .eq("user_id", authData.user.id)
         .neq("status", "cancelled")
         .limit(50);
+
+      if (error && isReminderColumnMissing(error.message)) {
+        const fallback = await supabase
+          .from("debts")
+          .select(
+            "id,user_id,title,creditor,total_amount,paid_amount,currency,status,priority,due_date,installment_count,notes,created_at,updated_at",
+          )
+          .eq("user_id", authData.user.id)
+          .neq("status", "cancelled")
+          .limit(50);
+        data = fallback.data?.map((debt) => ({
+          ...debt,
+          reminder_days_before: 3,
+        })) ?? null;
+        error = fallback.error;
+      }
 
       if (error) return { available: false, created: 0 };
       debts = (data ?? []).map((debt) =>

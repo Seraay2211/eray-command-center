@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { getIstanbulDateKey, getIstanbulDayRange } from "@/lib/dates/istanbul";
 import { createClient } from "@/lib/supabase/server";
-import { formatTRY } from "@/lib/utils/currency";
 import type { ActionResult } from "@/types";
 import type {
   AppNotification,
@@ -18,6 +17,7 @@ const notificationSelect =
 
 const notificationTypes: NotificationType[] = [
   "finance_due_today",
+  "finance_due_soon",
   "finance_overdue",
   "finance_critical",
   "finance_payment_added",
@@ -206,11 +206,6 @@ async function buildDynamicNotifications(
           debt && typeof debt === "object" && "title" in debt
             ? String(debt.title ?? "Taksit")
             : "Taksit";
-        const remaining = Math.max(
-          Number(installment.expected_amount) -
-            Number(installment.paid_amount),
-          0,
-        );
         const dueDate = String(installment.due_date);
         const isOverdue = dueDate < todayKey;
         const isToday = dueDate === todayKey;
@@ -221,18 +216,24 @@ async function buildDynamicNotifications(
           )}&installment=${encodeURIComponent(String(installment.id))}`,
           createdAt: new Date(`${dueDate}T09:00:00+03:00`).toISOString(),
           id: `dynamic-installment-${String(installment.id)}`,
-          message: `${installment.installment_no}. taksit için kalan tutar ${formatTRY(
-            remaining,
-          )}.`,
+          message: isOverdue
+            ? "Taksit ödeme tarihi geçti."
+            : isToday
+              ? "Taksit ödeme tarihi bugün."
+              : "Taksit ödeme günü yaklaşıyor.",
           priority: isOverdue ? "critical" : isToday ? "high" : "medium",
           source: "finance",
           sourceId: String(installment.id),
           title: isOverdue
             ? `${debtTitle} taksiti gecikti`
             : isToday
-              ? `${debtTitle} taksiti bugün`
-              : `${debtTitle} taksiti yaklaşıyor`,
-          type: isOverdue ? "finance_overdue" : "finance_due_today",
+              ? "Bugün son taksit ödeme günü"
+              : "Yaklaşan taksit ödemesi",
+          type: isOverdue
+            ? "finance_overdue"
+            : isToday
+              ? "finance_due_today"
+              : "finance_due_soon",
           userId,
         });
       },

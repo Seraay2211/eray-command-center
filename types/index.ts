@@ -206,7 +206,11 @@ export interface Debt {
   currency: string;
   status: DebtStatus;
   priority: DebtPriority;
+  start_date: string | null;
   due_date: string | null;
+  debt_type: string;
+  category: string | null;
+  reminder_days_before: number;
   installment_count: number | null;
   is_installment: boolean;
   installment_amount: number | null;
@@ -296,7 +300,11 @@ export interface CreateDebtInput {
   currency?: string;
   status?: DebtStatus;
   priority?: DebtPriority;
+  start_date?: string | null;
   due_date?: string | null;
+  debt_type?: string;
+  category?: string | null;
+  reminder_days_before?: number;
   installment_count?: number | null;
   is_installment?: boolean;
   installment_amount?: number | null;

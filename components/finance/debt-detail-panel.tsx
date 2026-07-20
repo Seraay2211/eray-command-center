@@ -77,7 +77,11 @@ export function DebtDetailPanel({
       <div className="app-border flex items-start justify-between gap-3 border-b p-4 sm:p-5">
         <div className="min-w-0">
           <div className="flex flex-wrap gap-2">
-            <DebtStatusBadge dueDate={debt.due_date} status={debt.status} />
+            <DebtStatusBadge
+              dueDate={debt.due_date}
+              reminderDaysBefore={debt.reminder_days_before}
+              status={debt.status}
+            />
             <DebtPriorityBadge priority={debt.priority} />
           </div>
           <h2 className="app-text mt-3 break-words text-lg font-semibold">{debt.title}</h2>
@@ -129,6 +133,7 @@ export function DebtDetailPanel({
               <dd className="mt-1">
                 <DebtStatusBadge
                   dueDate={debt.due_date}
+                  reminderDaysBefore={debt.reminder_days_before}
                   status={debt.status}
                 />
               </dd>

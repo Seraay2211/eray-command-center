@@ -98,7 +98,7 @@ function buildDashboardReminders(
       id: "finance-overdue",
       priority: "critical",
       rank: 1,
-      title: "Geciken ödeme var",
+      title: "Geciken borç var",
       type: "finance",
     });
   }
@@ -111,7 +111,7 @@ function buildDashboardReminders(
       id: "finance-today",
       priority: "important",
       rank: 2,
-      title: "Bugün ödeme günü",
+      title: "Bugün son ödeme günü",
       type: "finance",
     });
   }
@@ -124,7 +124,7 @@ function buildDashboardReminders(
       id: "finance-approaching",
       priority: "important",
       rank: 3,
-      title: "Yaklaşan ödeme var",
+      title: "Yaklaşan son ödeme tarihi",
       type: "finance",
     });
   }

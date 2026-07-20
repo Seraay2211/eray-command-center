@@ -31,7 +31,7 @@ interface FinancePlanItem {
   id: string;
   priority: DebtPriority;
   rank: number;
-  status: "Gecikti" | "Bugün" | "Yakında" | "Kritik";
+  status: "Gecikti" | "Bugün Son Gün" | "Yaklaşıyor" | "Kritik";
   title: string;
 }
 
@@ -63,8 +63,8 @@ function getDateState(
 ): Pick<FinancePlanItem, "rank" | "status"> | null {
   if (!dueDate) return null;
   if (dueDate < today) return { rank: 1, status: "Gecikti" };
-  if (dueDate === today) return { rank: 2, status: "Bugün" };
-  if (dueDate <= weekEnd) return { rank: 3, status: "Yakında" };
+  if (dueDate === today) return { rank: 2, status: "Bugün Son Gün" };
+  if (dueDate <= weekEnd) return { rank: 3, status: "Yaklaşıyor" };
   return null;
 }
 
@@ -72,7 +72,7 @@ function getStatusClass(status: FinancePlanItem["status"]): string {
   if (status === "Gecikti") {
     return "border-[color-mix(in_srgb,var(--danger)_30%,var(--border))] bg-[color-mix(in_srgb,var(--danger)_8%,var(--surface))] text-[var(--danger)]";
   }
-  if (status === "Bugün" || status === "Kritik") {
+  if (status === "Bugün Son Gün" || status === "Kritik") {
     return "border-[color-mix(in_srgb,var(--warning)_30%,var(--border))] bg-[color-mix(in_srgb,var(--warning)_8%,var(--surface))] text-[var(--warning)]";
   }
   return "app-border app-surface app-muted";
@@ -139,7 +139,7 @@ export function SmartFinancePlan({
         status:
           debt.status === "overdue"
             ? "Gecikti"
-            : (dateState?.status ?? "Yakında"),
+            : (dateState?.status ?? "Yaklaşıyor"),
         title: debt.title,
       });
     });
@@ -188,7 +188,9 @@ export function SmartFinancePlan({
             : "Düşük";
     const suggestion =
       overdueCount > 0
-        ? "Önce gecikmiş ödemeleri kapatman daha güvenli olur."
+        ? "Öncelik: Geciken borç kayıtlarını kontrol et."
+        : priorityItem?.status === "Bugün Son Gün"
+          ? "Öncelik: Bugün son ödeme tarihi olan borcu kontrol et."
         : weeklyCount === 0
           ? "Bu hafta ödeme baskısı düşük görünüyor."
           : "Yaklaşan ödemeler için kayıtlarını güncel tut.";
@@ -257,7 +259,7 @@ export function SmartFinancePlan({
           <div className="app-surface-2 min-w-0 rounded-2xl border p-3.5">
             <div className="flex items-center gap-2">
               <WalletCards className="app-primary size-4" />
-              <h3 className="app-text text-sm font-semibold">Öncelikli Ödeme</h3>
+              <h3 className="app-text text-sm font-semibold">En Yakın Son Ödeme</h3>
             </div>
             {plan.priorityItem ? (
               <div className="app-surface mt-3 min-w-0 rounded-xl border p-3">

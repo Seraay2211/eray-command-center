@@ -23,7 +23,7 @@ export function InstallmentStatusBadge({
   );
   const label =
     status === "pending" && installment.due_date === today
-      ? "Bugün"
+      ? "Bugün Son Gün"
       : status === "pending" && installment.due_date <= sevenDaysLater
         ? "Yaklaşıyor"
         : labels[status];

@@ -1,7 +1,11 @@
 "use client";
 
 import { CalendarClock, CreditCard, Pencil, Trash2 } from "lucide-react";
-import { DebtPriorityBadge, DebtStatusBadge } from "@/components/finance/debt-badges";
+import {
+  DebtPriorityBadge,
+  DebtStatusBadge,
+  getDebtDueTimingLabel,
+} from "@/components/finance/debt-badges";
 import { InstallmentStatusBadge } from "@/components/finance/installment-status-badge";
 import { useSettings } from "@/components/providers/settings-provider";
 import { Button } from "@/components/ui/button";
@@ -78,7 +82,11 @@ export function DebtCard({
           </p>
         </div>
         <div className="flex flex-wrap justify-end gap-1.5">
-          <DebtStatusBadge dueDate={debt.due_date} status={debt.status} />
+          <DebtStatusBadge
+            dueDate={debt.due_date}
+            reminderDaysBefore={debt.reminder_days_before}
+            status={debt.status}
+          />
           <DebtPriorityBadge priority={debt.priority} />
         </div>
       </div>
@@ -108,11 +116,16 @@ export function DebtCard({
         <div className="h-full rounded-full bg-[var(--primary)]" style={{ width: `${progress}%` }} />
       </div>
 
-      <div className="app-muted mt-3 flex items-center gap-2 text-[11px]">
+      <div className="app-surface-2 mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border p-3 text-[11px]">
         <CalendarClock className="size-3.5" />
-        {debt.due_date
-          ? `Son ödeme: ${new Intl.DateTimeFormat("tr-TR").format(new Date(`${debt.due_date}T00:00:00`))}`
-          : "Son ödeme tarihi yok"}
+        <span className="app-muted">
+          {debt.due_date
+            ? `Son ödeme: ${formatFinanceDate(debt.due_date)}`
+            : "Son ödeme tarihi yok"}
+        </span>
+        <strong className="app-text font-semibold">
+          {getDebtDueTimingLabel(debt.status, debt.due_date)}
+        </strong>
       </div>
 
       {debt.is_installment ? (

@@ -44,6 +44,8 @@ const debtPriorities: DebtPriority[] = [
 
 const debtSelect =
   "id,user_id,title,creditor,total_amount,paid_amount,currency,status,priority,due_date,installment_count,is_installment,installment_amount,installment_start_date,installment_day,installment_note,notes,created_at,updated_at";
+const advancedDebtSelect =
+  "id,user_id,title,creditor,total_amount,paid_amount,currency,status,priority,start_date,due_date,debt_type,category,reminder_days_before,installment_count,is_installment,installment_amount,installment_start_date,installment_day,installment_note,notes,created_at,updated_at";
 const legacyDebtSelect =
   "id,user_id,title,creditor,total_amount,paid_amount,currency,status,priority,due_date,installment_count,notes,created_at,updated_at";
 const paymentSelect =
@@ -73,6 +75,15 @@ function isInstallmentSchemaMissing(message: string): boolean {
   );
 }
 
+function isAdvancedDebtSchemaMissing(message: string): boolean {
+  return (
+    message.includes("start_date") ||
+    message.includes("debt_type") ||
+    message.includes("reminder_days_before") ||
+    message.includes("category")
+  );
+}
+
 function getErrorMessage(error: unknown): string {
   const message =
     error instanceof Error
@@ -87,6 +98,9 @@ function getErrorMessage(error: unknown): string {
     message.includes("ocr_status")
   ) {
     return "Dekont özelliği şu anda kullanılamıyor. Lütfen daha sonra tekrar dene.";
+  }
+  if (isAdvancedDebtSchemaMissing(message)) {
+    return "Gelişmiş borç alanları henüz etkin değil. Kurulum tamamlandıktan sonra tekrar dene.";
   }
   if (isInstallmentSchemaMissing(message)) {
     return "Taksit sistemi henüz etkin değil. Kurulum tamamlandıktan sonra tekrar dene.";
@@ -110,6 +124,12 @@ function getErrorMessage(error: unknown): string {
     "Ödeme kaydı bulunamadı",
     "Ödeme kaydı bulunan",
     "Toplam tutar kaydedilmiş",
+    "Son ödeme tarihi",
+    "Borç tutarı",
+    "Taksit günü",
+    "Başlangıç tarihi",
+    "Borç türü",
+    "Hatırlatma",
   ];
   return safeMessages.some((item) => message.startsWith(item))
     ? message
@@ -128,6 +148,19 @@ function mapDebt(raw: Record<string, unknown>): Debt {
     notes: typeof raw.notes === "string" ? raw.notes : "",
     total_amount: toNumber(raw.total_amount),
     paid_amount: toNumber(raw.paid_amount),
+    start_date:
+      typeof raw.start_date === "string"
+        ? raw.start_date
+        : typeof raw.created_at === "string"
+          ? raw.created_at.slice(0, 10)
+          : null,
+    debt_type: typeof raw.debt_type === "string" ? raw.debt_type : "other",
+    category: typeof raw.category === "string" ? raw.category : null,
+    reminder_days_before:
+      raw.reminder_days_before === null ||
+      raw.reminder_days_before === undefined
+        ? 3
+        : toNumber(raw.reminder_days_before),
     installment_count:
       raw.installment_count === null || raw.installment_count === undefined
         ? null
@@ -244,8 +277,26 @@ function validateDebtInput(
     }
     values.priority = input.priority;
   }
+  if (input.start_date !== undefined) {
+    values.start_date = input.start_date?.trim() || null;
+  }
   if (input.due_date !== undefined) {
     values.due_date = input.due_date?.trim() || null;
+  }
+  if (input.debt_type !== undefined) {
+    const debtType = input.debt_type.trim().slice(0, 60);
+    if (!debtType) throw new Error("Borç türü zorunludur.");
+    values.debt_type = debtType;
+  }
+  if (input.category !== undefined) {
+    values.category = input.category?.trim().slice(0, 80) || null;
+  }
+  if (input.reminder_days_before !== undefined) {
+    const reminderDays = Number(input.reminder_days_before);
+    if (![0, 1, 3, 7].includes(reminderDays)) {
+      throw new Error("Hatırlatma aralığı geçersiz.");
+    }
+    values.reminder_days_before = reminderDays;
   }
   if (input.installment_count !== undefined) {
     const count =
@@ -301,6 +352,19 @@ function validateDebtInput(
     values.installment_day =
       values.installment_day ??
       Number(values.installment_start_date.slice(8, 10));
+  }
+
+  if (requireTitle) {
+    if (!values.start_date) throw new Error("Başlangıç tarihi zorunludur.");
+    if (!values.due_date) throw new Error("Son ödeme tarihi zorunludur.");
+    if (!values.debt_type) throw new Error("Borç türü zorunludur.");
+  }
+  if (
+    values.start_date &&
+    values.due_date &&
+    values.due_date < values.start_date
+  ) {
+    throw new Error("Son ödeme tarihi başlangıç tarihinden önce olamaz.");
   }
 
   return values;
@@ -452,10 +516,20 @@ async function fetchDebtById(
 ): Promise<Debt> {
   let { data, error } = await supabase
     .from("debts")
-    .select(debtSelect)
+    .select(advancedDebtSelect)
     .eq("id", debtId)
     .eq("user_id", userId)
     .maybeSingle();
+  if (error && isAdvancedDebtSchemaMissing(error.message)) {
+    const currentSchemaResult = await supabase
+      .from("debts")
+      .select(debtSelect)
+      .eq("id", debtId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    data = currentSchemaResult.data as typeof data;
+    error = currentSchemaResult.error;
+  }
   if (error && isInstallmentSchemaMissing(error.message)) {
     const legacyResult = await supabase
       .from("debts")
@@ -479,11 +553,22 @@ export async function getDebts(
     const { supabase, userId } = await getContext();
     let { data, error } = await supabase
       .from("debts")
-      .select(debtSelect)
+      .select(advancedDebtSelect)
       .eq("user_id", userId)
       .order("due_date", { ascending: true, nullsFirst: false })
       .order("created_at", { ascending: false })
       .limit(limit);
+    if (error && isAdvancedDebtSchemaMissing(error.message)) {
+      const currentSchemaResult = await supabase
+        .from("debts")
+        .select(debtSelect)
+        .eq("user_id", userId)
+        .order("due_date", { ascending: true, nullsFirst: false })
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      data = currentSchemaResult.data as typeof data;
+      error = currentSchemaResult.error;
+    }
     if (error && isInstallmentSchemaMissing(error.message)) {
       const legacyResult = await supabase
         .from("debts")
@@ -527,7 +612,11 @@ export async function createDebt(
       currency: values.currency ?? "TRY",
       status: values.status ?? "active",
       priority: values.priority ?? "medium",
+      start_date: values.start_date,
       due_date: values.due_date ?? null,
+      debt_type: values.debt_type ?? "other",
+      category: values.category ?? null,
+      reminder_days_before: values.reminder_days_before ?? 3,
       installment_count: values.installment_count ?? null,
       is_installment: values.is_installment ?? false,
       installment_amount: values.installment_amount ?? null,
@@ -602,6 +691,11 @@ export async function updateDebt(
       throw new Error(
         "Toplam tutar kaydedilmiş ödemelerden düşük olamaz.",
       );
+    }
+    const nextStartDate = values.start_date ?? current.start_date;
+    const nextDueDate = values.due_date ?? current.due_date;
+    if (nextStartDate && nextDueDate && nextDueDate < nextStartDate) {
+      throw new Error("Son ödeme tarihi başlangıç tarihinden önce olamaz.");
     }
     await assertInstallmentPlanChangeIsSafe(
       supabase,

@@ -1,61 +1,93 @@
 import { getIstanbulDateKey } from "@/lib/dates/istanbul";
 import type { DebtPriority, DebtStatus } from "@/types";
 
-const statusLabels: Record<DebtStatus, string> = {
-  active: "Aktif",
-  overdue: "Gecikmiş",
-  structured: "Yapılandırıldı",
-  paid: "Kapandı",
+export type DebtDueState =
+  | "cancelled"
+  | "overdue"
+  | "paid"
+  | "planned"
+  | "soon"
+  | "structured"
+  | "today";
+
+const dueStateLabels: Record<DebtDueState, string> = {
   cancelled: "İptal",
+  overdue: "Gecikti",
+  paid: "Ödendi",
+  planned: "Planlandı",
+  soon: "Yaklaşıyor",
+  structured: "Yapılandırıldı",
+  today: "Bugün Son Gün",
 };
 
 const priorityLabels: Record<DebtPriority, string> = {
   low: "Düşük",
-  medium: "Orta",
-  high: "Yüksek",
+  medium: "Normal",
+  high: "Önemli",
   critical: "Kritik",
 };
 
-export function getDebtDisplayStatus(
+function getDayDifference(dueDate: string, today: string): number {
+  const due = new Date(`${dueDate}T12:00:00+03:00`).getTime();
+  const current = new Date(`${today}T12:00:00+03:00`).getTime();
+  return Math.round((due - current) / 86_400_000);
+}
+
+export function getDebtDueState(
   status: DebtStatus,
   dueDate?: string | null,
-): DebtStatus {
-  if (
-    dueDate &&
-    dueDate < getIstanbulDateKey() &&
-    status !== "paid" &&
-    status !== "cancelled"
-  ) {
-    return "overdue";
-  }
+  reminderDaysBefore = 3,
+): DebtDueState {
+  if (status === "paid") return "paid";
+  if (status === "cancelled") return "cancelled";
+  if (!dueDate) return status === "structured" ? "structured" : "planned";
 
-  return status;
+  const days = getDayDifference(dueDate, getIstanbulDateKey());
+  if (days < 0) return "overdue";
+  if (days === 0) return "today";
+  if (days <= reminderDaysBefore) return "soon";
+  return status === "structured" ? "structured" : "planned";
+}
+
+export function getDebtDueTimingLabel(
+  status: DebtStatus,
+  dueDate?: string | null,
+): string {
+  if (status === "paid") return "Ödeme tamamlandı";
+  if (!dueDate) return "Son ödeme tarihi yok";
+
+  const days = getDayDifference(dueDate, getIstanbulDateKey());
+  if (days === 0) return "Bugün son gün";
+  if (days > 0) return `${days} gün kaldı`;
+  return `${Math.abs(days)} gün gecikti`;
 }
 
 export function DebtStatusBadge({
   status,
   dueDate,
+  reminderDaysBefore = 3,
 }: {
   status: DebtStatus;
   dueDate?: string | null;
+  reminderDaysBefore?: number;
 }) {
-  const displayStatus = getDebtDisplayStatus(status, dueDate);
+  const dueState = getDebtDueState(status, dueDate, reminderDaysBefore);
   const color =
-    displayStatus === "paid"
+    dueState === "paid"
       ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-400"
-      : displayStatus === "overdue"
+      : dueState === "overdue"
         ? "border-rose-400/20 bg-rose-500/10 text-rose-400"
-        : displayStatus === "cancelled"
-          ? "app-border app-surface-2 app-muted"
-          : displayStatus === "structured"
-            ? "border-sky-400/20 bg-sky-500/10 text-sky-400"
-            : "border-violet-400/20 bg-violet-500/10 app-primary";
+        : dueState === "today" || dueState === "soon"
+          ? "border-amber-400/20 bg-amber-500/10 text-amber-400"
+          : dueState === "cancelled"
+            ? "app-border app-surface-2 app-muted"
+            : dueState === "structured"
+              ? "border-sky-400/20 bg-sky-500/10 text-sky-400"
+              : "app-border app-surface-2 app-muted";
 
   return (
-    <span
-      className={`rounded-full border px-2 py-1 text-[10px] font-semibold ${color}`}
-    >
-      {statusLabels[displayStatus]}
+    <span className={`rounded-full border px-2 py-1 text-[10px] font-semibold ${color}`}>
+      {dueStateLabels[dueState]}
     </span>
   );
 }
@@ -69,9 +101,7 @@ export function DebtPriorityBadge({ priority }: { priority: DebtPriority }) {
         : "app-border app-surface-2 app-muted";
 
   return (
-    <span
-      className={`rounded-full border px-2 py-1 text-[10px] font-semibold ${color}`}
-    >
+    <span className={`rounded-full border px-2 py-1 text-[10px] font-semibold ${color}`}>
       {priorityLabels[priority]}
     </span>
   );

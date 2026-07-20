@@ -1,5 +1,6 @@
 export type NotificationType =
   | "finance_due_today"
+  | "finance_due_soon"
   | "finance_overdue"
   | "finance_critical"
   | "finance_payment_added"
